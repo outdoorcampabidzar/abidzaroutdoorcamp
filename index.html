@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AbidzarOutdoorcamp — Sewa Outdoor & Open Trip</title>
+  <meta name="description" content="Katalog sewa perlengkapan outdoor dan open trip AbidzarOutdoorcamp.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-shell">
+    <a class="brand" href="index.html">
+      Abidzar<span>Outdoorcamp</span>
+    </a>
+
+    <button
+      class="nav-toggle"
+      type="button"
+      data-nav-toggle
+      aria-label="Buka menu navigasi"
+      aria-expanded="false"
+    >
+      <span aria-hidden="true">☰</span>
+    </button>
+
+    <div class="nav-menu" data-nav-menu>
+      <div class="nav-primary">
+        <a class="nav-link active" href="index.html">Beranda</a>
+        <a class="nav-link" href="rental.html">Sewa Item</a>
+        <a class="nav-link" href="trips.html">Open Trip</a>
+      </div>
+
+      <div class="nav-account">
+        <a class="nav-cart" href="cart.html">
+          Keranjang
+          <span data-cart-count class="cart-count hidden">0</span>
+        </a>
+
+        <a
+          data-notification
+          class="nav-notification hidden"
+          href="orders.html"
+          aria-label="Lihat status pesanan"
+          title="Status pesanan"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+            <path d="M10 21h4"></path>
+          </svg>
+          <span data-notification-dot class="notification-dot hidden"></span>
+        </a>
+
+        <a data-login class="btn nav-login" href="login.html">
+          Login
+        </a>
+
+        <div data-account-menu class="account-menu hidden">
+          <button
+            data-user-menu-toggle
+            class="account-trigger"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <span data-user-avatar class="account-avatar">U</span>
+
+            <span class="account-trigger-copy">
+              <strong data-user-name>Halo, Pengguna</strong>
+              <small data-user-role>Akun</small>
+            </span>
+
+            <svg class="account-chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m7 10 5 5 5-5"></path>
+            </svg>
+          </button>
+
+          <div
+            data-user-dropdown
+            class="account-dropdown"
+            role="menu"
+            aria-hidden="true"
+          >
+            <div class="account-dropdown-head">
+              <span data-user-avatar class="account-avatar account-avatar-large">U</span>
+              <div>
+                <strong data-user-full-name>Pengguna</strong>
+                <small data-user-email>email@pengguna.com</small>
+              </div>
+            </div>
+
+            <div class="account-dropdown-list">
+              <a
+                class="account-dropdown-item"
+                href="profile.html"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 21a8 8 0 0 0-16 0"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Profil Saya</span>
+              </a>
+
+              <a
+                class="account-dropdown-item"
+                href="orders.html"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 2h9l3 3v17H6z"></path>
+                  <path d="M14 2v4h4"></path>
+                  <path d="M9 12h6M9 16h6"></path>
+                </svg>
+                <span>Pesanan Saya</span>
+              </a>
+
+              <a
+                class="account-dropdown-item"
+                href="cart.html#voucher"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"></path>
+                  <path d="M13 7v12"></path>
+                </svg>
+                <span>Voucher & Checkout</span>
+              </a>
+
+              <a
+                data-admin
+                class="account-dropdown-item hidden"
+                href="admin.html"
+                role="menuitem"
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z"></path>
+                </svg>
+                <span>Admin Panel</span>
+              </a>
+            </div>
+
+            <div class="account-dropdown-footer">
+              <button
+                data-logout
+                class="account-dropdown-item account-logout hidden"
+                type="button"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 17l5-5-5-5"></path>
+                  <path d="M15 12H3"></path>
+                  <path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"></path>
+                </svg>
+                <span>Keluar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+  <main>
+    <section class="container hero catalog-home-hero">
+      <div>
+        <div class="hero-eyebrow">
+          <span class="hero-eyebrow-dot"></span>
+          Outdoor rental & open trip
+        </div>
+        <h1>
+          <span class="hero-title-accent">Siapkan petualangan.</span>
+          Pesan semuanya di satu tempat.
+        </h1>
+        <p class="muted">
+          Cari perlengkapan di katalog <b>Sewa Item</b> atau pilih perjalanan
+          di katalog <b>Open Trip</b>. Keduanya tetap dapat digabungkan dalam
+          satu keranjang dan satu checkout.
+        </p>
+        <div class="actions hero-actions">
+          <a class="btn" href="rental.html">
+            <span>Jelajahi Sewa Item</span>
+            <span aria-hidden="true">→</span>
+          </a>
+          <a class="btn secondary" href="trips.html">
+            Lihat Open Trip
+          </a>
+        </div>
+
+        <div class="hero-proof" aria-label="Keunggulan layanan">
+          <div>
+            <strong>2</strong>
+            <span>Katalog terpisah</span>
+          </div>
+          <div>
+            <strong>1</strong>
+            <span>Checkout terpadu</span>
+          </div>
+          <div>
+            <strong>WA</strong>
+            <span>Konfirmasi cepat</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="category-choice-grid">
+        <a class="card category-choice-card rental-choice" href="rental.html">
+          <span class="category-choice-icon">🎒</span>
+          <span class="badge">Katalog Sewa</span>
+          <h2>Sewa Item</h2>
+          <p class="muted">
+            Tenda, tas, perlengkapan camping, dan kebutuhan outdoor lainnya.
+          </p>
+          <span class="category-choice-action">Buka katalog →</span>
+        </a>
+
+        <a class="card category-choice-card trip-choice" href="trips.html">
+          <span class="category-choice-icon">🏔️</span>
+          <span class="badge">Katalog Perjalanan</span>
+          <h2>Open Trip</h2>
+          <p class="muted">
+            Pilih destinasi, tanggal keberangkatan, dan jumlah peserta.
+          </p>
+          <span class="category-choice-action">Buka katalog →</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="container section">
+      <div class="row catalog-section-heading">
+        <div>
+          <span class="badge">Sewa Item</span>
+          <h2>Perlengkapan terbaru</h2>
+          <p class="muted">Pilih jumlah unit dan tambahkan ke keranjang.</p>
+        </div>
+        <a class="btn secondary" href="rental.html">Lihat Semua Sewa</a>
+      </div>
+
+      <div id="rentalPreview" class="grid"></div>
+      <div id="rentalMsg" class="notice hidden"></div>
+    </section>
+
+    <section class="container section">
+      <div class="row catalog-section-heading">
+        <div>
+          <span class="badge">Open Trip</span>
+          <h2>Perjalanan terbaru</h2>
+          <p class="muted">Pilih destinasi dan jumlah peserta.</p>
+        </div>
+        <a class="btn secondary" href="trips.html">Lihat Semua Trip</a>
+      </div>
+
+      <div id="tripPreview" class="grid"></div>
+      <div id="tripMsg" class="notice hidden"></div>
+    </section>
+  </main>
+
+
+<section id="website-rating" class="website-rating-section">
+  <div class="container website-rating-layout">
+    <div class="website-rating-intro">
+      <span class="badge">Rating Website</span>
+      <h2>Bagaimana pengalamanmu?</h2>
+      <p class="muted">
+        Berikan penilaian untuk website AbidzarOutdoorcamp secara keseluruhan,
+        mulai dari tampilan, kemudahan pemesanan, hingga informasi yang tersedia.
+      </p>
+
+      <div class="website-rating-summary">
+        <div
+          id="websiteRatingStaticStars"
+          class="website-rating-static-stars"
+          aria-hidden="true"
+        >
+          <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+        </div>
+
+        <strong id="websiteRatingAverage">0.0</strong>
+        <span>/ 5</span>
+        <small id="websiteRatingCount">0 penilaian</small>
+      </div>
+    </div>
+
+    <form id="websiteRatingForm" class="card website-rating-card">
+      <div>
+        <h3>Nilai Website Kami</h3>
+        <p id="websiteRatingHelper" class="muted">
+          Pilih 1–5 bintang untuk menilai website ini.
+        </p>
+      </div>
+
+      <div
+        id="websiteRatingStars"
+        class="website-rating-stars"
+        role="group"
+        aria-label="Rating website 1 sampai 5 bintang"
+      ></div>
+
+      <input
+        id="websiteRatingScore"
+        name="score"
+        type="hidden"
+        value="0"
+      >
+
+      <label class="field">
+        <span>Komentar singkat <small>(opsional)</small></span>
+        <small class="rating-comment-helper">
+          Kolom kosong tidak akan menghapus komentar yang sudah tersimpan.
+        </small>
+        <textarea
+          id="websiteRatingComment"
+          class="input"
+          name="comment"
+          maxlength="300"
+          placeholder="Contoh: Pemesanan mudah dan tampilan sudah jelas."
+        ></textarea>
+      </label>
+
+      <button id="websiteRatingSubmit" class="btn" type="button">
+        Kirim Rating
+      </button>
+
+      <div id="websiteRatingMessage" class="notice hidden"></div>
+    </form>
+  </div>
+
+  <div class="container website-reviews-section">
+    <div class="website-reviews-heading">
+      <div>
+        <span class="badge">Ulasan Pengguna</span>
+        <h3>Komentar terbaru</h3>
+        <p class="muted">
+          Komentar dari pengguna yang telah memberikan rating website.
+        </p>
+      </div>
+
+      <span id="websiteReviewCount" class="website-review-count hidden"></span>
+    </div>
+
+    <div id="websiteReviewsList" class="website-reviews-list">
+      <div class="notice">Memuat komentar...</div>
+    </div>
+
+    <button
+      id="websiteReviewsLoadMore"
+      class="btn secondary website-reviews-more hidden"
+      type="button"
+    >
+      Tampilkan komentar lainnya
+    </button>
+  </div>
+</section>
+<script type="module">
+    import { mountCatalog } from "./catalog.js";
+    import { mountWebsiteRating } from "./website-rating.js";
+
+    mountCatalog({
+      type: "product",
+      gridId: "rentalPreview",
+      messageId: "rentalMsg",
+      limit: 3
+    });
+
+    mountCatalog({
+      type: "trip",
+      gridId: "tripPreview",
+      messageId: "tripMsg",
+      limit: 3
+    });
+
+    mountWebsiteRating();
+  </script>
+<a
+  class="customer-service-float"
+  href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan."
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp"
+  title="Hubungi CS: +62 895-0934-9428"
+>
+  <span class="customer-service-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24">
+      <path d="M21 11.5a8.5 8.5 0 0 1-12.55 7.47L3 20.5l1.53-5.3A8.5 8.5 0 1 1 21 11.5Z"></path>
+      <path d="M8.3 7.8c.25-.25.7-.2.88.1l1.05 1.72c.14.24.11.54-.08.74l-.62.64a8.1 8.1 0 0 0 3.47 3.47l.64-.62c.2-.19.5-.22.74-.08l1.72 1.05c.3.18.35.63.1.88l-.75.75c-.65.65-1.62.86-2.48.55a10.7 10.7 0 0 1-5.97-5.97c-.31-.86-.1-1.83.55-2.48l.75-.75Z"></path>
+    </svg>
+  </span>
+
+  <span class="customer-service-copy">
+    <strong>Hubungi CS</strong>
+    <small>WhatsApp</small>
+  </span>
+</a>
+</body>
+</html>

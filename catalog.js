@@ -1,0 +1,222 @@
+import { supabase, rupiah, esc, addCart, message } from "./app.js";
+
+function availableQuantity(item) {
+  return Math.max(
+    0,
+    Number(item.type === "trip" ? item.quota : item.stock) || 0
+  );
+}
+
+function catalogLabel(item) {
+  return item.type === "trip" ? "Open Trip" : "Sewa Item";
+}
+
+function unitLabel(item) {
+  return item.type === "trip" ? "peserta" : "unit";
+}
+
+function renderCard(item) {
+  const available = availableQuantity(item);
+  const unit = unitLabel(item);
+  const availability = item.type === "trip"
+    ? `${available} kursi tersedia`
+    : `${available} unit tersedia`;
+
+  return `
+    <article class="card item-card order-item-card">
+      <img src="${esc(item.image_url)}" alt="${esc(item.title)}">
+
+      <div class="body">
+        <div class="row">
+          <span class="badge">${catalogLabel(item)}</span>
+          <span class="${available > 0 ? "stock-available" : "stock-empty"}">
+            ${available > 0 ? availability : "Tidak tersedia"}
+          </span>
+        </div>
+
+        <h3>${esc(item.title)}</h3>
+        <p class="muted item-description">
+          ${esc((item.description || "").slice(0, 115))}
+          ${(item.description || "").length > 115 ? "…" : ""}
+        </p>
+
+        ${item.type === "trip" && item.trip_date
+          ? `<p class="catalog-meta">📅 ${new Date(item.trip_date + "T00:00:00")
+              .toLocaleDateString("id-ID", { dateStyle: "long" })}</p>`
+          : ""}
+
+        ${item.location
+          ? `<p class="catalog-meta">📍 ${esc(item.location)}</p>`
+          : ""}
+
+        ${item.requires_guarantee
+          ? `<p class="catalog-meta">🔐 Memerlukan jaminan</p>`
+          : ""}
+
+        <div class="item-unit-price">
+          <span>${item.type === "trip" ? "Harga per peserta" : "Harga sewa per unit"}</span>
+          <b>${rupiah(item.price)}</b>
+        </div>
+
+        <div class="item-order-box">
+          <label class="field compact-field">
+            <span>Jumlah ${unit}</span>
+            <input
+              class="input item-quantity"
+              data-quantity="${item.id}"
+              type="number"
+              min="1"
+              max="${Math.max(1, available)}"
+              value="1"
+              ${available < 1 ? "disabled" : ""}
+            >
+          </label>
+
+          <div class="item-line-total">
+            <span>Subtotal</span>
+            <strong data-line-total="${item.id}">
+              ${rupiah(item.price)}
+            </strong>
+          </div>
+        </div>
+
+        <div class="actions item-order-actions">
+          <a class="btn secondary" href="item.html?slug=${encodeURIComponent(item.slug)}">
+            Detail
+          </a>
+
+          <button
+            class="btn secondary"
+            type="button"
+            data-add="${item.id}"
+            ${available < 1 ? "disabled" : ""}
+          >
+            + Keranjang
+          </button>
+
+          <button
+            class="btn"
+            type="button"
+            data-order="${item.id}"
+            ${available < 1 ? "disabled" : ""}
+          >
+            Pesan
+          </button>
+        </div>
+
+        <div data-item-message="${item.id}" class="item-inline-message hidden"></div>
+      </div>
+    </article>`;
+}
+
+function selectedQuantity(items, itemId, scope = document) {
+  const input = scope.querySelector(`[data-quantity="${itemId}"]`);
+  const item = items.find(entry => entry.id === itemId);
+  const max = availableQuantity(item);
+  const quantity = Math.max(
+    1,
+    Math.min(max || 1, Number(input?.value || 1))
+  );
+
+  if (input) input.value = quantity;
+  return quantity;
+}
+
+function bindCatalogEvents(items, grid) {
+  grid.querySelectorAll("[data-quantity]").forEach(input => {
+    const update = () => {
+      const item = items.find(entry => entry.id === input.dataset.quantity);
+      if (!item) return;
+
+      const quantity = selectedQuantity(items, item.id, grid);
+      const totalElement = grid.querySelector(
+        `[data-line-total="${item.id}"]`
+      );
+
+      if (totalElement) {
+        totalElement.textContent = rupiah(Number(item.price) * quantity);
+      }
+    };
+
+    input.addEventListener("input", update);
+    input.addEventListener("change", update);
+  });
+
+  grid.querySelectorAll("[data-add]").forEach(button => {
+    button.addEventListener("click", () => {
+      const item = items.find(entry => entry.id === button.dataset.add);
+      if (!item) return;
+
+      const quantity = selectedQuantity(items, item.id, grid);
+      addCart(item, quantity);
+
+      const feedback = grid.querySelector(
+        `[data-item-message="${item.id}"]`
+      );
+
+      if (feedback) {
+        feedback.textContent =
+          `${quantity} ${unitLabel(item)} ditambahkan ke keranjang.`;
+        feedback.classList.remove("hidden");
+
+        clearTimeout(feedback.hideTimer);
+        feedback.hideTimer = setTimeout(
+          () => feedback.classList.add("hidden"),
+          1800
+        );
+      }
+    });
+  });
+
+  grid.querySelectorAll("[data-order]").forEach(button => {
+    button.addEventListener("click", () => {
+      const item = items.find(entry => entry.id === button.dataset.order);
+      if (!item) return;
+
+      const quantity = selectedQuantity(items, item.id, grid);
+
+      // Keranjang lama dipertahankan.
+      addCart(item, quantity);
+      location.href = "cart.html";
+    });
+  });
+}
+
+export async function mountCatalog({
+  type,
+  gridId,
+  messageId,
+  limit = null
+}) {
+  const grid = document.getElementById(gridId);
+  const messageElement = document.getElementById(messageId);
+
+  let query = supabase
+    .from("items")
+    .select("*")
+    .eq("is_active", true)
+    .eq("type", type)
+    .order("created_at", { ascending: false });
+
+  if (limit) query = query.limit(limit);
+
+  const { data, error } = await query;
+
+  if (error) {
+    if (messageElement) message(messageElement, error.message, "error");
+    return;
+  }
+
+  const items = data || [];
+
+  if (!items.length) {
+    grid.innerHTML = `
+      <div class="notice">
+        Belum ada ${type === "trip" ? "open trip" : "item sewa"} yang aktif.
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(renderCard).join("");
+  bindCatalogEvents(items, grid);
+}

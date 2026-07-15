@@ -1,0 +1,177 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Keranjang & Checkout</title><link rel="stylesheet" href="styles.css"></head><body>
+<nav class="nav">
+  <div class="nav-shell">
+    <a class="brand" href="index.html">
+      Abidzar<span>Outdoorcamp</span>
+    </a>
+
+    <button
+      class="nav-toggle"
+      type="button"
+      data-nav-toggle
+      aria-label="Buka menu navigasi"
+      aria-expanded="false"
+    >
+      <span aria-hidden="true">☰</span>
+    </button>
+
+    <div class="nav-menu" data-nav-menu>
+      <div class="nav-primary">
+        <a class="nav-link" href="index.html">Beranda</a>
+        <a class="nav-link" href="rental.html">Sewa Item</a>
+        <a class="nav-link" href="trips.html">Open Trip</a>
+      </div>
+
+      <div class="nav-account">
+        <a class="nav-cart active" href="cart.html">
+          Keranjang
+          <span data-cart-count class="cart-count hidden">0</span>
+        </a>
+
+        <a
+          data-notification
+          class="nav-notification hidden"
+          href="orders.html"
+          aria-label="Lihat status pesanan"
+          title="Status pesanan"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+            <path d="M10 21h4"></path>
+          </svg>
+          <span data-notification-dot class="notification-dot hidden"></span>
+        </a>
+
+        <a data-login class="btn nav-login" href="login.html">
+          Login
+        </a>
+
+        <div data-account-menu class="account-menu hidden">
+          <button
+            data-user-menu-toggle
+            class="account-trigger"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <span data-user-avatar class="account-avatar">U</span>
+
+            <span class="account-trigger-copy">
+              <strong data-user-name>Halo, Pengguna</strong>
+              <small data-user-role>Akun</small>
+            </span>
+
+            <svg class="account-chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m7 10 5 5 5-5"></path>
+            </svg>
+          </button>
+
+          <div
+            data-user-dropdown
+            class="account-dropdown"
+            role="menu"
+            aria-hidden="true"
+          >
+            <div class="account-dropdown-head">
+              <span data-user-avatar class="account-avatar account-avatar-large">U</span>
+              <div>
+                <strong data-user-full-name>Pengguna</strong>
+                <small data-user-email>email@pengguna.com</small>
+              </div>
+            </div>
+
+            <div class="account-dropdown-list">
+              <a
+                class="account-dropdown-item"
+                href="profile.html"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 21a8 8 0 0 0-16 0"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Profil Saya</span>
+              </a>
+
+              <a
+                class="account-dropdown-item"
+                href="orders.html"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 2h9l3 3v17H6z"></path>
+                  <path d="M14 2v4h4"></path>
+                  <path d="M9 12h6M9 16h6"></path>
+                </svg>
+                <span>Pesanan Saya</span>
+              </a>
+
+              <a
+                class="account-dropdown-item"
+                href="cart.html#voucher"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"></path>
+                  <path d="M13 7v12"></path>
+                </svg>
+                <span>Voucher & Checkout</span>
+              </a>
+
+              <a
+                data-admin
+                class="account-dropdown-item hidden"
+                href="admin.html"
+                role="menuitem"
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z"></path>
+                </svg>
+                <span>Admin Panel</span>
+              </a>
+            </div>
+
+            <div class="account-dropdown-footer">
+              <button
+                data-logout
+                class="account-dropdown-item account-logout hidden"
+                type="button"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 17l5-5-5-5"></path>
+                  <path d="M15 12H3"></path>
+                  <path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"></path>
+                </svg>
+                <span>Keluar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav><main class="container section"><h2>Keranjang & Checkout</h2><p class="muted">Pesan beberapa item sekaligus.</p><div id="empty" class="notice hidden">Keranjang kosong. <a href="index.html"><b>Pilih item</b></a>.</div><div id="content" class="hidden"><div class="cart-layout"><section id="list" class="cart-list"></section><aside class="card summary"><h3>Ringkasan</h3><div class="summary-line"><span>Subtotal</span><b id="subtotal"></b></div><div class="summary-line"><span>Diskon</span><b id="discount"></b></div><div class="summary-line total"><span>Total</span><span id="total"></span></div><input id="voucher" class="input" placeholder="Kode voucher"><button id="checkVoucher" class="btn secondary" style="width:100%;margin-top:10px">Cek Voucher</button><div id="voucherMsg" class="notice hidden" style="margin-top:10px"></div></aside></div>
+<section class="card checkout"><h2>Identitas Pemesan</h2><p class="muted">Untuk keamanan, hanya 4 karakter terakhir nomor identitas yang disimpan. Jangan unggah foto KTP/SIM ke website statis.</p><form id="form" class="form"><div class="two"><label class="field"><span>Nama lengkap *</span><input class="input" name="full_name" required></label><label class="field"><span>Email *</span><input class="input" name="email" type="email" readonly></label><label class="field"><span>Nomor HP/WhatsApp *</span><input class="input" name="phone" required></label><label class="field"><span>Kota/Kabupaten *</span><input class="input" name="city" required></label></div><label class="field"><span>Alamat lengkap *</span><textarea class="input" name="address" required></textarea></label><div class="two"><label class="field"><span>Kode pos</span><input class="input" name="postal_code"></label><label class="field"><span>Jenis identitas *</span><select class="input" name="identity_type" required><option value="">Pilih</option><option>KTP</option><option>SIM</option><option>Passport</option><option>Kartu Pelajar</option></select></label><label class="field"><span>4 karakter terakhir identitas *</span><input class="input" name="identity_last4" minlength="4" maxlength="4" required></label><label class="field"><span>Nama kontak darurat *</span><input class="input" name="emergency_contact_name" required></label><label class="field"><span>Nomor kontak darurat *</span><input class="input" name="emergency_contact_phone" required></label></div><div class="guarantee"><h3>Jaminan</h3><p id="guaranteeInfo" class="muted"></p><div class="two"><label class="field"><span>Jenis jaminan</span><select id="guaranteeType" class="input" name="guarantee_type"><option value="">Tidak ada</option><option>KTP saat pengambilan</option><option>SIM saat pengambilan</option><option>Deposit</option><option>Barang lain</option></select></label><label class="field"><span>Rincian jaminan</span><input id="guaranteeNotes" class="input" name="guarantee_notes" placeholder="Contoh: deposit Rp200.000"></label></div></div><label class="field"><span>Catatan pesanan</span><textarea class="input" name="customer_notes"></textarea></label><label><input type="checkbox" required> Data yang saya isi benar dan boleh digunakan untuk memproses pesanan.</label><button id="checkout" class="btn">Buat Pesanan</button></form><div id="msg" class="notice hidden" style="margin-top:12px"></div></section></div><section id="success" class="card panel hidden"><h2>Pesanan berhasil</h2><p id="successText"></p><div class="actions"><a id="wa" class="btn" target="_blank">Konfirmasi WhatsApp</a><a class="btn secondary" href="orders.html">Pesanan Saya</a></div></section></main><script type="module">import{supabase,getCart,saveCart,rupiah,esc,message}from'./app.js';import{CONFIG}from'./config.js';let cart=getCart(),voucher=null,discount=0,user=null;const subtotal=()=>cart.reduce((s,x)=>s+x.price*x.quantity,0),total=()=>Math.max(0,subtotal()-discount);function render(){document.getElementById('empty').classList.toggle('hidden',cart.length>0);document.getElementById('content').classList.toggle('hidden',cart.length===0);if(!cart.length)return;document.getElementById('list').innerHTML=cart.map(x=>`<article class="card cart-item"><img src="${esc(x.image_url)}"><div><span class="badge">${x.type==='trip'?'Open Trip':'Sewa Item'}</span><h3>${esc(x.title)}</h3><p class="muted">Harga satuan: ${rupiah(x.price)}</p>${x.requires_guarantee?'<small>🔐 Jaminan wajib</small>':''}</div><div class="cart-item-calculation"><label class="field"><span>Jumlah ${x.type==='trip'?'peserta':'unit'}</span><input class="input" data-q="${x.item_id}" type="number" min="1" max="${x.max_quantity}" value="${x.quantity}"></label><div class="cart-line-formula">${rupiah(x.price)} × ${x.quantity}</div><div class="cart-line-total"><span>Subtotal item</span><b>${rupiah(x.price*x.quantity)}</b></div><button class="btn danger small" data-r="${x.item_id}">Hapus</button></div></article>`).join('');document.querySelectorAll('[data-q]').forEach(i=>i.onchange=()=>{const x=cart.find(y=>y.item_id===i.dataset.q);x.quantity=Math.max(1,Math.min(x.max_quantity,Number(i.value)));discount=0;voucher=null;saveCart(cart);render()});document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{cart=cart.filter(x=>x.item_id!==b.dataset.r);discount=0;voucher=null;saveCart(cart);render()});document.getElementById('subtotal').textContent=rupiah(subtotal());document.getElementById('discount').textContent=rupiah(discount);document.getElementById('total').textContent=rupiah(total());const required=cart.some(x=>x.requires_guarantee);document.getElementById('guaranteeInfo').textContent=required?'Salah satu item memerlukan jaminan. Isi jenis dan rinciannya.':'Opsional, isi bila diperlukan.';document.getElementById('guaranteeType').required=required;document.getElementById('guaranteeNotes').required=required}async function init(){const r=await supabase.auth.getUser();user=r.data.user;if(!user){document.getElementById('checkout').disabled=true;message(document.getElementById('msg'),'Keranjang tetap tersimpan. Silakan login untuk membuat pesanan.','warning');return}document.getElementById('form').elements.email.value=user.email;const{data}=await supabase.from('profiles').select('full_name,phone,address,city,postal_code').eq('id',user.id).single();if(data)for(const k of ['full_name','phone','address','city','postal_code'])document.getElementById('form').elements[k].value=data[k]||''}document.getElementById('checkVoucher').onclick=async()=>{const code=document.getElementById('voucher').value.trim().toUpperCase();const{data,error}=await supabase.rpc('preview_voucher',{p_code:code,p_subtotal:subtotal()});if(error){discount=0;voucher=null;message(document.getElementById('voucherMsg'),error.message,'error')}else{voucher=data;discount=Number(data.discount);message(document.getElementById('voucherMsg'),'Voucher aktif.','success')}render()};document.getElementById('form').onsubmit=async e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.target));const customer={full_name:v.full_name,phone:v.phone,address:v.address,city:v.city,postal_code:v.postal_code,identity_type:v.identity_type,identity_last4:v.identity_last4,emergency_contact_name:v.emergency_contact_name,emergency_contact_phone:v.emergency_contact_phone,guarantee_type:v.guarantee_type,guarantee_notes:v.guarantee_notes};const items=cart.map(x=>({item_id:x.item_id,quantity:x.quantity}));const{data,error}=await supabase.rpc('create_order',{p_customer:customer,p_items:items,p_voucher_code:voucher?.code||null,p_notes:v.customer_notes||null});if(error)return message(document.getElementById('msg'),error.message,'error');const ordered=[...cart];cart=[];saveCart(cart);document.getElementById('content').classList.add('hidden');document.getElementById('success').classList.remove('hidden');document.getElementById('successText').textContent=`Nomor ${data.order_number}, total ${rupiah(data.total)}.`;const itemLines=ordered.map((x,index)=>{const lineTotal=Number(x.price)*Number(x.quantity);const detail=[`${index+1}. *${x.title}*`,`   Jumlah : ${x.quantity} ${x.type==='trip'?'peserta':'unit'}`,`   Harga  : ${rupiah(x.price)}`,`   Total  : ${rupiah(lineTotal)}`];if(x.type==='trip'&&x.trip_date)detail.push(`   Tanggal: ${new Date(x.trip_date+'T00:00:00').toLocaleDateString('id-ID',{dateStyle:'long'})}`);if(x.location)detail.push(`   Lokasi : ${x.location}`);return detail.join('\n')}).join('\n\n');const invoiceLines=['🧾 *INVOICE PEMESANAN - ABIDZAR OUTDOORCAMP*','━━━━━━━━━━━━━━━━━━━━',`No. Invoice : ${data.order_number}`,'Status      : Menunggu Konfirmasi',`Tanggal     : ${new Date().toLocaleString('id-ID')}`,'','📦 *DETAIL PESANAN*',itemLines,'','💰 *RINGKASAN PEMBAYARAN*',`Subtotal : ${rupiah(data.subtotal)}`,`Diskon   : ${rupiah(data.discount)}`,`Total    : *${rupiah(data.total)}*`,'','👤 *DATA PEMESAN*',`Nama     : ${v.full_name}`,`No. HP   : ${v.phone}`,`Email    : ${v.email}`,`Alamat   : ${v.address}, ${v.city}${v.postal_code?', '+v.postal_code:''}`,`Identitas: ${v.identity_type} (akhir ${v.identity_last4})`,'','📞 *KONTAK DARURAT*',`Nama     : ${v.emergency_contact_name}`,`No. HP   : ${v.emergency_contact_phone}`];if(v.guarantee_type){invoiceLines.push('','🔐 *DATA JAMINAN*',`Jenis    : ${v.guarantee_type}`,`Rincian  : ${v.guarantee_notes||'-'}`)}if(v.customer_notes){invoiceLines.push('','📝 *CATATAN*',v.customer_notes)}invoiceLines.push('','Mohon dicek dan dikonfirmasi ya admin. Terima kasih 🙏');const text=invoiceLines.join('\n');document.getElementById('wa').href=`https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`};render();init();</script><a
+  class="customer-service-float"
+  href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan."
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp"
+  title="Hubungi CS: +62 895-0934-9428"
+>
+  <span class="customer-service-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24">
+      <path d="M21 11.5a8.5 8.5 0 0 1-12.55 7.47L3 20.5l1.53-5.3A8.5 8.5 0 1 1 21 11.5Z"></path>
+      <path d="M8.3 7.8c.25-.25.7-.2.88.1l1.05 1.72c.14.24.11.54-.08.74l-.62.64a8.1 8.1 0 0 0 3.47 3.47l.64-.62c.2-.19.5-.22.74-.08l1.72 1.05c.3.18.35.63.1.88l-.75.75c-.65.65-1.62.86-2.48.55a10.7 10.7 0 0 1-5.97-5.97c-.31-.86-.1-1.83.55-2.48l.75-.75Z"></path>
+    </svg>
+  </span>
+
+  <span class="customer-service-copy">
+    <strong>Hubungi CS</strong>
+    <small>WhatsApp</small>
+  </span>
+</a>
+</body></html>

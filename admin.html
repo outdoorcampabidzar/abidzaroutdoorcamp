@@ -1,0 +1,1556 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Panel — AbidzarOutdoorcamp</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="nav">
+  <div class="nav-shell">
+    <a class="brand" href="index.html">
+      Abidzar<span>Outdoorcamp</span>
+    </a>
+
+    <button
+      class="nav-toggle"
+      type="button"
+      data-nav-toggle
+      aria-label="Buka menu navigasi"
+      aria-expanded="false"
+    >
+      <span aria-hidden="true">☰</span>
+    </button>
+
+    <div class="nav-menu" data-nav-menu>
+      <div class="nav-primary">
+        <a class="nav-link" href="index.html">Beranda</a>
+        <a class="nav-link" href="rental.html">Sewa Item</a>
+        <a class="nav-link" href="trips.html">Open Trip</a>
+      </div>
+
+      <div class="nav-account">
+        <a class="nav-cart" href="cart.html">
+          Keranjang
+          <span data-cart-count class="cart-count hidden">0</span>
+        </a>
+
+        <a
+          data-notification
+          class="nav-notification hidden"
+          href="orders.html"
+          aria-label="Lihat status pesanan"
+          title="Status pesanan"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+            <path d="M10 21h4"></path>
+          </svg>
+          <span data-notification-dot class="notification-dot hidden"></span>
+        </a>
+
+        <a data-login class="btn nav-login" href="login.html">
+          Login
+        </a>
+
+        <div data-account-menu class="account-menu hidden">
+          <button
+            data-user-menu-toggle
+            class="account-trigger"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <span data-user-avatar class="account-avatar">U</span>
+
+            <span class="account-trigger-copy">
+              <strong data-user-name>Halo, Pengguna</strong>
+              <small data-user-role>Akun</small>
+            </span>
+
+            <svg class="account-chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m7 10 5 5 5-5"></path>
+            </svg>
+          </button>
+
+          <div
+            data-user-dropdown
+            class="account-dropdown"
+            role="menu"
+            aria-hidden="true"
+          >
+            <div class="account-dropdown-head">
+              <span data-user-avatar class="account-avatar account-avatar-large">U</span>
+              <div>
+                <strong data-user-full-name>Pengguna</strong>
+                <small data-user-email>email@pengguna.com</small>
+              </div>
+            </div>
+
+            <div class="account-dropdown-list">
+              <a
+                class="account-dropdown-item"
+                href="profile.html"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 21a8 8 0 0 0-16 0"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Profil Saya</span>
+              </a>
+
+              <a
+                class="account-dropdown-item"
+                href="orders.html"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 2h9l3 3v17H6z"></path>
+                  <path d="M14 2v4h4"></path>
+                  <path d="M9 12h6M9 16h6"></path>
+                </svg>
+                <span>Pesanan Saya</span>
+              </a>
+
+              <a
+                class="account-dropdown-item"
+                href="cart.html#voucher"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"></path>
+                  <path d="M13 7v12"></path>
+                </svg>
+                <span>Voucher & Checkout</span>
+              </a>
+
+              <a
+                data-admin
+                class="account-dropdown-item hidden active"
+                href="admin.html"
+                role="menuitem"
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z"></path>
+                </svg>
+                <span>Admin Panel</span>
+              </a>
+            </div>
+
+            <div class="account-dropdown-footer">
+              <button
+                data-logout
+                class="account-dropdown-item account-logout hidden"
+                type="button"
+                role="menuitem"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 17l5-5-5-5"></path>
+                  <path d="M15 12H3"></path>
+                  <path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"></path>
+                </svg>
+                <span>Keluar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+  <main id="adminRoot">
+    <section class="container section">
+      <div class="notice">Memeriksa akses admin...</div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { supabase, rupiah, esc, message } from "./app.js";
+
+    const root = document.getElementById("adminRoot");
+
+    const statusLabels = {
+      pending: "Menunggu",
+      confirmed: "Dikonfirmasi",
+      paid: "Dibayar",
+      completed: "Selesai",
+      cancelled: "Dibatalkan"
+    };
+
+    let activeTab = "rental";
+    let items = [];
+    let orders = [];
+    let administrators = [];
+    let currentAdminUserId = null;
+    let editingItem = null;
+
+    function slugify(value) {
+      return String(value || "")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+    }
+
+    function rentalItems() {
+      return items.filter(item => item.type === "product");
+    }
+
+    function tripItems() {
+      return items.filter(item => item.type === "trip");
+    }
+
+    async function verifyAdmin() {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        location.href = "login.html?next=admin.html";
+        return false;
+      }
+
+      currentAdminUserId = user.id;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      let allowed =
+        String(profile?.role || "").trim().toLowerCase() === "admin";
+
+      if (!allowed) {
+        const { data: rpcResult } = await supabase.rpc("is_admin");
+        allowed = rpcResult === true;
+      }
+
+      if (!allowed) {
+        root.innerHTML = `
+          <section class="container section">
+            <div class="notice error">
+              Akses admin diperlukan. Pastikan role akun pada tabel
+              <b>profiles</b> bernilai <b>admin</b>.
+            </div>
+          </section>`;
+      }
+
+      return allowed;
+    }
+
+    async function loadAllData() {
+      const [itemResult, orderResult] = await Promise.all([
+        supabase
+          .from("items")
+          .select("*")
+          .order("created_at", { ascending: false }),
+
+        supabase
+          .from("orders")
+          .select("*,order_items(*)")
+          .order("created_at", { ascending: false })
+      ]);
+
+      if (itemResult.error) throw itemResult.error;
+      if (orderResult.error) throw orderResult.error;
+
+      items = itemResult.data || [];
+      orders = orderResult.data || [];
+
+      const { data: adminData } = await supabase.rpc("list_admin_users");
+      administrators = adminData || [];
+    }
+
+    function renderShell() {
+      root.innerHTML = `
+        <section class="container admin-page">
+          <header class="admin-page-heading">
+            <div>
+              <h2>Admin Panel</h2>
+              <p class="muted">
+                Kelola katalog, pesanan, dan hak akses administrator.
+              </p>
+            </div>
+
+            <div class="admin-stat-pills">
+              <span>${rentalItems().length} item sewa</span>
+              <span>${tripItems().length} open trip</span>
+              <span>${orders.length} pesanan</span>
+              <span>${Math.max(administrators.length, 1)} admin</span>
+            </div>
+          </header>
+
+          <nav class="admin-section-tabs" aria-label="Menu admin">
+            <button
+              class="admin-tab ${activeTab === "rental" ? "active" : ""}"
+              data-admin-tab="rental"
+              type="button"
+            >
+              🎒 Sewa Item
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "trips" ? "active" : ""}"
+              data-admin-tab="trips"
+              type="button"
+            >
+              🏔️ Open Trip
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "orders" ? "active" : ""}"
+              data-admin-tab="orders"
+              type="button"
+            >
+              🧾 Pesanan
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "administrators" ? "active" : ""}"
+              data-admin-tab="administrators"
+              type="button"
+            >
+              👥 Administrator
+            </button>
+          </nav>
+
+          <div id="adminMessage" class="notice hidden"></div>
+          <section id="adminContent"></section>
+        </section>`;
+
+      document.querySelectorAll("[data-admin-tab]").forEach(button => {
+        button.addEventListener("click", () => {
+          activeTab = button.dataset.adminTab;
+          editingItem = null;
+          renderShell();
+          renderActiveTab();
+        });
+      });
+
+      renderActiveTab();
+    }
+
+    function renderActiveTab() {
+      if (activeTab === "rental") renderRentalTab();
+      else if (activeTab === "trips") renderTripTab();
+      else if (activeTab === "orders") renderOrdersTab();
+      else renderAdministratorsTab();
+    }
+
+    function renderRentalTab() {
+      const content = document.getElementById("adminContent");
+      const rentals = rentalItems();
+
+      const item = editingItem || {
+        title: "",
+        slug: "",
+        description: "",
+        image_url: "",
+        price: 0,
+        stock: 0,
+        requires_guarantee: true,
+        guarantee_note: "",
+        is_active: true
+      };
+
+      content.innerHTML = `
+        <div class="admin-catalog-layout">
+          <section class="card admin-editor-card">
+            <div class="admin-editor-heading">
+              <div>
+                <span class="badge">Sewa Item</span>
+                <h3>${editingItem ? "Edit Item Sewa" : "Tambah Item Sewa"}</h3>
+                <p class="muted">
+                  Barang akan muncul di katalog Sewa Item.
+                </p>
+              </div>
+
+              ${editingItem ? `
+                <button id="cancelRentalEdit" class="btn secondary small" type="button">
+                  Batal
+                </button>
+              ` : ""}
+            </div>
+
+            <form id="rentalForm" class="form">
+              <div class="two">
+                <label class="field">
+                  <span>Nama item *</span>
+                  <input
+                    id="rentalTitle"
+                    class="input"
+                    name="title"
+                    value="${esc(item.title || "")}"
+                    required
+                    maxlength="150"
+                    placeholder="Contoh: Tenda Kapasitas 4 Orang"
+                  >
+                </label>
+
+                <label class="field">
+                  <span>Slug URL *</span>
+                  <input
+                    id="rentalSlug"
+                    class="input"
+                    name="slug"
+                    value="${esc(item.slug || "")}"
+                    required
+                    maxlength="160"
+                    placeholder="tenda-4-orang"
+                  >
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Deskripsi *</span>
+                <textarea
+                  class="input"
+                  name="description"
+                  required
+                  maxlength="3000"
+                  placeholder="Spesifikasi, kelengkapan, dan ketentuan penyewaan"
+                >${esc(item.description || "")}</textarea>
+              </label>
+
+              <label class="field">
+                <span>URL gambar *</span>
+                <input
+                  id="rentalImageUrl"
+                  class="input"
+                  name="image_url"
+                  type="url"
+                  value="${esc(item.image_url || "")}"
+                  required
+                  placeholder="https://domain.com/gambar.jpg"
+                >
+              </label>
+
+              <div
+                id="rentalPreviewWrap"
+                class="admin-image-preview ${item.image_url ? "" : "hidden"}"
+              >
+                <img
+                  id="rentalPreview"
+                  src="${esc(item.image_url || "")}"
+                  alt="Preview item sewa"
+                >
+              </div>
+
+              <div class="two">
+                <label class="field">
+                  <span>Harga sewa per unit *</span>
+                  <input
+                    class="input"
+                    name="price"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value="${Number(item.price || 0)}"
+                    required
+                  >
+                </label>
+
+                <label class="field">
+                  <span>Jumlah stok *</span>
+                  <input
+                    class="input"
+                    name="stock"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value="${Number(item.stock || 0)}"
+                    required
+                  >
+                </label>
+              </div>
+
+              <div class="admin-check-grid">
+                <label class="admin-check">
+                  <input
+                    name="requires_guarantee"
+                    type="checkbox"
+                    ${item.requires_guarantee ? "checked" : ""}
+                  >
+                  <span>Wajib jaminan</span>
+                </label>
+
+                <label class="admin-check">
+                  <input
+                    name="is_active"
+                    type="checkbox"
+                    ${item.is_active ? "checked" : ""}
+                  >
+                  <span>Tampilkan di katalog</span>
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Ketentuan jaminan</span>
+                <input
+                  class="input"
+                  name="guarantee_note"
+                  value="${esc(item.guarantee_note || "")}"
+                  maxlength="500"
+                  placeholder="Contoh: KTP asli atau deposit Rp200.000"
+                >
+              </label>
+
+              <button id="saveRentalButton" class="btn" type="submit">
+                ${editingItem ? "Simpan Perubahan" : "Tambah Sewa Item"}
+              </button>
+            </form>
+          </section>
+
+          <section>
+            <div class="admin-list-heading">
+              <div>
+                <h3>Daftar Sewa Item</h3>
+                <p class="muted">
+                  ${rentals.length} item sewa tersimpan.
+                </p>
+              </div>
+
+              <button id="refreshRentals" class="btn secondary small" type="button">
+                Muat Ulang
+              </button>
+            </div>
+
+            <div class="admin-catalog-list">
+              ${rentals.map(renderRentalCard).join("") || `
+                <div class="notice">
+                  Belum ada item sewa. Tambahkan melalui formulir.
+                </div>
+              `}
+            </div>
+          </section>
+        </div>`;
+
+      bindRentalEvents();
+    }
+
+    function renderRentalCard(item) {
+      return `
+        <article class="card admin-rental-card">
+          <img src="${esc(item.image_url)}" alt="${esc(item.title)}">
+
+          <div class="admin-rental-body">
+            <div class="row">
+              <span class="badge">Sewa Item</span>
+              <span class="${item.is_active ? "admin-active" : "admin-inactive"}">
+                ${item.is_active ? "Aktif" : "Nonaktif"}
+              </span>
+            </div>
+
+            <h3>${esc(item.title)}</h3>
+            <p class="muted admin-clamp">${esc(item.description || "")}</p>
+
+            <div class="admin-rental-summary">
+              <strong>${rupiah(item.price)}</strong>
+              <span>${Number(item.stock || 0)} stok</span>
+            </div>
+
+            ${item.requires_guarantee ? `
+              <p class="admin-rental-guarantee">
+                🔐 ${esc(item.guarantee_note || "Jaminan wajib")}
+              </p>
+            ` : ""}
+
+            <div class="actions">
+              <button
+                class="btn secondary small"
+                type="button"
+                data-edit-rental="${item.id}"
+              >
+                Edit
+              </button>
+
+              <button
+                class="btn secondary small"
+                type="button"
+                data-toggle-rental="${item.id}"
+              >
+                ${item.is_active ? "Nonaktifkan" : "Aktifkan"}
+              </button>
+
+              <button
+                class="btn danger small"
+                type="button"
+                data-delete-rental="${item.id}"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function bindRentalEvents() {
+      const form = document.getElementById("rentalForm");
+      const titleInput = document.getElementById("rentalTitle");
+      const slugInput = document.getElementById("rentalSlug");
+      const imageInput = document.getElementById("rentalImageUrl");
+      const previewWrap = document.getElementById("rentalPreviewWrap");
+      const preview = document.getElementById("rentalPreview");
+
+      let slugEdited = Boolean(editingItem?.slug);
+
+      titleInput.addEventListener("input", () => {
+        if (!slugEdited) slugInput.value = slugify(titleInput.value);
+      });
+
+      slugInput.addEventListener("input", () => {
+        slugEdited = true;
+        slugInput.value = slugify(slugInput.value);
+      });
+
+      imageInput.addEventListener("input", () => {
+        const value = imageInput.value.trim();
+        preview.src = value;
+        previewWrap.classList.toggle("hidden", !value);
+      });
+
+      preview.addEventListener("error", () => {
+        previewWrap.classList.add("hidden");
+      });
+
+      form.addEventListener("submit", saveRental);
+
+      document.getElementById("cancelRentalEdit")?.addEventListener("click", () => {
+        editingItem = null;
+        renderRentalTab();
+      });
+
+      document.getElementById("refreshRentals").addEventListener("click", async () => {
+        await refreshItems();
+        renderRentalTab();
+        showAdminMessage("Daftar item sewa dimuat ulang.", "success");
+      });
+
+      document.querySelectorAll("[data-edit-rental]").forEach(button => {
+        button.addEventListener("click", () => {
+          editingItem =
+            rentalItems().find(item => item.id === button.dataset.editRental) ||
+            null;
+
+          renderRentalTab();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+
+      document.querySelectorAll("[data-toggle-rental]").forEach(button => {
+        button.addEventListener("click", () => {
+          toggleItem(button.dataset.toggleRental, "rental");
+        });
+      });
+
+      document.querySelectorAll("[data-delete-rental]").forEach(button => {
+        button.addEventListener("click", () => {
+          deleteItem(button.dataset.deleteRental, "rental");
+        });
+      });
+    }
+
+    async function saveRental(event) {
+      event.preventDefault();
+
+      const form = event.currentTarget;
+      const values = Object.fromEntries(new FormData(form));
+      const formData = new FormData(form);
+      const button = document.getElementById("saveRentalButton");
+
+      const payload = {
+        title: String(values.title || "").trim(),
+        slug: slugify(values.slug),
+        type: "product",
+        description: String(values.description || "").trim(),
+        image_url: String(values.image_url || "").trim(),
+        price: Number(values.price || 0),
+        stock: Number(values.stock || 0),
+        location: null,
+        trip_date: null,
+        quota: null,
+        requires_guarantee: formData.has("requires_guarantee"),
+        guarantee_note:
+          String(values.guarantee_note || "").trim() || null,
+        is_active: formData.has("is_active")
+      };
+
+      if (!payload.slug) {
+        showAdminMessage("Slug item tidak valid.", "error");
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Menyimpan...";
+
+      const query = editingItem
+        ? supabase
+            .from("items")
+            .update(payload)
+            .eq("id", editingItem.id)
+            .eq("type", "product")
+        : supabase.from("items").insert(payload);
+
+      const { error } = await query;
+
+      button.disabled = false;
+      button.textContent =
+        editingItem ? "Simpan Perubahan" : "Tambah Sewa Item";
+
+      if (error) {
+        showAdminMessage(
+          error.code === "23505"
+            ? "Slug sudah digunakan. Gunakan slug lain."
+            : error.message,
+          "error"
+        );
+        return;
+      }
+
+      const wasEditing = Boolean(editingItem);
+      editingItem = null;
+      await refreshItems();
+      renderShell();
+
+      showAdminMessage(
+        wasEditing
+          ? "Item sewa berhasil diperbarui."
+          : "Item sewa berhasil ditambahkan.",
+        "success"
+      );
+    }
+
+    function renderTripTab() {
+      const content = document.getElementById("adminContent");
+      const trips = tripItems();
+
+      const item = editingItem || {
+        title: "",
+        slug: "",
+        description: "",
+        image_url: "",
+        price: 0,
+        location: "",
+        trip_date: "",
+        quota: 0,
+        requires_guarantee: false,
+        guarantee_note: "",
+        is_active: true
+      };
+
+      content.innerHTML = `
+        <div class="admin-catalog-layout">
+          <section class="card admin-editor-card">
+            <div class="admin-editor-heading">
+              <div>
+                <span class="badge">Open Trip</span>
+                <h3>${editingItem ? "Edit Open Trip" : "Tambah Open Trip"}</h3>
+                <p class="muted">
+                  Trip akan muncul pada katalog Open Trip.
+                </p>
+              </div>
+
+              ${editingItem ? `
+                <button id="cancelTripEdit" class="btn secondary small" type="button">
+                  Batal
+                </button>
+              ` : ""}
+            </div>
+
+            <form id="tripForm" class="form">
+              <div class="two">
+                <label class="field">
+                  <span>Nama trip *</span>
+                  <input
+                    id="tripTitle"
+                    class="input"
+                    name="title"
+                    value="${esc(item.title || "")}"
+                    required
+                    maxlength="150"
+                    placeholder="Contoh: Open Trip Dieng"
+                  >
+                </label>
+
+                <label class="field">
+                  <span>Slug URL *</span>
+                  <input
+                    id="tripSlug"
+                    class="input"
+                    name="slug"
+                    value="${esc(item.slug || "")}"
+                    required
+                    maxlength="160"
+                    placeholder="open-trip-dieng"
+                  >
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Deskripsi *</span>
+                <textarea
+                  class="input"
+                  name="description"
+                  required
+                  maxlength="3000"
+                  placeholder="Fasilitas, itinerary, titik kumpul, dan ketentuan"
+                >${esc(item.description || "")}</textarea>
+              </label>
+
+              <label class="field">
+                <span>URL gambar *</span>
+                <input
+                  class="input"
+                  name="image_url"
+                  type="url"
+                  value="${esc(item.image_url || "")}"
+                  required
+                >
+              </label>
+
+              <div class="two">
+                <label class="field">
+                  <span>Harga per peserta *</span>
+                  <input
+                    class="input"
+                    name="price"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value="${Number(item.price || 0)}"
+                    required
+                  >
+                </label>
+
+                <label class="field">
+                  <span>Kuota peserta *</span>
+                  <input
+                    class="input"
+                    name="quota"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value="${Number(item.quota || 0)}"
+                    required
+                  >
+                </label>
+              </div>
+
+              <div class="two">
+                <label class="field">
+                  <span>Lokasi *</span>
+                  <input
+                    class="input"
+                    name="location"
+                    value="${esc(item.location || "")}"
+                    required
+                    maxlength="200"
+                  >
+                </label>
+
+                <label class="field">
+                  <span>Tanggal trip *</span>
+                  <input
+                    class="input"
+                    name="trip_date"
+                    type="date"
+                    value="${item.trip_date ? String(item.trip_date).slice(0, 10) : ""}"
+                    required
+                  >
+                </label>
+              </div>
+
+              <label class="admin-check">
+                <input
+                  name="is_active"
+                  type="checkbox"
+                  ${item.is_active ? "checked" : ""}
+                >
+                <span>Tampilkan di katalog</span>
+              </label>
+
+              <button id="saveTripButton" class="btn" type="submit">
+                ${editingItem ? "Simpan Perubahan" : "Tambah Open Trip"}
+              </button>
+            </form>
+          </section>
+
+          <section>
+            <div class="admin-list-heading">
+              <div>
+                <h3>Daftar Open Trip</h3>
+                <p class="muted">${trips.length} trip tersimpan.</p>
+              </div>
+            </div>
+
+            <div class="admin-catalog-list">
+              ${trips.map(renderTripCard).join("") || `
+                <div class="notice">Belum ada open trip.</div>
+              `}
+            </div>
+          </section>
+        </div>`;
+
+      bindTripEvents();
+    }
+
+    function renderTripCard(item) {
+      return `
+        <article class="card admin-rental-card">
+          <img src="${esc(item.image_url)}" alt="${esc(item.title)}">
+
+          <div class="admin-rental-body">
+            <div class="row">
+              <span class="badge">Open Trip</span>
+              <span class="${item.is_active ? "admin-active" : "admin-inactive"}">
+                ${item.is_active ? "Aktif" : "Nonaktif"}
+              </span>
+            </div>
+
+            <h3>${esc(item.title)}</h3>
+            <p class="muted admin-clamp">${esc(item.description || "")}</p>
+
+            <div class="admin-rental-summary">
+              <strong>${rupiah(item.price)}</strong>
+              <span>${Number(item.quota || 0)} kursi</span>
+            </div>
+
+            <p class="admin-rental-guarantee">
+              📅 ${item.trip_date
+                ? new Date(item.trip_date + "T00:00:00")
+                    .toLocaleDateString("id-ID", { dateStyle: "long" })
+                : "-"}
+            </p>
+
+            <div class="actions">
+              <button
+                class="btn secondary small"
+                data-edit-trip="${item.id}"
+                type="button"
+              >
+                Edit
+              </button>
+
+              <button
+                class="btn secondary small"
+                data-toggle-trip="${item.id}"
+                type="button"
+              >
+                ${item.is_active ? "Nonaktifkan" : "Aktifkan"}
+              </button>
+
+              <button
+                class="btn danger small"
+                data-delete-trip="${item.id}"
+                type="button"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function bindTripEvents() {
+      const form = document.getElementById("tripForm");
+      const title = document.getElementById("tripTitle");
+      const slug = document.getElementById("tripSlug");
+      let slugEdited = Boolean(editingItem?.slug);
+
+      title.addEventListener("input", () => {
+        if (!slugEdited) slug.value = slugify(title.value);
+      });
+
+      slug.addEventListener("input", () => {
+        slugEdited = true;
+        slug.value = slugify(slug.value);
+      });
+
+      form.addEventListener("submit", saveTrip);
+
+      document.getElementById("cancelTripEdit")?.addEventListener("click", () => {
+        editingItem = null;
+        renderTripTab();
+      });
+
+      document.querySelectorAll("[data-edit-trip]").forEach(button => {
+        button.addEventListener("click", () => {
+          editingItem =
+            tripItems().find(item => item.id === button.dataset.editTrip) ||
+            null;
+
+          renderTripTab();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+
+      document.querySelectorAll("[data-toggle-trip]").forEach(button => {
+        button.addEventListener("click", () => {
+          toggleItem(button.dataset.toggleTrip, "trip");
+        });
+      });
+
+      document.querySelectorAll("[data-delete-trip]").forEach(button => {
+        button.addEventListener("click", () => {
+          deleteItem(button.dataset.deleteTrip, "trip");
+        });
+      });
+    }
+
+    async function saveTrip(event) {
+      event.preventDefault();
+
+      const form = event.currentTarget;
+      const values = Object.fromEntries(new FormData(form));
+      const formData = new FormData(form);
+      const button = document.getElementById("saveTripButton");
+
+      const payload = {
+        title: String(values.title || "").trim(),
+        slug: slugify(values.slug),
+        type: "trip",
+        description: String(values.description || "").trim(),
+        image_url: String(values.image_url || "").trim(),
+        price: Number(values.price || 0),
+        stock: 0,
+        location: String(values.location || "").trim(),
+        trip_date: values.trip_date || null,
+        quota: Number(values.quota || 0),
+        requires_guarantee: false,
+        guarantee_note: null,
+        is_active: formData.has("is_active")
+      };
+
+      button.disabled = true;
+      button.textContent = "Menyimpan...";
+
+      const query = editingItem
+        ? supabase
+            .from("items")
+            .update(payload)
+            .eq("id", editingItem.id)
+            .eq("type", "trip")
+        : supabase.from("items").insert(payload);
+
+      const { error } = await query;
+
+      button.disabled = false;
+      button.textContent =
+        editingItem ? "Simpan Perubahan" : "Tambah Open Trip";
+
+      if (error) {
+        showAdminMessage(
+          error.code === "23505"
+            ? "Slug sudah digunakan. Gunakan slug lain."
+            : error.message,
+          "error"
+        );
+        return;
+      }
+
+      editingItem = null;
+      await refreshItems();
+      renderShell();
+      showAdminMessage("Open trip berhasil disimpan.", "success");
+    }
+
+    async function toggleItem(id, expectedType) {
+      const item = items.find(entry => entry.id === id);
+      if (!item || item.type !== (expectedType === "rental" ? "product" : "trip")) {
+        return;
+      }
+
+      const { error } = await supabase
+        .from("items")
+        .update({ is_active: !item.is_active })
+        .eq("id", id);
+
+      if (error) {
+        showAdminMessage(error.message, "error");
+        return;
+      }
+
+      await refreshItems();
+      renderActiveTab();
+      showAdminMessage(
+        `Item berhasil ${item.is_active ? "dinonaktifkan" : "diaktifkan"}.`,
+        "success"
+      );
+    }
+
+    async function deleteItem(id, expectedType) {
+      const expectedDatabaseType =
+        expectedType === "rental" ? "product" : "trip";
+
+      const item = items.find(entry => entry.id === id);
+
+      if (!item || item.type !== expectedDatabaseType) return;
+
+      const confirmed = confirm(
+        `Hapus "${item.title}"?\n\n` +
+        "Jika item pernah dipesan, database mungkin menolak penghapusan. " +
+        "Gunakan Nonaktifkan untuk menyembunyikannya tanpa menghapus riwayat."
+      );
+
+      if (!confirmed) return;
+
+      const { error } = await supabase
+        .from("items")
+        .delete()
+        .eq("id", id)
+        .eq("type", expectedDatabaseType);
+
+      if (error) {
+        showAdminMessage(
+          error.code === "23503"
+            ? "Item sudah terhubung ke pesanan dan tidak dapat dihapus. Gunakan tombol Nonaktifkan."
+            : error.message,
+          "error"
+        );
+        return;
+      }
+
+      editingItem = null;
+      await refreshItems();
+      renderActiveTab();
+      showAdminMessage("Item berhasil dihapus.", "success");
+    }
+
+    async function refreshItems() {
+      const { data, error } = await supabase
+        .from("items")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      items = data || [];
+    }
+
+    function renderOrdersTab() {
+      const content = document.getElementById("adminContent");
+
+      content.innerHTML = `
+        <div class="admin-list-heading">
+          <div>
+            <h3>Pesanan Pelanggan</h3>
+            <p class="muted">${orders.length} pesanan tersimpan.</p>
+          </div>
+
+          <button id="refreshOrders" class="btn secondary small" type="button">
+            Muat Ulang
+          </button>
+        </div>
+
+        <div class="orders">
+          ${orders.map(renderOrder).join("") || `
+            <div class="notice">Belum ada pesanan.</div>
+          `}
+        </div>`;
+
+      document.getElementById("refreshOrders").addEventListener(
+        "click",
+        refreshOrders
+      );
+
+      document.querySelectorAll("[data-save-order]").forEach(button => {
+        button.addEventListener("click", () => {
+          saveOrderStatus(button.dataset.saveOrder);
+        });
+      });
+    }
+
+    function renderOrder(order) {
+      return `
+        <details class="card admin-order-compact">
+          <summary>
+            <div>
+              <span class="status">${statusLabels[order.status] || esc(order.status)}</span>
+              <strong>${esc(order.order_number)}</strong>
+              <small>${new Date(order.created_at).toLocaleString("id-ID")}</small>
+            </div>
+
+            <strong>${rupiah(order.total)}</strong>
+            <span>Lihat detail ▾</span>
+          </summary>
+
+          <div class="admin-order-details">
+            <div class="data-grid">
+              <div class="data"><b>Nama</b><br>${esc(order.customer_name)}</div>
+              <div class="data"><b>HP</b><br>${esc(order.phone)}</div>
+              <div class="data"><b>Alamat</b><br>${esc(order.address)}, ${esc(order.city)}</div>
+              <div class="data"><b>Jaminan</b><br>${esc(order.guarantee_type || "-")}</div>
+            </div>
+
+            ${(order.order_items || []).map(line => `
+              <div class="order-line">
+                <span>${esc(line.title_snapshot)} × ${line.quantity}</span>
+                <b>${rupiah(line.line_total)}</b>
+              </div>
+            `).join("")}
+
+            <div class="two" style="margin-top:14px">
+              <select id="status-${order.id}" class="input">
+                ${Object.entries(statusLabels).map(([value, label]) => `
+                  <option
+                    value="${value}"
+                    ${order.status === value ? "selected" : ""}
+                  >
+                    ${label}
+                  </option>
+                `).join("")}
+              </select>
+
+              <input
+                id="note-${order.id}"
+                class="input"
+                value="${esc(order.admin_notes || "")}"
+                placeholder="Catatan admin"
+              >
+            </div>
+
+            <button
+              class="btn"
+              data-save-order="${order.id}"
+              style="margin-top:10px"
+              type="button"
+            >
+              Simpan Status
+            </button>
+          </div>
+        </details>`;
+    }
+
+    async function refreshOrders() {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*,order_items(*)")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        showAdminMessage(error.message, "error");
+        return;
+      }
+
+      orders = data || [];
+      renderOrdersTab();
+      showAdminMessage("Daftar pesanan dimuat ulang.", "success");
+    }
+
+    async function saveOrderStatus(id) {
+      const status = document.getElementById(`status-${id}`).value;
+      const notes =
+        document.getElementById(`note-${id}`).value.trim() || null;
+
+      const { error } = await supabase.rpc("admin_update_order_status", {
+        p_order_id: id,
+        p_status: status,
+        p_admin_notes: notes
+      });
+
+      if (error) {
+        showAdminMessage(error.message, "error");
+        return;
+      }
+
+      await refreshOrders();
+      showAdminMessage("Status pesanan berhasil diperbarui.", "success");
+    }
+
+
+async function renderAdministratorsTab() {
+  const content = document.getElementById("adminContent");
+
+  content.innerHTML = `
+    <div class="notice">
+      Memuat daftar administrator...
+    </div>`;
+
+  const { data, error } = await supabase.rpc("list_admin_users");
+
+  if (error) {
+    content.innerHTML = `
+      <div class="notice error">
+        Fitur pengelolaan admin belum aktif di database.<br><br>
+        Jalankan file <b>admin-management.sql</b> melalui
+        Supabase SQL Editor, lalu muat ulang halaman.
+        <br><small>${esc(error.message)}</small>
+      </div>`;
+    return;
+  }
+
+  administrators = data || [];
+  renderAdministratorContent();
+}
+
+function renderAdministratorContent() {
+  const content = document.getElementById("adminContent");
+
+  content.innerHTML = `
+    <div class="admin-user-layout">
+      <section class="card admin-editor-card admin-add-user-card">
+        <div class="admin-editor-heading">
+          <div>
+            <span class="badge">Hak Akses</span>
+            <h3>Tambahkan Administrator</h3>
+            <p class="muted">
+              Pengguna harus mendaftar dan memiliki akun terlebih dahulu.
+            </p>
+          </div>
+        </div>
+
+        <form id="addAdministratorForm" class="form">
+          <label class="field">
+            <span>Email pengguna *</span>
+            <input
+              class="input"
+              name="email"
+              type="email"
+              required
+              autocomplete="off"
+              placeholder="email-admin@gmail.com"
+            >
+          </label>
+
+          <label class="field">
+            <span>Nama tampilan</span>
+            <input
+              class="input"
+              name="full_name"
+              maxlength="120"
+              autocomplete="off"
+              placeholder="Contoh: Admin Toko"
+            >
+          </label>
+
+          <div class="notice warning admin-access-note">
+            Email tersebut harus sudah pernah mendaftar melalui halaman
+            Login/Daftar. Fitur ini tidak membuat akun baru dan tidak
+            meminta password pengguna.
+          </div>
+
+          <button id="addAdministratorButton" class="btn" type="submit">
+            Tambahkan sebagai Admin
+          </button>
+        </form>
+      </section>
+
+      <section>
+        <div class="admin-list-heading">
+          <div>
+            <h3>Daftar Administrator</h3>
+            <p class="muted">
+              ${administrators.length} akun memiliki akses admin.
+            </p>
+          </div>
+
+          <button
+            id="refreshAdministrators"
+            class="btn secondary small"
+            type="button"
+          >
+            Muat Ulang
+          </button>
+        </div>
+
+        <div class="admin-user-list">
+          ${administrators.map(renderAdministratorCard).join("") || `
+            <div class="notice">
+              Belum ada administrator yang dapat ditampilkan.
+            </div>
+          `}
+        </div>
+      </section>
+    </div>`;
+
+  document
+    .getElementById("addAdministratorForm")
+    .addEventListener("submit", addAdministrator);
+
+  document
+    .getElementById("refreshAdministrators")
+    .addEventListener("click", async () => {
+      await reloadAdministrators();
+      showAdminMessage("Daftar administrator dimuat ulang.", "success");
+    });
+
+  document.querySelectorAll("[data-remove-admin]").forEach(button => {
+    button.addEventListener("click", () => {
+      removeAdministrator(button.dataset.removeAdmin);
+    });
+  });
+}
+
+function renderAdministratorCard(administrator) {
+  const isCurrent =
+    String(administrator.user_id) === String(currentAdminUserId);
+
+  const displayName =
+    administrator.full_name?.trim() ||
+    administrator.email?.split("@")[0] ||
+    "Administrator";
+
+  return `
+    <article class="card admin-user-card">
+      <div class="admin-user-avatar" aria-hidden="true">
+        ${esc(displayName.slice(0, 1).toUpperCase())}
+      </div>
+
+      <div class="admin-user-info">
+        <div class="admin-user-name-row">
+          <strong>${esc(displayName)}</strong>
+          ${isCurrent ? '<span class="admin-current-badge">Akun Anda</span>' : ""}
+        </div>
+
+        <span>${esc(administrator.email || "-")}</span>
+        <small>
+          Admin sejak
+          ${new Date(administrator.admin_since || administrator.created_at)
+            .toLocaleDateString("id-ID", { dateStyle: "medium" })}
+        </small>
+      </div>
+
+      <button
+        class="btn danger small"
+        type="button"
+        data-remove-admin="${administrator.user_id}"
+        ${isCurrent ? "disabled" : ""}
+        title="${isCurrent
+          ? "Anda tidak dapat mencabut akses akun sendiri"
+          : "Cabut akses administrator"}"
+      >
+        Cabut Akses
+      </button>
+    </article>`;
+}
+
+async function addAdministrator(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const values = Object.fromEntries(new FormData(form));
+  const email = String(values.email || "").trim().toLowerCase();
+  const fullName = String(values.full_name || "").trim() || null;
+  const button = document.getElementById("addAdministratorButton");
+
+  if (!email) {
+    showAdminMessage("Masukkan email pengguna.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Menambahkan...";
+
+  const { error } = await supabase.rpc("add_admin_by_email", {
+    p_email: email,
+    p_full_name: fullName
+  });
+
+  button.disabled = false;
+  button.textContent = "Tambahkan sebagai Admin";
+
+  if (error) {
+    showAdminMessage(error.message, "error");
+    return;
+  }
+
+  form.reset();
+  await reloadAdministrators();
+  showAdminMessage(
+    `${email} berhasil mendapatkan akses administrator.`,
+    "success"
+  );
+}
+
+async function removeAdministrator(userId) {
+  const administrator = administrators.find(
+    entry => String(entry.user_id) === String(userId)
+  );
+
+  if (!administrator) return;
+
+  const confirmed = confirm(
+    `Cabut akses admin dari ${administrator.email}?\n\n` +
+    "Akun pengguna tidak akan dihapus. Role-nya akan kembali menjadi user."
+  );
+
+  if (!confirmed) return;
+
+  const { error } = await supabase.rpc("remove_admin_access", {
+    p_user_id: userId
+  });
+
+  if (error) {
+    showAdminMessage(error.message, "error");
+    return;
+  }
+
+  await reloadAdministrators();
+  showAdminMessage(
+    `Akses admin ${administrator.email} berhasil dicabut.`,
+    "success"
+  );
+}
+
+async function reloadAdministrators() {
+  const { data, error } = await supabase.rpc("list_admin_users");
+
+  if (error) throw error;
+
+  administrators = data || [];
+  renderAdministratorContent();
+}
+
+    function showAdminMessage(text, type = "") {
+      const box = document.getElementById("adminMessage");
+      if (!box) return;
+      message(box, text, type);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function initialize() {
+      try {
+        const allowed = await verifyAdmin();
+        if (!allowed) return;
+
+        await loadAllData();
+        renderShell();
+      } catch (error) {
+        root.innerHTML = `
+          <section class="container section">
+            <div class="notice error">
+              ${esc(error.message || "Admin panel gagal dimuat.")}
+            </div>
+          </section>`;
+      }
+    }
+
+    initialize();
+  </script>
+<a
+  class="customer-service-float"
+  href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan."
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp"
+  title="Hubungi CS: +62 895-0934-9428"
+>
+  <span class="customer-service-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24">
+      <path d="M21 11.5a8.5 8.5 0 0 1-12.55 7.47L3 20.5l1.53-5.3A8.5 8.5 0 1 1 21 11.5Z"></path>
+      <path d="M8.3 7.8c.25-.25.7-.2.88.1l1.05 1.72c.14.24.11.54-.08.74l-.62.64a8.1 8.1 0 0 0 3.47 3.47l.64-.62c.2-.19.5-.22.74-.08l1.72 1.05c.3.18.35.63.1.88l-.75.75c-.65.65-1.62.86-2.48.55a10.7 10.7 0 0 1-5.97-5.97c-.31-.86-.1-1.83.55-2.48l.75-.75Z"></path>
+    </svg>
+  </span>
+
+  <span class="customer-service-copy">
+    <strong>Hubungi CS</strong>
+    <small>WhatsApp</small>
+  </span>
+</a>
+</body>
+</html>
