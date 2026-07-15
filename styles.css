@@ -3192,3 +3192,823 @@ body:has(.auth){
     transition:none;
   }
 }
+
+/* =========================================================
+   RESPONSIVE PRO — DESKTOP, LAPTOP, TABLET, HANDPHONE
+   ========================================================= */
+
+/* Fondasi */
+html{
+  width:100%;
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+
+body{
+  width:100%;
+  min-width:320px;
+  overflow-x:hidden;
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+}
+
+img,
+video,
+canvas,
+svg{
+  max-width:100%;
+}
+
+img,
+video{
+  height:auto;
+}
+
+button,
+a,
+input,
+textarea,
+select{
+  min-width:0;
+}
+
+button,
+.btn,
+.nav-link,
+.nav-cart,
+.account-trigger,
+.account-dropdown-item{
+  touch-action:manipulation;
+}
+
+.container{
+  width:min(1280px,calc(100% - clamp(24px,5vw,64px)));
+}
+
+main{
+  min-width:0;
+}
+
+.card,
+.item-card,
+.cart-item,
+.compact-order,
+.admin-rental-card,
+.admin-user-card,
+.website-review-card{
+  min-width:0;
+}
+
+/* Desktop dan laptop */
+@media(min-width:1281px){
+  .nav-shell{
+    width:min(1380px,calc(100% - 56px));
+  }
+
+  .grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  .admin-catalog-list,
+  .admin-item-list{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .website-reviews-list{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+
+@media(min-width:1600px){
+  .container{
+    width:min(1380px,calc(100% - 96px));
+  }
+
+  .nav-shell{
+    width:min(1480px,calc(100% - 96px));
+  }
+
+  .catalog-home-hero{
+    padding:68px;
+  }
+}
+
+/* Kartu katalog fleksibel */
+.grid{
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,285px),1fr));
+  align-items:stretch;
+}
+
+.item-card{
+  display:flex;
+  min-height:100%;
+  flex-direction:column;
+}
+
+.item-card>img,
+.item-card img{
+  width:100%;
+  height:auto;
+  aspect-ratio:16/10;
+  object-fit:cover;
+}
+
+.item-card .body,
+.order-item-card .body{
+  height:auto;
+  min-height:0;
+  flex:1;
+}
+
+.item-order-actions{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  width:100%;
+}
+
+.item-order-actions .btn{
+  width:100%;
+  min-width:0;
+  padding-left:10px;
+  padding-right:10px;
+}
+
+.category-choice-grid,
+.website-reviews-list,
+.admin-catalog-list,
+.admin-item-list{
+  align-items:stretch;
+}
+
+/* Header dan navbar */
+.nav{
+  padding-top:env(safe-area-inset-top);
+}
+
+.nav-shell{
+  width:min(1380px,calc(100% - clamp(24px,4vw,56px)));
+}
+
+.nav-primary,
+.nav-account{
+  min-width:0;
+}
+
+.account-trigger-copy strong,
+.account-trigger-copy small{
+  max-width:100%;
+}
+
+.account-dropdown{
+  max-width:calc(100vw - 24px);
+}
+
+/* Tablet besar / laptop kecil */
+@media(max-width:1180px){
+  .catalog-home-hero{
+    grid-template-columns:1fr;
+    gap:34px;
+    padding:46px;
+  }
+
+  .category-choice-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .detail{
+    gap:28px;
+  }
+
+  .cart-layout{
+    grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);
+  }
+
+  .admin-catalog-layout,
+  .admin-item-layout,
+  .admin-user-layout{
+    grid-template-columns:1fr;
+  }
+
+  .admin-editor-card,
+  .admin-item-form-card,
+  .admin-add-user-card{
+    position:static;
+  }
+
+  .admin-catalog-list,
+  .admin-item-list{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+/* Tablet */
+@media(max-width:900px){
+  .container{
+    width:min(100% - 30px,780px);
+  }
+
+  .hero,
+  .detail,
+  .cart-layout,
+  .website-rating-layout,
+  .auth-page,
+  .auth-page.is-register,
+  .profile-layout{
+    grid-template-columns:1fr;
+  }
+
+  .hero,
+  .catalog-home-hero{
+    padding-top:42px;
+    padding-bottom:42px;
+  }
+
+  .catalog-home-hero{
+    margin-top:20px;
+    padding-left:32px;
+    padding-right:32px;
+  }
+
+  .hero h1{
+    max-width:760px;
+  }
+
+  .category-choice-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .detail>img,
+  .detail img,
+  .profile-summary-card{
+    position:static;
+  }
+
+  .summary{
+    position:static;
+  }
+
+  .cart-layout{
+    gap:16px;
+  }
+
+  .checkout{
+    margin-top:16px;
+  }
+
+  .website-rating-layout{
+    gap:28px;
+  }
+
+  .website-reviews-list{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .auth-showcase{
+    position:static;
+  }
+
+  .auth-benefits{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  .profile-layout{
+    gap:16px;
+  }
+
+  .admin-catalog-list,
+  .admin-item-list{
+    grid-template-columns:1fr;
+  }
+
+  .admin-rental-card,
+  .admin-product-card{
+    grid-template-columns:118px minmax(0,1fr);
+  }
+
+  .admin-rental-card>img,
+  .admin-product-card>img{
+    width:118px;
+  }
+}
+
+/* Handphone dan tablet kecil */
+@media(max-width:700px){
+  :root{
+    --mobile-gap:12px;
+  }
+
+  body{
+    font-size:14px;
+  }
+
+  .container{
+    width:calc(100% - 24px);
+  }
+
+  .nav-shell{
+    width:calc(100% - 22px);
+    min-height:64px;
+  }
+
+  .nav-shell .brand{
+    max-width:calc(100vw - 92px);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-size:17px;
+  }
+
+  .nav-toggle{
+    width:42px;
+    height:40px;
+    flex:0 0 auto;
+  }
+
+  .nav-menu{
+    max-height:calc(100dvh - 66px - env(safe-area-inset-top));
+    overscroll-behavior:contain;
+  }
+
+  .nav-menu.is-open{
+    padding:12px;
+    gap:10px;
+  }
+
+  .nav-primary,
+  .nav-account{
+    width:100%;
+  }
+
+  .nav-link,
+  .nav-cart,
+  .nav-notification,
+  .nav-login,
+  .account-trigger{
+    min-height:46px;
+  }
+
+  .account-menu{
+    width:100%;
+    max-width:none;
+  }
+
+  .account-dropdown{
+    width:100%;
+    max-width:none;
+    max-height:55dvh;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+  }
+
+  .hero,
+  .section,
+  .catalog-page-hero,
+  .detail,
+  .orders-page,
+  .profile-page,
+  .admin-page{
+    padding-top:38px;
+    padding-bottom:44px;
+  }
+
+  .catalog-home-hero{
+    padding:28px 20px;
+    border-radius:24px;
+  }
+
+  .hero h1,
+  .catalog-page-hero h1,
+  .detail h1,
+  .profile-page-heading h1{
+    font-size:clamp(36px,11vw,50px);
+    line-height:1.02;
+  }
+
+  .section h2,
+  .catalog-section-heading h2,
+  .website-rating-intro h2{
+    font-size:clamp(27px,8vw,37px);
+  }
+
+  .hero-actions,
+  .actions{
+    width:100%;
+  }
+
+  .hero-actions .btn{
+    flex:1;
+  }
+
+  .hero-proof{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .hero-proof>div,
+  .hero-proof>div+div{
+    padding:0;
+    border-left:0;
+  }
+
+  .category-choice-grid{
+    grid-template-columns:1fr;
+  }
+
+  .category-choice-card{
+    min-height:0;
+  }
+
+  .catalog-section-heading,
+  .item-section-heading,
+  .admin-list-heading,
+  .orders-page-heading,
+  .profile-page-heading,
+  .website-reviews-heading{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .catalog-section-heading>.btn,
+  .item-section-heading>.btn,
+  .profile-page-heading>.btn{
+    width:100%;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+    gap:15px;
+  }
+
+  .item-card>img,
+  .item-card img{
+    aspect-ratio:16/9;
+  }
+
+  .item-order-box,
+  .detail-price-row{
+    grid-template-columns:1fr;
+  }
+
+  .item-order-actions{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .item-order-actions .btn:last-child{
+    grid-column:1/-1;
+  }
+
+  .detail{
+    gap:20px;
+  }
+
+  .detail>img,
+  .detail img{
+    border-radius:19px;
+  }
+
+  .detail-order-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .detail-order-actions .btn{
+    width:100%;
+  }
+
+  .two,
+  .data-grid,
+  .admin-check-grid,
+  .auth-card .two,
+  .auth-password-grid{
+    grid-template-columns:1fr;
+  }
+
+  input.input,
+  select.input,
+  textarea.input{
+    font-size:16px;
+  }
+
+  .cart-item{
+    grid-template-columns:82px minmax(0,1fr);
+    align-items:start;
+    gap:12px;
+  }
+
+  .cart-item img{
+    width:82px;
+    height:82px;
+  }
+
+  .cart-item-calculation{
+    grid-column:1/-1;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    align-items:end;
+    min-width:0;
+  }
+
+  .cart-line-formula{
+    text-align:left;
+  }
+
+  .cart-line-total{
+    min-height:66px;
+  }
+
+  .cart-item-calculation>.btn{
+    grid-column:1/-1;
+    width:100%;
+  }
+
+  .summary,
+  .checkout{
+    padding:18px;
+  }
+
+  .checkout .btn,
+  #checkout{
+    width:100%;
+  }
+
+  .compact-order-summary,
+  .admin-order-compact>summary{
+    grid-template-columns:1fr auto;
+  }
+
+  .compact-order-item-count{
+    padding-left:0;
+  }
+
+  .website-rating-card{
+    padding:19px;
+  }
+
+  .website-rating-stars{
+    gap:5px;
+  }
+
+  .website-rating-star{
+    height:48px;
+    font-size:27px;
+  }
+
+  .website-reviews-list{
+    grid-template-columns:1fr;
+  }
+
+  .auth-page,
+  .auth-page.is-register{
+    width:calc(100% - 22px);
+    gap:22px;
+    padding-top:28px;
+  }
+
+  .auth-showcase h1{
+    font-size:clamp(38px,12vw,52px);
+  }
+
+  .auth-benefits{
+    grid-template-columns:1fr;
+  }
+
+  .auth-card{
+    padding:19px;
+  }
+
+  .profile-summary-card,
+  .profile-form-card,
+  .admin-editor-card,
+  .admin-item-form-card{
+    padding:18px;
+  }
+
+  .profile-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .profile-actions .btn{
+    width:100%;
+  }
+
+  .admin-section-tabs,
+  .admin-tabs{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .admin-tab,
+  .admin-tabs .btn{
+    width:100%;
+  }
+
+  .admin-rental-card,
+  .admin-product-card,
+  .admin-user-card{
+    grid-template-columns:76px minmax(0,1fr);
+  }
+
+  .admin-rental-card>img,
+  .admin-product-card>img{
+    width:76px;
+    min-height:180px;
+  }
+
+  .admin-rental-body .actions,
+  .admin-product-body .actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+
+  .admin-rental-body .actions .danger,
+  .admin-product-body .actions .danger{
+    grid-column:1/-1;
+  }
+
+  .customer-service-float{
+    right:max(12px,env(safe-area-inset-right));
+    bottom:max(12px,calc(env(safe-area-inset-bottom) + 10px));
+  }
+}
+
+/* Handphone kecil */
+@media(max-width:430px){
+  .container{
+    width:calc(100% - 18px);
+  }
+
+  .nav-shell{
+    width:calc(100% - 18px);
+  }
+
+  .nav-shell .brand{
+    font-size:15px;
+  }
+
+  .catalog-home-hero{
+    padding:23px 15px;
+  }
+
+  .hero h1,
+  .catalog-page-hero h1,
+  .detail h1,
+  .profile-page-heading h1{
+    font-size:clamp(33px,12vw,43px);
+  }
+
+  .hero-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .hero-actions .btn,
+  .actions .btn{
+    width:100%;
+  }
+
+  .item-order-actions{
+    grid-template-columns:1fr;
+  }
+
+  .item-order-actions .btn:last-child{
+    grid-column:auto;
+  }
+
+  .cart-item{
+    grid-template-columns:68px minmax(0,1fr);
+    padding:12px;
+  }
+
+  .cart-item img{
+    width:68px;
+    height:68px;
+  }
+
+  .cart-item h3{
+    margin-top:7px;
+    font-size:15px;
+  }
+
+  .cart-item-calculation{
+    grid-template-columns:1fr;
+  }
+
+  .compact-order-summary,
+  .admin-order-compact>summary{
+    grid-template-columns:1fr;
+  }
+
+  .compact-order-total,
+  .compact-order-action{
+    text-align:left;
+  }
+
+  .website-rating-stars{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+  }
+
+  .website-rating-star{
+    min-width:0;
+    height:43px;
+    font-size:24px;
+  }
+
+  .website-review-top{
+    grid-template-columns:38px minmax(0,1fr);
+  }
+
+  .website-review-avatar{
+    width:38px;
+    height:38px;
+  }
+
+  .website-review-stars{
+    grid-column:2;
+  }
+
+  .admin-rental-card,
+  .admin-product-card{
+    grid-template-columns:1fr;
+  }
+
+  .admin-rental-card>img,
+  .admin-product-card>img{
+    width:100%;
+    height:auto;
+    min-height:0;
+    aspect-ratio:16/9;
+  }
+
+  .admin-user-card{
+    grid-template-columns:42px minmax(0,1fr);
+  }
+
+  .admin-user-card>.btn{
+    grid-column:1/-1;
+    width:100%;
+  }
+
+  .account-trigger{
+    min-width:0;
+  }
+
+  .account-trigger-copy strong{
+    max-width:none;
+  }
+}
+
+/* HP landscape */
+@media(max-height:520px) and (orientation:landscape){
+  .nav-menu{
+    max-height:calc(100dvh - 58px);
+  }
+
+  .account-dropdown{
+    max-height:45dvh;
+  }
+
+  .customer-service-float{
+    bottom:10px;
+  }
+}
+
+/* Perangkat sentuh: hindari hover yang terasa melompat */
+@media(hover:none){
+  .btn:hover,
+  .item-card:hover,
+  .category-choice-card:hover,
+  .website-review-card:hover,
+  .admin-rental-card:hover,
+  .admin-user-card:hover,
+  .customer-service-float:hover{
+    transform:none;
+  }
+}
+
+/* Cetak invoice/riwayat lebih bersih */
+@media print{
+  .nav,
+  .customer-service-float,
+  .nav-toggle,
+  .btn,
+  button{
+    display:none!important;
+  }
+
+  body{
+    color:#111;
+    background:white;
+  }
+
+  .card,
+  .notice{
+    border-color:#bbb;
+    color:#111;
+    background:white;
+    box-shadow:none;
+  }
+
+  .muted{
+    color:#444;
+  }
+}

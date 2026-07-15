@@ -1,23 +1,36 @@
-PATCH HUBUNGI CS
+PATCH RESPONSIVE PC & HANDPHONE
 
-Nomor CS:
-+62 895-0934-9428
-Format WhatsApp:
-6289509349428
-
-Ganti file:
+Ganti:
 - styles.css
+- seluruh file HTML yang tersedia di patch
+
+Optimalisasi:
+- Desktop besar, laptop, tablet, dan handphone
+- Navbar hamburger dan dropdown akun
+- Hero dan kategori
+- Kartu Sewa Item dan Open Trip
+- Detail item
+- Keranjang dan checkout
+- Pesanan Saya
+- Login/registrasi
+- Profil
+- Admin Panel
+- Rating dan ulasan
+- Tombol Hubungi CS
+- Safe area pada HP berponi
+- Input 16px agar browser HP tidak melakukan zoom otomatis
+- Layout HP landscape
+- Tampilan cetak sederhana
+
+Tidak mengubah:
 - config.js
-- seluruh file HTML yang tersedia di dalam patch
+- app.js
+- catalog.js
+- website-rating.js
+- database Supabase
+- alur login, keranjang, dan pemesanan
 
-Hasil:
-- Tombol Hubungi CS tampil mengambang di kanan bawah.
-- Tombol tersedia pada seluruh halaman.
-- Klik tombol langsung membuka WhatsApp CS.
-- Pesan pembuka sudah diisi otomatis.
-- Di HP, tombol berubah menjadi ikon ringkas.
-- Nomor konfirmasi WhatsApp checkout juga memakai nomor CS yang sama.
-
-Setelah upload ulang:
+Setelah upload:
 1. Tekan Ctrl + F5.
-2. Klik tombol Hubungi CS untuk melakukan pengujian.
+2. Uji mode desktop dan mobile melalui DevTools.
+3. Pada Chrome tekan F12 > Toggle device toolbar.
