@@ -4012,3 +4012,485 @@ main{
     color:#444;
   }
 }
+
+/* =========================================================
+   PORTRAIT PRO — HP & TABLET VERTIKAL
+   ========================================================= */
+
+/* Tablet portrait: iPad / Android tablet */
+@media (orientation:portrait) and (min-width:701px) and (max-width:1024px){
+  .container{
+    width:min(100% - 40px,820px);
+  }
+
+  .nav-shell{
+    width:calc(100% - 34px);
+  }
+
+  .catalog-home-hero{
+    grid-template-columns:1fr;
+    gap:28px;
+    padding:42px 36px;
+  }
+
+  .hero h1,
+  .catalog-page-hero h1,
+  .detail h1,
+  .profile-page-heading h1{
+    max-width:760px;
+    font-size:clamp(46px,8vw,68px);
+  }
+
+  .hero-proof{
+    max-width:100%;
+  }
+
+  .category-choice-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .item-card>img,
+  .item-card img{
+    aspect-ratio:4/3;
+  }
+
+  .detail,
+  .cart-layout,
+  .website-rating-layout,
+  .profile-layout,
+  .auth-page,
+  .auth-page.is-register{
+    grid-template-columns:1fr;
+  }
+
+  .detail>img,
+  .detail img{
+    width:100%;
+    max-height:520px;
+    object-fit:cover;
+    position:static;
+  }
+
+  .summary,
+  .profile-summary-card,
+  .auth-showcase{
+    position:static;
+  }
+
+  .website-reviews-list{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .admin-catalog-list,
+  .admin-item-list{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .customer-service-float{
+    right:max(18px,env(safe-area-inset-right));
+    bottom:max(18px,calc(env(safe-area-inset-bottom) + 14px));
+  }
+}
+
+/* Semua HP portrait */
+@media (orientation:portrait) and (max-width:700px){
+  body{
+    min-width:0;
+  }
+
+  .container{
+    width:calc(100% - 20px);
+  }
+
+  .nav-shell{
+    width:calc(100% - 18px);
+    min-height:62px;
+  }
+
+  .nav-shell .brand{
+    max-width:calc(100vw - 78px);
+    font-size:16px;
+  }
+
+  .nav-toggle{
+    width:40px;
+    height:39px;
+  }
+
+  .nav-menu{
+    left:0;
+    right:0;
+    width:100%;
+    max-height:calc(100dvh - 64px - env(safe-area-inset-top));
+  }
+
+  .account-dropdown{
+    max-height:58dvh;
+  }
+
+  .hero,
+  .section,
+  .catalog-page-hero,
+  .detail,
+  .orders-page,
+  .profile-page,
+  .admin-page{
+    padding-top:30px;
+    padding-bottom:38px;
+  }
+
+  .catalog-home-hero{
+    margin-top:12px;
+    padding:22px 15px;
+    gap:24px;
+    border-radius:20px;
+  }
+
+  .hero h1,
+  .catalog-page-hero h1,
+  .detail h1,
+  .profile-page-heading h1{
+    font-size:clamp(34px,10.5vw,46px);
+    line-height:1.02;
+  }
+
+  .section h2,
+  .catalog-section-heading h2,
+  .website-rating-intro h2{
+    font-size:clamp(26px,7.5vw,34px);
+  }
+
+  .hero-actions,
+  .actions,
+  .profile-actions{
+    display:grid;
+    grid-template-columns:1fr;
+    width:100%;
+  }
+
+  .hero-actions .btn,
+  .actions .btn,
+  .profile-actions .btn{
+    width:100%;
+  }
+
+  .hero-proof{
+    width:100%;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:0;
+  }
+
+  .hero-proof>div,
+  .hero-proof>div+div{
+    min-width:0;
+    padding:0 9px;
+    border-left:1px solid var(--line);
+    text-align:center;
+  }
+
+  .hero-proof>div:first-child{
+    padding-left:0;
+    border-left:0;
+  }
+
+  .hero-proof>div:last-child{
+    padding-right:0;
+  }
+
+  .hero-proof strong{
+    font-size:18px;
+  }
+
+  .hero-proof span{
+    font-size:9px;
+  }
+
+  .category-choice-grid,
+  .grid,
+  .website-reviews-list,
+  .admin-catalog-list,
+  .admin-item-list{
+    grid-template-columns:1fr;
+  }
+
+  .category-choice-card{
+    min-height:0;
+    padding:19px;
+  }
+
+  .category-choice-icon{
+    width:54px;
+    height:54px;
+    font-size:27px;
+  }
+
+  .item-card{
+    border-radius:18px;
+  }
+
+  .item-card>img,
+  .item-card img{
+    aspect-ratio:4/3;
+    max-height:320px;
+  }
+
+  .item-card .body,
+  .order-item-card .body{
+    padding:16px;
+  }
+
+  .item-order-box,
+  .detail-price-row{
+    grid-template-columns:1fr;
+  }
+
+  .item-order-actions{
+    grid-template-columns:1fr;
+  }
+
+  .item-order-actions .btn,
+  .item-order-actions .btn:last-child{
+    grid-column:auto;
+  }
+
+  .detail{
+    gap:17px;
+  }
+
+  .detail>img,
+  .detail img{
+    width:100%;
+    max-height:380px;
+    object-fit:cover;
+    border-radius:17px;
+  }
+
+  .detail-order-panel,
+  .summary,
+  .checkout,
+  .website-rating-card,
+  .profile-summary-card,
+  .profile-form-card,
+  .auth-card,
+  .admin-editor-card,
+  .admin-item-form-card{
+    padding:16px;
+  }
+
+  .cart-item{
+    grid-template-columns:72px minmax(0,1fr);
+    gap:10px;
+    padding:11px;
+  }
+
+  .cart-item img{
+    width:72px;
+    height:72px;
+  }
+
+  .cart-item-calculation{
+    grid-template-columns:1fr;
+  }
+
+  .cart-item-calculation>.btn{
+    width:100%;
+  }
+
+  .compact-order-summary,
+  .admin-order-compact>summary{
+    grid-template-columns:1fr;
+    gap:7px;
+  }
+
+  .compact-order-total,
+  .compact-order-action{
+    text-align:left;
+  }
+
+  .website-rating-layout{
+    gap:22px;
+  }
+
+  .website-rating-summary{
+    width:100%;
+  }
+
+  .website-rating-stars{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:4px;
+  }
+
+  .website-rating-star{
+    width:100%;
+    height:43px;
+    font-size:24px;
+  }
+
+  .website-review-card{
+    padding:14px;
+  }
+
+  .website-review-top{
+    grid-template-columns:38px minmax(0,1fr);
+  }
+
+  .website-review-stars{
+    grid-column:2;
+  }
+
+  .auth-page,
+  .auth-page.is-register{
+    width:calc(100% - 18px);
+    gap:18px;
+    padding-top:22px;
+    padding-bottom:36px;
+  }
+
+  .auth-showcase h1{
+    font-size:clamp(34px,10.5vw,45px);
+  }
+
+  .auth-benefits{
+    grid-template-columns:1fr;
+  }
+
+  .profile-avatar-large{
+    width:72px;
+    height:72px;
+    font-size:27px;
+  }
+
+  .admin-section-tabs,
+  .admin-tabs{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .admin-rental-card,
+  .admin-product-card{
+    grid-template-columns:1fr;
+  }
+
+  .admin-rental-card>img,
+  .admin-product-card>img{
+    width:100%;
+    min-height:0;
+    aspect-ratio:4/3;
+  }
+
+  .admin-rental-body .actions,
+  .admin-product-body .actions{
+    grid-template-columns:1fr;
+  }
+
+  .admin-rental-body .actions .danger,
+  .admin-product-body .actions .danger{
+    grid-column:auto;
+  }
+
+  .customer-service-float{
+    right:max(10px,env(safe-area-inset-right));
+    bottom:max(10px,calc(env(safe-area-inset-bottom) + 8px));
+  }
+}
+
+/* HP portrait sangat kecil: 320–374px */
+@media (orientation:portrait) and (max-width:374px){
+  .container{
+    width:calc(100% - 14px);
+  }
+
+  .nav-shell{
+    width:calc(100% - 14px);
+  }
+
+  .nav-shell .brand{
+    max-width:calc(100vw - 70px);
+    font-size:14px;
+  }
+
+  .catalog-home-hero{
+    padding:19px 12px;
+  }
+
+  .hero h1,
+  .catalog-page-hero h1,
+  .detail h1,
+  .profile-page-heading h1{
+    font-size:32px;
+  }
+
+  .hero-proof{
+    grid-template-columns:1fr;
+    gap:9px;
+  }
+
+  .hero-proof>div,
+  .hero-proof>div+div{
+    padding:0;
+    border:0;
+    text-align:left;
+  }
+
+  .cart-item{
+    grid-template-columns:62px minmax(0,1fr);
+  }
+
+  .cart-item img{
+    width:62px;
+    height:62px;
+  }
+
+  .website-rating-star{
+    height:40px;
+    font-size:22px;
+  }
+
+  .account-trigger{
+    min-width:0;
+  }
+
+  .account-trigger-copy strong{
+    font-size:11px;
+  }
+}
+
+/* Portrait tinggi: gunakan ruang vertikal dengan lebih nyaman */
+@media (orientation:portrait) and (min-height:850px) and (max-width:700px){
+  .catalog-home-hero{
+    padding-top:30px;
+    padding-bottom:30px;
+  }
+
+  .category-choice-card{
+    padding-top:23px;
+    padding-bottom:23px;
+  }
+
+  .auth-page,
+  .auth-page.is-register{
+    padding-top:34px;
+  }
+}
+
+/* Hindari tombol CS menutupi elemen terakhir pada portrait */
+@media (orientation:portrait) and (max-width:700px){
+  main{
+    padding-bottom:max(24px,calc(env(safe-area-inset-bottom) + 70px));
+  }
+
+  .customer-service-float{
+    width:50px;
+    height:50px;
+    min-height:50px;
+  }
+
+  .customer-service-icon{
+    width:37px;
+    height:37px;
+  }
+}
