@@ -1,0 +1,53 @@
+PEMBAYARAN OTOMATIS BTZPAY
+
+PERSIAPAN DATABASE
+1. Pastikan backup.txt, site-settings.sql, dan rental-calendar.sql sudah dijalankan.
+2. Jalankan seluruh isi btzpay-payment.sql melalui Supabase SQL Editor.
+
+SECRET EDGE FUNCTION
+Simpan melalui Supabase Dashboard > Edge Functions > Secrets:
+- BTZPAY_API_KEY = API key metode pembayaran dari BTZPay
+- PUBLIC_SITE_URL = URL website tanpa garis miring di akhir
+  Contoh: https://tokomu.example.com
+- BTZPAY_CRON_SECRET = teks acak panjang minimal 32 karakter
+
+SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL, dan SUPABASE_ANON_KEY biasanya sudah
+tersedia otomatis pada Edge Function Supabase. Jangan menaruh service role key
+di file website.
+
+DEPLOY EDGE FUNCTION
+Jalankan dari folder proyek menggunakan Supabase CLI:
+  supabase functions deploy btzpay --no-verify-jwt
+
+Opsi --no-verify-jwt diperlukan agar callback BTZPay dapat masuk. Aksi pelanggan
+dan admin tetap memeriksa JWT secara manual di dalam function. Callback tidak
+langsung dipercaya; status selalu diverifikasi ulang ke BTZPay.
+
+AKTIFKAN DARI ADMIN
+1. Login sebagai admin.
+2. Buka Admin Panel > Pengaturan > Pembayaran Otomatis.
+3. Pilih metode dan batas waktu.
+4. Aktifkan BTZPay lalu Simpan Pengaturan.
+
+PEMBATALAN OTOMATIS
+Buat Supabase Cron yang memanggil setiap menit:
+  POST https://PROJECT_REF.supabase.co/functions/v1/btzpay
+  Header: x-cron-secret: NILAI_BTZPAY_CRON_SECRET
+  Header: Content-Type: application/json
+  Body: {"action":"expire"}
+
+Tanpa cron, halaman pembayaran tetap mengecek kedaluwarsa selama sedang dibuka
+dan callback BTZPay tetap diproses. Cron memastikan pesanan kedaluwarsa juga
+dibatalkan ketika pelanggan sudah menutup halaman.
+
+STATUS
+- pending: menunggu pembayaran
+- paid: berhasil dibayar
+- expired: melewati batas waktu
+- cancelled: dibatalkan
+- failed: gagal
+- refunded: refund dicatat admin setelah dana benar-benar dikembalikan
+
+CATATAN REFUND
+SDK BTZPay 1.0.1 tidak menyediakan metode refund. Tombol Tandai Refund hanya
+mencatat bahwa admin sudah melakukan pengembalian dana melalui kanal yang sesuai.

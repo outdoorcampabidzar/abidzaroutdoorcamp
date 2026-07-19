@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Pembayaran — AbidzarOutdoorcamp</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="container nav-inner">
+        <a class="brand" href="index.html">Abidzar<span>Outdoorcamp</span></a>
+        <a class="btn secondary small" href="orders.html">Pesanan Saya</a>
+      </div>
+    </nav>
+    <main class="container payment-page">
+      <section id="paymentCard" class="card payment-card">
+        <div class="notice">Memuat pembayaran...</div>
+      </section>
+    </main>
+    <script type="module">
+      import { supabase, rupiah, esc } from "./app.js";
+      const card = document.getElementById("paymentCard");
+      const orderId = new URLSearchParams(location.search).get("order");
+      let payment = null;
+      let timer = null;
+      let poller = null;
+      let checking = false;
+      const labels = {
+        pending: "Menunggu Pembayaran",
+        paid: "Pembayaran Berhasil",
+        expired: "Kedaluwarsa",
+        cancelled: "Dibatalkan",
+        refunded: "Dikembalikan",
+        failed: "Gagal",
+      };
+
+      async function invoke(action, extra = {}) {
+        const { data, error } = await supabase.functions.invoke("btzpay", {
+          body: { action, ...extra },
+        });
+        if (error) throw error;
+        if (!data?.success)
+          throw new Error(data?.error || "Operasi pembayaran gagal");
+        return data;
+      }
+
+      async function load() {
+        if (!orderId) return showError("Nomor pesanan tidak ditemukan.");
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user)
+          return (location.href = `login.html?next=${encodeURIComponent(location.pathname + location.search)}`);
+        const { data: order, error } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("id", orderId)
+          .single();
+        if (error) return showError(error.message);
+        const { data: rows } = await supabase
+          .from("payment_transactions")
+          .select("*")
+          .eq("order_id", orderId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (!rows?.length) {
+          try {
+            const created = await invoke("create", { order_id: orderId });
+            payment = created.payment;
+          } catch (error) {
+            return showError(error.message);
+          }
+        } else payment = rows[0];
+        render(order);
+      }
+
+      function render(order) {
+        clearInterval(timer);
+        clearInterval(poller);
+        const status = payment.status;
+        const active = status === "pending";
+        card.innerHTML = `
+        <div class="payment-heading">
+          <div><span class="badge">BTZPay</span><h1>${labels[status] || esc(status)}</h1>
+          <p class="muted">Pesanan ${esc(order.order_number)}</p></div>
+          <span class="payment-status payment-status-${esc(status)}">${labels[status] || esc(status)}</span>
+        </div>
+        <div class="payment-amount"><span>Total pembayaran</span><strong>${rupiah(payment.total_amount)}</strong></div>
+        ${active ? `<div class="payment-countdown"><span>Selesaikan pembayaran dalam</span><strong id="countdown">--:--</strong></div>` : ""}
+        <div class="data-grid payment-data">
+          <div class="data"><b>ID Transaksi</b><br>${esc(payment.gateway_transaction_id)}</div>
+          <div class="data"><b>Metode</b><br>${esc(payment.payment_method)}</div>
+          <div class="data"><b>Dibuat</b><br>${new Date(payment.created_at).toLocaleString("id-ID")}</div>
+        </div>
+        <div id="paymentMessage" class="notice hidden"></div>
+        <div class="actions payment-actions">
+          ${active && payment.payment_url ? `<a class="btn" href="${esc(payment.payment_url)}" target="_blank" rel="noopener">Buka Halaman Pembayaran</a>` : ""}
+          ${active ? '<button id="checkPayment" class="btn secondary" type="button">Cek Pembayaran</button><button id="cancelPayment" class="btn danger" type="button">Batalkan</button>' : ""}
+          ${["expired", "cancelled", "failed"].includes(status) ? '<button id="recreatePayment" class="btn" type="button">Buat Pembayaran Baru</button>' : ""}
+          <a class="btn secondary" href="orders.html">Kembali ke Pesanan</a>
+        </div>`;
+        document
+          .getElementById("checkPayment")
+          ?.addEventListener("click", check);
+        document
+          .getElementById("cancelPayment")
+          ?.addEventListener("click", cancel);
+        document
+          .getElementById("recreatePayment")
+          ?.addEventListener("click", recreate);
+        if (active) {
+          updateCountdown();
+          timer = setInterval(() => {
+            updateCountdown();
+            if (Date.now() >= new Date(payment.expires_at).getTime()) check();
+          }, 1000);
+          poller = setInterval(check, 8000);
+        }
+      }
+
+      function updateCountdown() {
+        const el = document.getElementById("countdown");
+        if (!el) return;
+        const left = Math.max(
+          0,
+          new Date(payment.expires_at).getTime() - Date.now(),
+        );
+        const minutes = Math.floor(left / 60000);
+        const seconds = Math.floor((left % 60000) / 1000);
+        el.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      }
+
+      async function check() {
+        if (checking) return;
+        checking = true;
+        try {
+          const result = await invoke("check", { payment_id: payment.id });
+          payment = { ...payment, ...result.payment };
+          const { data: order } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("id", orderId)
+            .single();
+          render(order);
+        } catch (error) {
+          showMessage(error.message, "error");
+        } finally {
+          checking = false;
+        }
+      }
+      async function cancel() {
+        if (!confirm("Batalkan pembayaran dan pesanan ini?")) return;
+        try {
+          await invoke("cancel", {
+            payment_id: payment.id,
+            reason: "Dibatalkan pelanggan",
+          });
+          await load();
+        } catch (error) {
+          showMessage(error.message, "error");
+        }
+      }
+      async function recreate() {
+        try {
+          const result = await invoke("recreate", { order_id: orderId });
+          payment = result.payment;
+          const { data: order } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("id", orderId)
+            .single();
+          render(order);
+        } catch (error) {
+          showMessage(error.message, "error");
+        }
+      }
+      function showMessage(text, type) {
+        const el = document.getElementById("paymentMessage");
+        if (el) {
+          el.textContent = text;
+          el.className = `notice ${type}`;
+        }
+      }
+      function showError(text) {
+        card.innerHTML = `<div class="notice error">${esc(text)}</div><div class="actions" style="margin-top:14px"><a class="btn secondary" href="orders.html">Pesanan Saya</a></div>`;
+      }
+      load();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,50 @@
+MENU PENGATURAN WEBSITE
+
+1. Masuk ke dashboard Supabase proyek website.
+2. Buka SQL Editor.
+3. Salin seluruh isi file site-settings.sql.
+4. Jalankan SQL tersebut satu kali.
+5. Buka website dan login menggunakan akun admin.
+6. Masuk ke Admin Panel > Pengaturan.
+7. Isi data website lalu tekan Simpan Pengaturan.
+
+YANG DAPAT DIKELOLA
+- Nama website
+- Nomor dan pesan awal WhatsApp
+- Alamat, jam operasional, Google Maps
+- Instagram dan TikTok
+- Hero halaman utama
+- Judul dan deskripsi SEO
+- Batas penyewaan
+- Aturan keterlambatan dan jaminan
+- Kebijakan pembatalan dan refund
+- Fondasi mode perawatan
+
+CATATAN
+- config.js tetap digunakan sebagai nilai cadangan apabila SQL belum dipasang.
+- Jangan menyimpan API key pembayaran atau service role key melalui menu ini.
+
+SISTEM PENYEWAAN BERDASARKAN TANGGAL
+
+Setelah site-settings.sql berhasil dijalankan:
+1. Buka Supabase SQL Editor kembali.
+2. Salin seluruh isi rental-calendar.sql.
+3. Jalankan file tersebut satu kali.
+4. Atur minimal dan maksimal durasi melalui Admin Panel > Pengaturan.
+5. Uji checkout item sewa dan buka Admin Panel > Jadwal Sewa.
+
+Harga item sewa dihitung sebagai:
+harga per hari × jumlah unit × jumlah hari.
+
+Catatan migrasi:
+- Kolom stok pada item menjadi total unit inventaris.
+- Stok tidak lagi dikurangi permanen saat pesanan dikonfirmasi.
+- Ketersediaan dihitung berdasarkan bentrok tanggal pesanan.
+- Setelah migrasi, periksa kembali angka stok setiap produk agar sama dengan
+  jumlah fisik total yang dimiliki.
+
+PEMBAYARAN BTZPAY
+
+Untuk mengaktifkan pembayaran otomatis, ikuti PETUNJUK-BTZPAY.txt. Jangan
+mengaktifkan sakelar BTZPay di admin sebelum database, Edge Function, secrets,
+dan cron pembatalan otomatis selesai dipasang.

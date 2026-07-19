@@ -3,7 +3,7 @@ import { supabase, rupiah, esc, addCart, message } from "./app.js";
 function availableQuantity(item) {
   return Math.max(
     0,
-    Number(item.type === "trip" ? item.quota : item.stock) || 0
+    Number(item.type === "trip" ? item.quota : item.stock) || 0,
   );
 }
 
@@ -18,9 +18,10 @@ function unitLabel(item) {
 function renderCard(item) {
   const available = availableQuantity(item);
   const unit = unitLabel(item);
-  const availability = item.type === "trip"
-    ? `${available} kursi tersedia`
-    : `${available} unit tersedia`;
+  const availability =
+    item.type === "trip"
+      ? `${available} kursi tersedia`
+      : `${available} unit tersedia`;
 
   return `
     <article class="card item-card order-item-card">
@@ -40,21 +41,28 @@ function renderCard(item) {
           ${(item.description || "").length > 115 ? "…" : ""}
         </p>
 
-        ${item.type === "trip" && item.trip_date
-          ? `<p class="catalog-meta">📅 ${new Date(item.trip_date + "T00:00:00")
-              .toLocaleDateString("id-ID", { dateStyle: "long" })}</p>`
-          : ""}
+        ${
+          item.type === "trip" && item.trip_date
+            ? `<p class="catalog-meta">📅 ${new Date(
+                item.trip_date + "T00:00:00",
+              ).toLocaleDateString("id-ID", { dateStyle: "long" })}</p>`
+            : ""
+        }
 
-        ${item.location
-          ? `<p class="catalog-meta">📍 ${esc(item.location)}</p>`
-          : ""}
+        ${
+          item.location
+            ? `<p class="catalog-meta">📍 ${esc(item.location)}</p>`
+            : ""
+        }
 
-        ${item.requires_guarantee
-          ? `<p class="catalog-meta">🔐 Memerlukan jaminan</p>`
-          : ""}
+        ${
+          item.requires_guarantee
+            ? `<p class="catalog-meta">🔐 Memerlukan jaminan</p>`
+            : ""
+        }
 
         <div class="item-unit-price">
-          <span>${item.type === "trip" ? "Harga per peserta" : "Harga sewa per unit"}</span>
+          <span>${item.type === "trip" ? "Harga per peserta" : "Harga sewa per unit / hari"}</span>
           <b>${rupiah(item.price)}</b>
         </div>
 
@@ -111,27 +119,22 @@ function renderCard(item) {
 
 function selectedQuantity(items, itemId, scope = document) {
   const input = scope.querySelector(`[data-quantity="${itemId}"]`);
-  const item = items.find(entry => entry.id === itemId);
+  const item = items.find((entry) => entry.id === itemId);
   const max = availableQuantity(item);
-  const quantity = Math.max(
-    1,
-    Math.min(max || 1, Number(input?.value || 1))
-  );
+  const quantity = Math.max(1, Math.min(max || 1, Number(input?.value || 1)));
 
   if (input) input.value = quantity;
   return quantity;
 }
 
 function bindCatalogEvents(items, grid) {
-  grid.querySelectorAll("[data-quantity]").forEach(input => {
+  grid.querySelectorAll("[data-quantity]").forEach((input) => {
     const update = () => {
-      const item = items.find(entry => entry.id === input.dataset.quantity);
+      const item = items.find((entry) => entry.id === input.dataset.quantity);
       if (!item) return;
 
       const quantity = selectedQuantity(items, item.id, grid);
-      const totalElement = grid.querySelector(
-        `[data-line-total="${item.id}"]`
-      );
+      const totalElement = grid.querySelector(`[data-line-total="${item.id}"]`);
 
       if (totalElement) {
         totalElement.textContent = rupiah(Number(item.price) * quantity);
@@ -142,35 +145,32 @@ function bindCatalogEvents(items, grid) {
     input.addEventListener("change", update);
   });
 
-  grid.querySelectorAll("[data-add]").forEach(button => {
+  grid.querySelectorAll("[data-add]").forEach((button) => {
     button.addEventListener("click", () => {
-      const item = items.find(entry => entry.id === button.dataset.add);
+      const item = items.find((entry) => entry.id === button.dataset.add);
       if (!item) return;
 
       const quantity = selectedQuantity(items, item.id, grid);
       addCart(item, quantity);
 
-      const feedback = grid.querySelector(
-        `[data-item-message="${item.id}"]`
-      );
+      const feedback = grid.querySelector(`[data-item-message="${item.id}"]`);
 
       if (feedback) {
-        feedback.textContent =
-          `${quantity} ${unitLabel(item)} ditambahkan ke keranjang.`;
+        feedback.textContent = `${quantity} ${unitLabel(item)} ditambahkan ke keranjang.`;
         feedback.classList.remove("hidden");
 
         clearTimeout(feedback.hideTimer);
         feedback.hideTimer = setTimeout(
           () => feedback.classList.add("hidden"),
-          1800
+          1800,
         );
       }
     });
   });
 
-  grid.querySelectorAll("[data-order]").forEach(button => {
+  grid.querySelectorAll("[data-order]").forEach((button) => {
     button.addEventListener("click", () => {
-      const item = items.find(entry => entry.id === button.dataset.order);
+      const item = items.find((entry) => entry.id === button.dataset.order);
       if (!item) return;
 
       const quantity = selectedQuantity(items, item.id, grid);
@@ -182,12 +182,7 @@ function bindCatalogEvents(items, grid) {
   });
 }
 
-export async function mountCatalog({
-  type,
-  gridId,
-  messageId,
-  limit = null
-}) {
+export async function mountCatalog({ type, gridId, messageId, limit = null }) {
   const grid = document.getElementById(gridId);
   const messageElement = document.getElementById(messageId);
 

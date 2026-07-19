@@ -1,281 +1,315 @@
 <!doctype html>
 <html lang="id">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#050d17">
-  <title>Admin Panel — AbidzarOutdoorcamp</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <nav class="nav">
-  <div class="nav-shell">
-    <a class="brand" href="index.html">
-      Abidzar<span>Outdoorcamp</span>
-    </a>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#050d17" />
+    <title>Admin Panel — AbidzarOutdoorcamp</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="nav-shell">
+        <a class="brand" href="index.html"> Abidzar<span>Outdoorcamp</span> </a>
 
-    <button
-      class="nav-toggle"
-      type="button"
-      data-nav-toggle
-      aria-label="Buka menu navigasi"
-      aria-expanded="false"
-    >
-      <span aria-hidden="true">☰</span>
-    </button>
-
-    <div class="nav-menu" data-nav-menu>
-      <div class="nav-primary">
-        <a class="nav-link" href="index.html">Beranda</a>
-        <a class="nav-link" href="rental.html">Sewa Item</a>
-        <a class="nav-link" href="trips.html">Open Trip</a>
-      </div>
-
-      <div class="nav-account">
-        <a class="nav-cart" href="cart.html">
-          Keranjang
-          <span data-cart-count class="cart-count hidden">0</span>
-        </a>
-
-        <a
-          data-notification
-          class="nav-notification hidden"
-          href="orders.html"
-          aria-label="Lihat status pesanan"
-          title="Status pesanan"
+        <button
+          class="nav-toggle"
+          type="button"
+          data-nav-toggle
+          aria-label="Buka menu navigasi"
+          aria-expanded="false"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
-            <path d="M10 21h4"></path>
-          </svg>
-          <span data-notification-dot class="notification-dot hidden"></span>
-        </a>
+          <span aria-hidden="true">☰</span>
+        </button>
 
-        <a data-login class="btn nav-login" href="login.html">
-          Login
-        </a>
+        <div class="nav-menu" data-nav-menu>
+          <div class="nav-primary">
+            <a class="nav-link" href="index.html">Beranda</a>
+            <a class="nav-link" href="rental.html">Sewa Item</a>
+            <a class="nav-link" href="trips.html">Open Trip</a>
+          </div>
 
-        <div data-account-menu class="account-menu hidden">
-          <button
-            data-user-menu-toggle
-            class="account-trigger"
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded="false"
-          >
-            <span data-user-avatar class="account-avatar">U</span>
+          <div class="nav-account">
+            <a class="nav-cart" href="cart.html">
+              Keranjang
+              <span data-cart-count class="cart-count hidden">0</span>
+            </a>
 
-            <span class="account-trigger-copy">
-              <strong data-user-name>Halo, Pengguna</strong>
-              <small data-user-role>Akun</small>
-            </span>
+            <a
+              data-notification
+              class="nav-notification hidden"
+              href="orders.html"
+              aria-label="Lihat status pesanan"
+              title="Status pesanan"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+                ></path>
+                <path d="M10 21h4"></path>
+              </svg>
+              <span
+                data-notification-dot
+                class="notification-dot hidden"
+              ></span>
+            </a>
 
-            <svg class="account-chevron" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m7 10 5 5 5-5"></path>
-            </svg>
-          </button>
+            <a data-login class="btn nav-login" href="login.html"> Login </a>
 
-          <div
-            data-user-dropdown
-            class="account-dropdown"
-            role="menu"
-            aria-hidden="true"
-          >
-            <div class="account-dropdown-head">
-              <span data-user-avatar class="account-avatar account-avatar-large">U</span>
-              <div>
-                <strong data-user-full-name>Pengguna</strong>
-                <small data-user-email>email@pengguna.com</small>
-              </div>
-            </div>
-
-            <div class="account-dropdown-list">
-              <a
-                class="account-dropdown-item"
-                href="profile.html"
-                role="menuitem"
+            <div data-account-menu class="account-menu hidden">
+              <button
+                data-user-menu-toggle
+                class="account-trigger"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded="false"
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M20 21a8 8 0 0 0-16 0"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <span>Profil Saya</span>
-              </a>
+                <span data-user-avatar class="account-avatar">U</span>
 
-              <a
-                class="account-dropdown-item"
-                href="orders.html"
-                role="menuitem"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 2h9l3 3v17H6z"></path>
-                  <path d="M14 2v4h4"></path>
-                  <path d="M9 12h6M9 16h6"></path>
-                </svg>
-                <span>Pesanan Saya</span>
-              </a>
+                <span class="account-trigger-copy">
+                  <strong data-user-name>Halo, Pengguna</strong>
+                  <small data-user-role>Akun</small>
+                </span>
 
-              <a
-                class="account-dropdown-item"
-                href="cart.html#voucher"
-                role="menuitem"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"></path>
-                  <path d="M13 7v12"></path>
+                <svg
+                  class="account-chevron"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="m7 10 5 5 5-5"></path>
                 </svg>
-                <span>Voucher & Checkout</span>
-              </a>
+              </button>
 
-              <a
-                data-admin
-                class="account-dropdown-item hidden active"
-                href="admin.html"
-                role="menuitem"
+              <div
+                data-user-dropdown
+                class="account-dropdown"
+                role="menu"
                 aria-hidden="true"
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z"></path>
-                </svg>
-                <span>Admin Panel</span>
-              </a>
-            </div>
+                <div class="account-dropdown-head">
+                  <span
+                    data-user-avatar
+                    class="account-avatar account-avatar-large"
+                    >U</span
+                  >
+                  <div>
+                    <strong data-user-full-name>Pengguna</strong>
+                    <small data-user-email>email@pengguna.com</small>
+                  </div>
+                </div>
 
-            <div class="account-dropdown-footer">
-              <button
-                data-logout
-                class="account-dropdown-item account-logout hidden"
-                type="button"
-                role="menuitem"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M10 17l5-5-5-5"></path>
-                  <path d="M15 12H3"></path>
-                  <path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"></path>
-                </svg>
-                <span>Keluar</span>
-              </button>
+                <div class="account-dropdown-list">
+                  <a
+                    class="account-dropdown-item"
+                    href="profile.html"
+                    role="menuitem"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M20 21a8 8 0 0 0-16 0"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span>Profil Saya</span>
+                  </a>
+
+                  <a
+                    class="account-dropdown-item"
+                    href="orders.html"
+                    role="menuitem"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M6 2h9l3 3v17H6z"></path>
+                      <path d="M14 2v4h4"></path>
+                      <path d="M9 12h6M9 16h6"></path>
+                    </svg>
+                    <span>Pesanan Saya</span>
+                  </a>
+
+                  <a
+                    class="account-dropdown-item"
+                    href="cart.html#voucher"
+                    role="menuitem"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"
+                      ></path>
+                      <path d="M13 7v12"></path>
+                    </svg>
+                    <span>Voucher & Checkout</span>
+                  </a>
+
+                  <a
+                    data-admin
+                    class="account-dropdown-item hidden active"
+                    href="admin.html"
+                    role="menuitem"
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path
+                        d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z"
+                      ></path>
+                    </svg>
+                    <span>Admin Panel</span>
+                  </a>
+                </div>
+
+                <div class="account-dropdown-footer">
+                  <button
+                    data-logout
+                    class="account-dropdown-item account-logout hidden"
+                    type="button"
+                    role="menuitem"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M10 17l5-5-5-5"></path>
+                      <path d="M15 12H3"></path>
+                      <path
+                        d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"
+                      ></path>
+                    </svg>
+                    <span>Keluar</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</nav>
+    </nav>
 
-  <main id="adminRoot">
-    <section class="container section">
-      <div class="notice">Memeriksa akses admin...</div>
-    </section>
-  </main>
+    <main id="adminRoot">
+      <section class="container section">
+        <div class="notice">Memeriksa akses admin...</div>
+      </section>
+    </main>
 
-  <script type="module">
-    import { supabase, rupiah, esc, message } from "./app.js";
+    <script type="module">
+      import {
+        supabase,
+        rupiah,
+        esc,
+        message,
+        DEFAULT_SITE_SETTINGS,
+        loadSiteSettings,
+        applySiteSettings,
+      } from "./app.js";
 
-    const root = document.getElementById("adminRoot");
+      const root = document.getElementById("adminRoot");
 
-    const statusLabels = {
-      pending: "Menunggu",
-      confirmed: "Dikonfirmasi",
-      paid: "Dibayar",
-      completed: "Selesai",
-      cancelled: "Dibatalkan"
-    };
+      const statusLabels = {
+        pending: "Menunggu",
+        confirmed: "Dikonfirmasi",
+        paid: "Dibayar",
+        completed: "Selesai",
+        cancelled: "Dibatalkan",
+      };
 
-    let activeTab = "rental";
-    let items = [];
-    let orders = [];
-    let administrators = [];
-    let currentAdminUserId = null;
-    let editingItem = null;
+      let activeTab = "rental";
+      let items = [];
+      let orders = [];
+      let administrators = [];
+      let currentAdminUserId = null;
+      let editingItem = null;
+      let siteSettings = { ...DEFAULT_SITE_SETTINGS };
 
-    function slugify(value) {
-      return String(value || "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-")
-        .replace(/^-|-$/g, "");
-    }
-
-    function rentalItems() {
-      return items.filter(item => item.type === "product");
-    }
-
-    function tripItems() {
-      return items.filter(item => item.type === "trip");
-    }
-
-    async function verifyAdmin() {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        location.href = "login.html?next=admin.html";
-        return false;
+      function slugify(value) {
+        return String(value || "")
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "");
       }
 
-      currentAdminUserId = user.id;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      let allowed =
-        String(profile?.role || "").trim().toLowerCase() === "admin";
-
-      if (!allowed) {
-        const { data: rpcResult } = await supabase.rpc("is_admin");
-        allowed = rpcResult === true;
+      function rentalItems() {
+        return items.filter((item) => item.type === "product");
       }
 
-      if (!allowed) {
-        root.innerHTML = `
+      function tripItems() {
+        return items.filter((item) => item.type === "trip");
+      }
+
+      async function verifyAdmin() {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          location.href = "login.html?next=admin.html";
+          return false;
+        }
+
+        currentAdminUserId = user.id;
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+
+        let allowed =
+          String(profile?.role || "")
+            .trim()
+            .toLowerCase() === "admin";
+
+        if (!allowed) {
+          const { data: rpcResult } = await supabase.rpc("is_admin");
+          allowed = rpcResult === true;
+        }
+
+        if (!allowed) {
+          root.innerHTML = `
           <section class="container section">
             <div class="notice error">
               Akses admin diperlukan. Pastikan role akun pada tabel
               <b>profiles</b> bernilai <b>admin</b>.
             </div>
           </section>`;
+        }
+
+        return allowed;
       }
 
-      return allowed;
-    }
+      async function loadAllData() {
+        const [itemResult, orderResult, loadedSettings] = await Promise.all([
+          supabase
+            .from("items")
+            .select("*")
+            .order("created_at", { ascending: false }),
 
-    async function loadAllData() {
-      const [itemResult, orderResult] = await Promise.all([
-        supabase
-          .from("items")
-          .select("*")
-          .order("created_at", { ascending: false }),
+          supabase
+            .from("orders")
+            .select("*,order_items(*),payment_transactions(*)")
+            .order("created_at", { ascending: false }),
 
-        supabase
-          .from("orders")
-          .select("*,order_items(*)")
-          .order("created_at", { ascending: false })
-      ]);
+          loadSiteSettings(),
+        ]);
 
-      if (itemResult.error) throw itemResult.error;
-      if (orderResult.error) throw orderResult.error;
+        if (itemResult.error) throw itemResult.error;
+        if (orderResult.error) throw orderResult.error;
 
-      items = itemResult.data || [];
-      orders = orderResult.data || [];
+        items = itemResult.data || [];
+        orders = orderResult.data || [];
+        siteSettings = { ...DEFAULT_SITE_SETTINGS, ...loadedSettings };
 
-      const { data: adminData } = await supabase.rpc("list_admin_users");
-      administrators = adminData || [];
-    }
+        const { data: adminData } = await supabase.rpc("list_admin_users");
+        administrators = adminData || [];
+      }
 
-    function renderShell() {
-      root.innerHTML = `
+      function renderShell() {
+        root.innerHTML = `
         <section class="container admin-page">
           <header class="admin-page-heading">
             <div>
               <h2>Admin Panel</h2>
               <p class="muted">
-                Kelola katalog, pesanan, dan hak akses administrator.
+              Kelola katalog, pesanan, dan hak akses administrator.
               </p>
             </div>
 
@@ -313,6 +347,30 @@
             </button>
 
             <button
+              class="admin-tab ${activeTab === "settings" ? "active" : ""}"
+              data-admin-tab="settings"
+              type="button"
+            >
+              ⚙️ Pengaturan
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "schedule" ? "active" : ""}"
+              data-admin-tab="schedule"
+              type="button"
+            >
+              📅 Jadwal Sewa
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "payment_logs" ? "active" : ""}"
+              data-admin-tab="payment_logs"
+              type="button"
+            >
+              🔔 Log Pembayaran
+            </button>
+
+            <button
               class="admin-tab ${activeTab === "administrators" ? "active" : ""}"
               data-admin-tab="administrators"
               type="button"
@@ -325,42 +383,423 @@
           <section id="adminContent"></section>
         </section>`;
 
-      document.querySelectorAll("[data-admin-tab]").forEach(button => {
-        button.addEventListener("click", () => {
-          activeTab = button.dataset.adminTab;
-          editingItem = null;
-          renderShell();
-          renderActiveTab();
+        document.querySelectorAll("[data-admin-tab]").forEach((button) => {
+          button.addEventListener("click", () => {
+            activeTab = button.dataset.adminTab;
+            editingItem = null;
+            renderShell();
+            renderActiveTab();
+          });
         });
-      });
 
-      renderActiveTab();
-    }
+        renderActiveTab();
+      }
 
-    function renderActiveTab() {
-      if (activeTab === "rental") renderRentalTab();
-      else if (activeTab === "trips") renderTripTab();
-      else if (activeTab === "orders") renderOrdersTab();
-      else renderAdministratorsTab();
-    }
+      function renderActiveTab() {
+        if (activeTab === "rental") renderRentalTab();
+        else if (activeTab === "trips") renderTripTab();
+        else if (activeTab === "orders") renderOrdersTab();
+        else if (activeTab === "settings") renderSettingsTab();
+        else if (activeTab === "schedule") renderRentalScheduleTab();
+        else if (activeTab === "payment_logs") renderPaymentLogsTab();
+        else renderAdministratorsTab();
+      }
 
-    function renderRentalTab() {
-      const content = document.getElementById("adminContent");
-      const rentals = rentalItems();
+      async function renderPaymentLogsTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML =
+          '<div class="notice">Memuat log callback BTZPay...</div>';
+        const { data, error } = await supabase
+          .from("payment_webhook_logs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(100);
+        if (error) {
+          content.innerHTML = `<div class="notice error">${esc(error.message)}<br><small>Jalankan btzpay-payment.sql terlebih dahulu.</small></div>`;
+          return;
+        }
+        content.innerHTML = `
+        <div class="admin-list-heading"><div><h3>Riwayat Callback BTZPay</h3>
+        <p class="muted">100 callback terbaru untuk pemeriksaan transaksi.</p></div></div>
+        <div class="payment-log-list">
+          ${
+            (data || [])
+              .map(
+                (log) => `
+            <details class="card payment-log-card">
+              <summary><span class="${log.verified ? "admin-active" : "admin-inactive"}">${log.verified ? "Terverifikasi" : "Ditolak"}</span>
+              <b>${esc(log.gateway_transaction_id || "Tanpa ID")}</b>
+              <span>${esc(log.event_status || "-")}</span>
+              <small>${new Date(log.created_at).toLocaleString("id-ID")}</small></summary>
+              <pre>${esc(JSON.stringify(log.payload, null, 2))}</pre>
+              ${log.error_message ? `<div class="notice error">${esc(log.error_message)}</div>` : ""}
+            </details>`,
+              )
+              .join("") || '<div class="notice">Belum ada callback.</div>'
+          }
+        </div>`;
+      }
 
-      const item = editingItem || {
-        title: "",
-        slug: "",
-        description: "",
-        image_url: "",
-        price: 0,
-        stock: 0,
-        requires_guarantee: true,
-        guarantee_note: "",
-        is_active: true
-      };
+      function formatRentalDate(value) {
+        if (!value) return "-";
+        return new Date(
+          `${String(value).slice(0, 10)}T00:00:00`,
+        ).toLocaleDateString("id-ID", { dateStyle: "long" });
+      }
 
-      content.innerHTML = `
+      function renderRentalScheduleTab() {
+        const content = document.getElementById("adminContent");
+        const rentals = orders
+          .filter(
+            (order) =>
+              order.rental_start &&
+              ["pending", "confirmed", "paid"].includes(order.status),
+          )
+          .sort((a, b) =>
+            String(a.rental_start).localeCompare(String(b.rental_start)),
+          );
+
+        content.innerHTML = `
+        <div class="admin-list-heading">
+          <div>
+            <h3>Kalender Penyewaan</h3>
+            <p class="muted">${rentals.length} pesanan sewa aktif atau menunggu.</p>
+          </div>
+          <button id="refreshRentalSchedule" class="btn secondary small" type="button">Muat Ulang</button>
+        </div>
+        <div class="rental-calendar-list">
+          ${
+            rentals
+              .map(
+                (order) => `
+            <article class="card rental-calendar-card">
+              <div class="rental-calendar-date">
+                <small>${esc(formatRentalDate(order.rental_start))}</small>
+                <strong>→</strong>
+                <small>${esc(formatRentalDate(order.rental_end))}</small>
+                <span class="badge">${Number(order.rental_days || 1)} hari</span>
+              </div>
+              <div class="rental-calendar-order">
+                <div>
+                  <span class="status">${statusLabels[order.status] || esc(order.status)}</span>
+                  <h3>${esc(order.order_number)}</h3>
+                  <p class="muted">${esc(order.customer_name)} · ${esc(order.phone)}</p>
+                </div>
+                <strong>${rupiah(order.total)}</strong>
+              </div>
+              <div class="rental-calendar-items">
+                ${
+                  (order.order_items || [])
+                    .filter((item) => item.item_type === "product")
+                    .map(
+                      (item) =>
+                        `<span>${esc(item.title_snapshot)} × ${Number(item.quantity)}</span>`,
+                    )
+                    .join("") ||
+                  '<span class="muted">Tidak ada item sewa.</span>'
+                }
+              </div>
+              <button class="btn secondary small" data-open-schedule-order="${order.id}" type="button">Buka di Pesanan</button>
+            </article>
+          `,
+              )
+              .join("") ||
+            '<div class="notice">Belum ada jadwal penyewaan.</div>'
+          }
+        </div>`;
+
+        document
+          .getElementById("refreshRentalSchedule")
+          .addEventListener("click", refreshRentalSchedule);
+        document
+          .querySelectorAll("[data-open-schedule-order]")
+          .forEach((button) => {
+            button.addEventListener("click", () => {
+              activeTab = "orders";
+              renderShell();
+              const detail = document.querySelector(
+                `[data-order-id="${button.dataset.openScheduleOrder}"]`,
+              );
+              if (detail) {
+                detail.open = true;
+                detail.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+            });
+          });
+      }
+
+      async function refreshRentalSchedule() {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*,order_items(*),payment_transactions(*)")
+          .order("created_at", { ascending: false });
+        if (error) return showAdminMessage(error.message, "error");
+        orders = data || [];
+        renderRentalScheduleTab();
+        showAdminMessage("Jadwal penyewaan dimuat ulang.", "success");
+      }
+
+      function settingInput(name, label, options = {}) {
+        const value = siteSettings[name] ?? "";
+        const type = options.type || "text";
+        const hint = options.hint
+          ? `<small class="muted">${esc(options.hint)}</small>`
+          : "";
+
+        if (type === "textarea") {
+          return `
+          <label class="field ${options.wide ? "admin-setting-wide" : ""}">
+            <span>${esc(label)}</span>
+            <textarea class="input" name="${esc(name)}" rows="${options.rows || 3}" maxlength="${options.maxlength || 1000}">${esc(value)}</textarea>
+            ${hint}
+          </label>`;
+        }
+
+        return `
+        <label class="field ${options.wide ? "admin-setting-wide" : ""}">
+          <span>${esc(label)}</span>
+          <input
+            class="input"
+            name="${esc(name)}"
+            type="${esc(type)}"
+            value="${esc(value)}"
+            ${options.required ? "required" : ""}
+            ${options.min !== undefined ? `min="${esc(options.min)}"` : ""}
+            ${options.max !== undefined ? `max="${esc(options.max)}"` : ""}
+            maxlength="${options.maxlength || 255}"
+          >
+          ${hint}
+        </label>`;
+      }
+
+      function renderSettingsTab() {
+        const content = document.getElementById("adminContent");
+
+        content.innerHTML = `
+        <form id="siteSettingsForm" class="form admin-settings-form">
+          <div class="admin-list-heading">
+            <div>
+              <h3>Pengaturan Website</h3>
+              <p class="muted">Perubahan yang disimpan langsung digunakan pada halaman website.</p>
+            </div>
+            <button id="saveSiteSettings" class="btn" type="submit">Simpan Pengaturan</button>
+          </div>
+
+          <section class="card admin-settings-section">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Identitas</span><h3>Brand dan Kontak</h3></div>
+            </div>
+            <div class="two admin-settings-grid">
+              ${settingInput("site_name", "Nama website *", { required: true })}
+              ${settingInput("whatsapp_number", "Nomor WhatsApp *", {
+                required: true,
+                hint: "Gunakan format internasional tanpa tanda +, contoh 62812...",
+              })}
+              ${settingInput("address", "Alamat toko", { type: "textarea", wide: true })}
+              ${settingInput("business_hours", "Jam operasional")}
+              ${settingInput("google_maps_url", "Tautan Google Maps", { type: "url" })}
+              ${settingInput("instagram_url", "Tautan Instagram", { type: "url" })}
+              ${settingInput("tiktok_url", "Tautan TikTok", { type: "url" })}
+              ${settingInput("whatsapp_message", "Pesan awal WhatsApp", {
+                type: "textarea",
+                wide: true,
+                maxlength: 500,
+              })}
+            </div>
+          </section>
+
+          <section class="card admin-settings-section">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Beranda</span><h3>Hero Halaman Utama</h3></div>
+            </div>
+            <div class="two admin-settings-grid">
+              ${settingInput("hero_eyebrow", "Teks kecil")}
+              ${settingInput("hero_title", "Judul utama")}
+              ${settingInput("hero_subtitle", "Judul lanjutan")}
+              ${settingInput("hero_description", "Deskripsi", {
+                type: "textarea",
+                wide: true,
+                maxlength: 700,
+              })}
+            </div>
+          </section>
+
+          <section class="card admin-settings-section">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Pencarian</span><h3>SEO</h3></div>
+            </div>
+            <div class="two admin-settings-grid">
+              ${settingInput("seo_title", "Judul SEO", { maxlength: 70 })}
+              ${settingInput("seo_description", "Deskripsi SEO", {
+                type: "textarea",
+                wide: true,
+                maxlength: 170,
+                rows: 2,
+              })}
+            </div>
+          </section>
+
+          <section class="card admin-settings-section">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Operasional</span><h3>Aturan Penyewaan</h3></div>
+            </div>
+            <div class="two admin-settings-grid">
+              ${settingInput("rental_min_days", "Minimal sewa (hari)", { type: "number", min: 1, max: 365 })}
+              ${settingInput("rental_max_days", "Maksimal sewa (hari)", { type: "number", min: 1, max: 365 })}
+              ${settingInput("late_fee_text", "Ketentuan keterlambatan", { type: "textarea", wide: true })}
+              ${settingInput("guarantee_policy", "Ketentuan jaminan", { type: "textarea", wide: true })}
+              ${settingInput("cancellation_policy", "Kebijakan pembatalan", { type: "textarea", wide: true })}
+              ${settingInput("refund_policy", "Kebijakan pengembalian dana", { type: "textarea", wide: true })}
+            </div>
+          </section>
+
+          <section class="card admin-settings-section">
+            <div class="admin-editor-heading">
+              <div><span class="badge">BTZPay</span><h3>Pembayaran Otomatis</h3></div>
+            </div>
+            <label class="admin-check">
+              <input name="payment_enabled" type="checkbox" ${siteSettings.payment_enabled ? "checked" : ""}>
+              <span>Aktifkan pembayaran otomatis BTZPay</span>
+            </label>
+            <div class="two admin-settings-grid">
+              <label class="field">
+                <span>Metode pembayaran</span>
+                <select class="input" name="payment_method">
+                  ${[
+                    ["qrisorkut", "QRIS Orkut"],
+                    ["qrisdana", "QRIS Dana"],
+                    ["qrisgopay", "QRIS GoPay"],
+                    ["qrisshopeepay", "QRIS ShopeePay"],
+                  ]
+                    .map(
+                      ([value, label]) =>
+                        `<option value="${value}" ${siteSettings.payment_method === value ? "selected" : ""}>${label}</option>`,
+                    )
+                    .join("")}
+                </select>
+              </label>
+              ${settingInput("payment_timeout_minutes", "Batas pembayaran (menit)", { type: "number", min: 5, max: 1440 })}
+            </div>
+            <div class="notice warning">
+              API key tidak disimpan di website. Simpan sebagai secret Edge Function bernama <b>BTZPAY_API_KEY</b>.
+            </div>
+          </section>
+
+          <section class="card admin-settings-section">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Status</span><h3>Mode Perawatan</h3></div>
+            </div>
+            <label class="admin-check">
+              <input name="maintenance_mode" type="checkbox" ${siteSettings.maintenance_mode ? "checked" : ""}>
+              <span>Aktifkan mode perawatan</span>
+            </label>
+            ${settingInput("maintenance_message", "Pesan perawatan", {
+              type: "textarea",
+              wide: true,
+              maxlength: 500,
+            })}
+            <p class="muted">Pengaturan ini sudah disimpan sebagai fondasi. Tampilan halaman perawatan penuh dapat diaktifkan pada tahap berikutnya.</p>
+          </section>
+
+          <div class="actions admin-settings-actions">
+            <button class="btn" type="submit">Simpan Pengaturan</button>
+            <button id="resetSiteSettings" class="btn secondary" type="button">Kembalikan Isian Bawaan</button>
+          </div>
+        </form>`;
+
+        document
+          .getElementById("siteSettingsForm")
+          .addEventListener("submit", saveSiteSettings);
+        document
+          .getElementById("resetSiteSettings")
+          .addEventListener("click", () => {
+            if (
+              !confirm(
+                "Kembalikan seluruh isian ke nilai bawaan? Perubahan belum disimpan sampai tombol Simpan ditekan.",
+              )
+            )
+              return;
+            siteSettings = { ...DEFAULT_SITE_SETTINGS };
+            renderSettingsTab();
+          });
+      }
+
+      async function saveSiteSettings(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const button = document.getElementById("saveSiteSettings");
+        const values = Object.fromEntries(new FormData(form));
+
+        values.site_name = String(values.site_name || "").trim();
+        values.whatsapp_number = String(values.whatsapp_number || "").replace(
+          /\D/g,
+          "",
+        );
+        values.rental_min_days = Math.max(
+          1,
+          Number(values.rental_min_days) || 1,
+        );
+        values.rental_max_days = Math.max(
+          values.rental_min_days,
+          Number(values.rental_max_days) || 30,
+        );
+        values.maintenance_mode = form.elements.maintenance_mode.checked;
+        values.payment_enabled = form.elements.payment_enabled.checked;
+        values.payment_timeout_minutes = Math.max(
+          5,
+          Math.min(1440, Number(values.payment_timeout_minutes) || 15),
+        );
+
+        if (!values.site_name || !values.whatsapp_number) {
+          showAdminMessage(
+            "Nama website dan nomor WhatsApp wajib diisi.",
+            "error",
+          );
+          return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Menyimpan...";
+
+        const { data, error } = await supabase.rpc("admin_save_site_settings", {
+          p_settings: values,
+        });
+
+        button.disabled = false;
+        button.textContent = "Simpan Pengaturan";
+
+        if (error) {
+          showAdminMessage(
+            error.message.includes("admin_save_site_settings")
+              ? "Fitur database belum dipasang. Jalankan site-settings.sql melalui Supabase SQL Editor."
+              : error.message,
+            "error",
+          );
+          return;
+        }
+
+        siteSettings = { ...DEFAULT_SITE_SETTINGS, ...(data || values) };
+        applySiteSettings(siteSettings);
+        showAdminMessage("Pengaturan website berhasil disimpan.", "success");
+      }
+
+      function renderRentalTab() {
+        const content = document.getElementById("adminContent");
+        const rentals = rentalItems();
+
+        const item = editingItem || {
+          title: "",
+          slug: "",
+          description: "",
+          image_url: "",
+          price: 0,
+          stock: 0,
+          requires_guarantee: true,
+          guarantee_note: "",
+          is_active: true,
+        };
+
+        content.innerHTML = `
         <div class="admin-catalog-layout">
           <section class="card admin-editor-card">
             <div class="admin-editor-heading">
@@ -372,11 +811,15 @@
                 </p>
               </div>
 
-              ${editingItem ? `
+              ${
+                editingItem
+                  ? `
                 <button id="cancelRentalEdit" class="btn secondary small" type="button">
                   Batal
                 </button>
-              ` : ""}
+              `
+                  : ""
+              }
             </div>
 
             <form id="rentalForm" class="form">
@@ -445,7 +888,7 @@
 
               <div class="two">
                 <label class="field">
-                  <span>Harga sewa per unit *</span>
+                  <span>Harga sewa per unit / hari *</span>
                   <input
                     class="input"
                     name="price"
@@ -523,20 +966,23 @@
             </div>
 
             <div class="admin-catalog-list">
-              ${rentals.map(renderRentalCard).join("") || `
+              ${
+                rentals.map(renderRentalCard).join("") ||
+                `
                 <div class="notice">
                   Belum ada item sewa. Tambahkan melalui formulir.
                 </div>
-              `}
+              `
+              }
             </div>
           </section>
         </div>`;
 
-      bindRentalEvents();
-    }
+        bindRentalEvents();
+      }
 
-    function renderRentalCard(item) {
-      return `
+      function renderRentalCard(item) {
+        return `
         <article class="card admin-rental-card">
           <img src="${esc(item.image_url)}" alt="${esc(item.title)}">
 
@@ -556,11 +1002,15 @@
               <span>${Number(item.stock || 0)} stok</span>
             </div>
 
-            ${item.requires_guarantee ? `
+            ${
+              item.requires_guarantee
+                ? `
               <p class="admin-rental-guarantee">
                 🔐 ${esc(item.guarantee_note || "Jaminan wajib")}
               </p>
-            ` : ""}
+            `
+                : ""
+            }
 
             <div class="actions">
               <button
@@ -589,163 +1039,168 @@
             </div>
           </div>
         </article>`;
-    }
+      }
 
-    function bindRentalEvents() {
-      const form = document.getElementById("rentalForm");
-      const titleInput = document.getElementById("rentalTitle");
-      const slugInput = document.getElementById("rentalSlug");
-      const imageInput = document.getElementById("rentalImageUrl");
-      const previewWrap = document.getElementById("rentalPreviewWrap");
-      const preview = document.getElementById("rentalPreview");
+      function bindRentalEvents() {
+        const form = document.getElementById("rentalForm");
+        const titleInput = document.getElementById("rentalTitle");
+        const slugInput = document.getElementById("rentalSlug");
+        const imageInput = document.getElementById("rentalImageUrl");
+        const previewWrap = document.getElementById("rentalPreviewWrap");
+        const preview = document.getElementById("rentalPreview");
 
-      let slugEdited = Boolean(editingItem?.slug);
+        let slugEdited = Boolean(editingItem?.slug);
 
-      titleInput.addEventListener("input", () => {
-        if (!slugEdited) slugInput.value = slugify(titleInput.value);
-      });
+        titleInput.addEventListener("input", () => {
+          if (!slugEdited) slugInput.value = slugify(titleInput.value);
+        });
 
-      slugInput.addEventListener("input", () => {
-        slugEdited = true;
-        slugInput.value = slugify(slugInput.value);
-      });
+        slugInput.addEventListener("input", () => {
+          slugEdited = true;
+          slugInput.value = slugify(slugInput.value);
+        });
 
-      imageInput.addEventListener("input", () => {
-        const value = imageInput.value.trim();
-        preview.src = value;
-        previewWrap.classList.toggle("hidden", !value);
-      });
+        imageInput.addEventListener("input", () => {
+          const value = imageInput.value.trim();
+          preview.src = value;
+          previewWrap.classList.toggle("hidden", !value);
+        });
 
-      preview.addEventListener("error", () => {
-        previewWrap.classList.add("hidden");
-      });
+        preview.addEventListener("error", () => {
+          previewWrap.classList.add("hidden");
+        });
 
-      form.addEventListener("submit", saveRental);
+        form.addEventListener("submit", saveRental);
 
-      document.getElementById("cancelRentalEdit")?.addEventListener("click", () => {
+        document
+          .getElementById("cancelRentalEdit")
+          ?.addEventListener("click", () => {
+            editingItem = null;
+            renderRentalTab();
+          });
+
+        document
+          .getElementById("refreshRentals")
+          .addEventListener("click", async () => {
+            await refreshItems();
+            renderRentalTab();
+            showAdminMessage("Daftar item sewa dimuat ulang.", "success");
+          });
+
+        document.querySelectorAll("[data-edit-rental]").forEach((button) => {
+          button.addEventListener("click", () => {
+            editingItem =
+              rentalItems().find(
+                (item) => item.id === button.dataset.editRental,
+              ) || null;
+
+            renderRentalTab();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+        });
+
+        document.querySelectorAll("[data-toggle-rental]").forEach((button) => {
+          button.addEventListener("click", () => {
+            toggleItem(button.dataset.toggleRental, "rental");
+          });
+        });
+
+        document.querySelectorAll("[data-delete-rental]").forEach((button) => {
+          button.addEventListener("click", () => {
+            deleteItem(button.dataset.deleteRental, "rental");
+          });
+        });
+      }
+
+      async function saveRental(event) {
+        event.preventDefault();
+
+        const form = event.currentTarget;
+        const values = Object.fromEntries(new FormData(form));
+        const formData = new FormData(form);
+        const button = document.getElementById("saveRentalButton");
+
+        const payload = {
+          title: String(values.title || "").trim(),
+          slug: slugify(values.slug),
+          type: "product",
+          description: String(values.description || "").trim(),
+          image_url: String(values.image_url || "").trim(),
+          price: Number(values.price || 0),
+          stock: Number(values.stock || 0),
+          location: null,
+          trip_date: null,
+          quota: null,
+          requires_guarantee: formData.has("requires_guarantee"),
+          guarantee_note: String(values.guarantee_note || "").trim() || null,
+          is_active: formData.has("is_active"),
+        };
+
+        if (!payload.slug) {
+          showAdminMessage("Slug item tidak valid.", "error");
+          return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Menyimpan...";
+
+        const query = editingItem
+          ? supabase
+              .from("items")
+              .update(payload)
+              .eq("id", editingItem.id)
+              .eq("type", "product")
+          : supabase.from("items").insert(payload);
+
+        const { error } = await query;
+
+        button.disabled = false;
+        button.textContent = editingItem
+          ? "Simpan Perubahan"
+          : "Tambah Sewa Item";
+
+        if (error) {
+          showAdminMessage(
+            error.code === "23505"
+              ? "Slug sudah digunakan. Gunakan slug lain."
+              : error.message,
+            "error",
+          );
+          return;
+        }
+
+        const wasEditing = Boolean(editingItem);
         editingItem = null;
-        renderRentalTab();
-      });
-
-      document.getElementById("refreshRentals").addEventListener("click", async () => {
         await refreshItems();
-        renderRentalTab();
-        showAdminMessage("Daftar item sewa dimuat ulang.", "success");
-      });
+        renderShell();
 
-      document.querySelectorAll("[data-edit-rental]").forEach(button => {
-        button.addEventListener("click", () => {
-          editingItem =
-            rentalItems().find(item => item.id === button.dataset.editRental) ||
-            null;
-
-          renderRentalTab();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-      });
-
-      document.querySelectorAll("[data-toggle-rental]").forEach(button => {
-        button.addEventListener("click", () => {
-          toggleItem(button.dataset.toggleRental, "rental");
-        });
-      });
-
-      document.querySelectorAll("[data-delete-rental]").forEach(button => {
-        button.addEventListener("click", () => {
-          deleteItem(button.dataset.deleteRental, "rental");
-        });
-      });
-    }
-
-    async function saveRental(event) {
-      event.preventDefault();
-
-      const form = event.currentTarget;
-      const values = Object.fromEntries(new FormData(form));
-      const formData = new FormData(form);
-      const button = document.getElementById("saveRentalButton");
-
-      const payload = {
-        title: String(values.title || "").trim(),
-        slug: slugify(values.slug),
-        type: "product",
-        description: String(values.description || "").trim(),
-        image_url: String(values.image_url || "").trim(),
-        price: Number(values.price || 0),
-        stock: Number(values.stock || 0),
-        location: null,
-        trip_date: null,
-        quota: null,
-        requires_guarantee: formData.has("requires_guarantee"),
-        guarantee_note:
-          String(values.guarantee_note || "").trim() || null,
-        is_active: formData.has("is_active")
-      };
-
-      if (!payload.slug) {
-        showAdminMessage("Slug item tidak valid.", "error");
-        return;
-      }
-
-      button.disabled = true;
-      button.textContent = "Menyimpan...";
-
-      const query = editingItem
-        ? supabase
-            .from("items")
-            .update(payload)
-            .eq("id", editingItem.id)
-            .eq("type", "product")
-        : supabase.from("items").insert(payload);
-
-      const { error } = await query;
-
-      button.disabled = false;
-      button.textContent =
-        editingItem ? "Simpan Perubahan" : "Tambah Sewa Item";
-
-      if (error) {
         showAdminMessage(
-          error.code === "23505"
-            ? "Slug sudah digunakan. Gunakan slug lain."
-            : error.message,
-          "error"
+          wasEditing
+            ? "Item sewa berhasil diperbarui."
+            : "Item sewa berhasil ditambahkan.",
+          "success",
         );
-        return;
       }
 
-      const wasEditing = Boolean(editingItem);
-      editingItem = null;
-      await refreshItems();
-      renderShell();
+      function renderTripTab() {
+        const content = document.getElementById("adminContent");
+        const trips = tripItems();
 
-      showAdminMessage(
-        wasEditing
-          ? "Item sewa berhasil diperbarui."
-          : "Item sewa berhasil ditambahkan.",
-        "success"
-      );
-    }
+        const item = editingItem || {
+          title: "",
+          slug: "",
+          description: "",
+          image_url: "",
+          price: 0,
+          location: "",
+          trip_date: "",
+          quota: 0,
+          requires_guarantee: false,
+          guarantee_note: "",
+          is_active: true,
+        };
 
-    function renderTripTab() {
-      const content = document.getElementById("adminContent");
-      const trips = tripItems();
-
-      const item = editingItem || {
-        title: "",
-        slug: "",
-        description: "",
-        image_url: "",
-        price: 0,
-        location: "",
-        trip_date: "",
-        quota: 0,
-        requires_guarantee: false,
-        guarantee_note: "",
-        is_active: true
-      };
-
-      content.innerHTML = `
+        content.innerHTML = `
         <div class="admin-catalog-layout">
           <section class="card admin-editor-card">
             <div class="admin-editor-heading">
@@ -757,11 +1212,15 @@
                 </p>
               </div>
 
-              ${editingItem ? `
+              ${
+                editingItem
+                  ? `
                 <button id="cancelTripEdit" class="btn secondary small" type="button">
                   Batal
                 </button>
-              ` : ""}
+              `
+                  : ""
+              }
             </div>
 
             <form id="tripForm" class="form">
@@ -891,18 +1350,21 @@
             </div>
 
             <div class="admin-catalog-list">
-              ${trips.map(renderTripCard).join("") || `
+              ${
+                trips.map(renderTripCard).join("") ||
+                `
                 <div class="notice">Belum ada open trip.</div>
-              `}
+              `
+              }
             </div>
           </section>
         </div>`;
 
-      bindTripEvents();
-    }
+        bindTripEvents();
+      }
 
-    function renderTripCard(item) {
-      return `
+      function renderTripCard(item) {
+        return `
         <article class="card admin-rental-card">
           <img src="${esc(item.image_url)}" alt="${esc(item.title)}">
 
@@ -923,10 +1385,14 @@
             </div>
 
             <p class="admin-rental-guarantee">
-              📅 ${item.trip_date
-                ? new Date(item.trip_date + "T00:00:00")
-                    .toLocaleDateString("id-ID", { dateStyle: "long" })
-                : "-"}
+              📅 ${
+                item.trip_date
+                  ? new Date(item.trip_date + "T00:00:00").toLocaleDateString(
+                      "id-ID",
+                      { dateStyle: "long" },
+                    )
+                  : "-"
+              }
             </p>
 
             <div class="actions">
@@ -956,187 +1422,193 @@
             </div>
           </div>
         </article>`;
-    }
+      }
 
-    function bindTripEvents() {
-      const form = document.getElementById("tripForm");
-      const title = document.getElementById("tripTitle");
-      const slug = document.getElementById("tripSlug");
-      let slugEdited = Boolean(editingItem?.slug);
+      function bindTripEvents() {
+        const form = document.getElementById("tripForm");
+        const title = document.getElementById("tripTitle");
+        const slug = document.getElementById("tripSlug");
+        let slugEdited = Boolean(editingItem?.slug);
 
-      title.addEventListener("input", () => {
-        if (!slugEdited) slug.value = slugify(title.value);
-      });
+        title.addEventListener("input", () => {
+          if (!slugEdited) slug.value = slugify(title.value);
+        });
 
-      slug.addEventListener("input", () => {
-        slugEdited = true;
-        slug.value = slugify(slug.value);
-      });
+        slug.addEventListener("input", () => {
+          slugEdited = true;
+          slug.value = slugify(slug.value);
+        });
 
-      form.addEventListener("submit", saveTrip);
+        form.addEventListener("submit", saveTrip);
 
-      document.getElementById("cancelTripEdit")?.addEventListener("click", () => {
+        document
+          .getElementById("cancelTripEdit")
+          ?.addEventListener("click", () => {
+            editingItem = null;
+            renderTripTab();
+          });
+
+        document.querySelectorAll("[data-edit-trip]").forEach((button) => {
+          button.addEventListener("click", () => {
+            editingItem =
+              tripItems().find((item) => item.id === button.dataset.editTrip) ||
+              null;
+
+            renderTripTab();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+        });
+
+        document.querySelectorAll("[data-toggle-trip]").forEach((button) => {
+          button.addEventListener("click", () => {
+            toggleItem(button.dataset.toggleTrip, "trip");
+          });
+        });
+
+        document.querySelectorAll("[data-delete-trip]").forEach((button) => {
+          button.addEventListener("click", () => {
+            deleteItem(button.dataset.deleteTrip, "trip");
+          });
+        });
+      }
+
+      async function saveTrip(event) {
+        event.preventDefault();
+
+        const form = event.currentTarget;
+        const values = Object.fromEntries(new FormData(form));
+        const formData = new FormData(form);
+        const button = document.getElementById("saveTripButton");
+
+        const payload = {
+          title: String(values.title || "").trim(),
+          slug: slugify(values.slug),
+          type: "trip",
+          description: String(values.description || "").trim(),
+          image_url: String(values.image_url || "").trim(),
+          price: Number(values.price || 0),
+          stock: 0,
+          location: String(values.location || "").trim(),
+          trip_date: values.trip_date || null,
+          quota: Number(values.quota || 0),
+          requires_guarantee: false,
+          guarantee_note: null,
+          is_active: formData.has("is_active"),
+        };
+
+        button.disabled = true;
+        button.textContent = "Menyimpan...";
+
+        const query = editingItem
+          ? supabase
+              .from("items")
+              .update(payload)
+              .eq("id", editingItem.id)
+              .eq("type", "trip")
+          : supabase.from("items").insert(payload);
+
+        const { error } = await query;
+
+        button.disabled = false;
+        button.textContent = editingItem
+          ? "Simpan Perubahan"
+          : "Tambah Open Trip";
+
+        if (error) {
+          showAdminMessage(
+            error.code === "23505"
+              ? "Slug sudah digunakan. Gunakan slug lain."
+              : error.message,
+            "error",
+          );
+          return;
+        }
+
         editingItem = null;
-        renderTripTab();
-      });
+        await refreshItems();
+        renderShell();
+        showAdminMessage("Open trip berhasil disimpan.", "success");
+      }
 
-      document.querySelectorAll("[data-edit-trip]").forEach(button => {
-        button.addEventListener("click", () => {
-          editingItem =
-            tripItems().find(item => item.id === button.dataset.editTrip) ||
-            null;
+      async function toggleItem(id, expectedType) {
+        const item = items.find((entry) => entry.id === id);
+        if (
+          !item ||
+          item.type !== (expectedType === "rental" ? "product" : "trip")
+        ) {
+          return;
+        }
 
-          renderTripTab();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-      });
+        const { error } = await supabase
+          .from("items")
+          .update({ is_active: !item.is_active })
+          .eq("id", id);
 
-      document.querySelectorAll("[data-toggle-trip]").forEach(button => {
-        button.addEventListener("click", () => {
-          toggleItem(button.dataset.toggleTrip, "trip");
-        });
-      });
+        if (error) {
+          showAdminMessage(error.message, "error");
+          return;
+        }
 
-      document.querySelectorAll("[data-delete-trip]").forEach(button => {
-        button.addEventListener("click", () => {
-          deleteItem(button.dataset.deleteTrip, "trip");
-        });
-      });
-    }
-
-    async function saveTrip(event) {
-      event.preventDefault();
-
-      const form = event.currentTarget;
-      const values = Object.fromEntries(new FormData(form));
-      const formData = new FormData(form);
-      const button = document.getElementById("saveTripButton");
-
-      const payload = {
-        title: String(values.title || "").trim(),
-        slug: slugify(values.slug),
-        type: "trip",
-        description: String(values.description || "").trim(),
-        image_url: String(values.image_url || "").trim(),
-        price: Number(values.price || 0),
-        stock: 0,
-        location: String(values.location || "").trim(),
-        trip_date: values.trip_date || null,
-        quota: Number(values.quota || 0),
-        requires_guarantee: false,
-        guarantee_note: null,
-        is_active: formData.has("is_active")
-      };
-
-      button.disabled = true;
-      button.textContent = "Menyimpan...";
-
-      const query = editingItem
-        ? supabase
-            .from("items")
-            .update(payload)
-            .eq("id", editingItem.id)
-            .eq("type", "trip")
-        : supabase.from("items").insert(payload);
-
-      const { error } = await query;
-
-      button.disabled = false;
-      button.textContent =
-        editingItem ? "Simpan Perubahan" : "Tambah Open Trip";
-
-      if (error) {
+        await refreshItems();
+        renderActiveTab();
         showAdminMessage(
-          error.code === "23505"
-            ? "Slug sudah digunakan. Gunakan slug lain."
-            : error.message,
-          "error"
+          `Item berhasil ${item.is_active ? "dinonaktifkan" : "diaktifkan"}.`,
+          "success",
         );
-        return;
       }
 
-      editingItem = null;
-      await refreshItems();
-      renderShell();
-      showAdminMessage("Open trip berhasil disimpan.", "success");
-    }
+      async function deleteItem(id, expectedType) {
+        const expectedDatabaseType =
+          expectedType === "rental" ? "product" : "trip";
 
-    async function toggleItem(id, expectedType) {
-      const item = items.find(entry => entry.id === id);
-      if (!item || item.type !== (expectedType === "rental" ? "product" : "trip")) {
-        return;
-      }
+        const item = items.find((entry) => entry.id === id);
 
-      const { error } = await supabase
-        .from("items")
-        .update({ is_active: !item.is_active })
-        .eq("id", id);
+        if (!item || item.type !== expectedDatabaseType) return;
 
-      if (error) {
-        showAdminMessage(error.message, "error");
-        return;
-      }
-
-      await refreshItems();
-      renderActiveTab();
-      showAdminMessage(
-        `Item berhasil ${item.is_active ? "dinonaktifkan" : "diaktifkan"}.`,
-        "success"
-      );
-    }
-
-    async function deleteItem(id, expectedType) {
-      const expectedDatabaseType =
-        expectedType === "rental" ? "product" : "trip";
-
-      const item = items.find(entry => entry.id === id);
-
-      if (!item || item.type !== expectedDatabaseType) return;
-
-      const confirmed = confirm(
-        `Hapus "${item.title}"?\n\n` +
-        "Jika item pernah dipesan, database mungkin menolak penghapusan. " +
-        "Gunakan Nonaktifkan untuk menyembunyikannya tanpa menghapus riwayat."
-      );
-
-      if (!confirmed) return;
-
-      const { error } = await supabase
-        .from("items")
-        .delete()
-        .eq("id", id)
-        .eq("type", expectedDatabaseType);
-
-      if (error) {
-        showAdminMessage(
-          error.code === "23503"
-            ? "Item sudah terhubung ke pesanan dan tidak dapat dihapus. Gunakan tombol Nonaktifkan."
-            : error.message,
-          "error"
+        const confirmed = confirm(
+          `Hapus "${item.title}"?\n\n` +
+            "Jika item pernah dipesan, database mungkin menolak penghapusan. " +
+            "Gunakan Nonaktifkan untuk menyembunyikannya tanpa menghapus riwayat.",
         );
-        return;
+
+        if (!confirmed) return;
+
+        const { error } = await supabase
+          .from("items")
+          .delete()
+          .eq("id", id)
+          .eq("type", expectedDatabaseType);
+
+        if (error) {
+          showAdminMessage(
+            error.code === "23503"
+              ? "Item sudah terhubung ke pesanan dan tidak dapat dihapus. Gunakan tombol Nonaktifkan."
+              : error.message,
+            "error",
+          );
+          return;
+        }
+
+        editingItem = null;
+        await refreshItems();
+        renderActiveTab();
+        showAdminMessage("Item berhasil dihapus.", "success");
       }
 
-      editingItem = null;
-      await refreshItems();
-      renderActiveTab();
-      showAdminMessage("Item berhasil dihapus.", "success");
-    }
+      async function refreshItems() {
+        const { data, error } = await supabase
+          .from("items")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-    async function refreshItems() {
-      const { data, error } = await supabase
-        .from("items")
-        .select("*")
-        .order("created_at", { ascending: false });
+        if (error) throw error;
+        items = data || [];
+      }
 
-      if (error) throw error;
-      items = data || [];
-    }
+      function renderOrdersTab() {
+        const content = document.getElementById("adminContent");
 
-    function renderOrdersTab() {
-      const content = document.getElementById("adminContent");
-
-      content.innerHTML = `
+        content.innerHTML = `
         <div class="admin-list-heading">
           <div>
             <h3>Pesanan Pelanggan</h3>
@@ -1149,26 +1621,51 @@
         </div>
 
         <div class="orders">
-          ${orders.map(renderOrder).join("") || `
+          ${
+            orders.map(renderOrder).join("") ||
+            `
             <div class="notice">Belum ada pesanan.</div>
-          `}
+          `
+          }
         </div>`;
 
-      document.getElementById("refreshOrders").addEventListener(
-        "click",
-        refreshOrders
-      );
+        document
+          .getElementById("refreshOrders")
+          .addEventListener("click", refreshOrders);
 
-      document.querySelectorAll("[data-save-order]").forEach(button => {
-        button.addEventListener("click", () => {
-          saveOrderStatus(button.dataset.saveOrder);
+        document.querySelectorAll("[data-save-order]").forEach((button) => {
+          button.addEventListener("click", () => {
+            saveOrderStatus(button.dataset.saveOrder);
+          });
+          document
+            .querySelectorAll("[data-payment-action]")
+            .forEach((button) => {
+              button.addEventListener("click", () =>
+                runAdminPaymentAction(
+                  button.dataset.paymentAction,
+                  button.dataset.paymentId,
+                  button.dataset.orderId,
+                ),
+              );
+            });
         });
-      });
-    }
+      }
 
-    function renderOrder(order) {
-      return `
-        <details class="card admin-order-compact">
+      function renderOrder(order) {
+        const payment = [...(order.payment_transactions || [])].sort((a, b) =>
+          String(b.created_at).localeCompare(String(a.created_at)),
+        )[0];
+        const paymentLabels = {
+          unpaid: "Belum Dibayar",
+          pending: "Menunggu Pembayaran",
+          paid: "Dibayar",
+          expired: "Kedaluwarsa",
+          cancelled: "Dibatalkan",
+          refunded: "Refund",
+          failed: "Gagal",
+        };
+        return `
+        <details class="card admin-order-compact" data-order-id="${order.id}">
           <summary>
             <div>
               <span class="status">${statusLabels[order.status] || esc(order.status)}</span>
@@ -1181,6 +1678,50 @@
           </summary>
 
           <div class="admin-order-details">
+            <div class="admin-payment-box">
+              <div>
+                <b>💳 Pembayaran BTZPay</b><br>
+                <span>${paymentLabels[payment?.status || order.payment_status] || esc(payment?.status || order.payment_status || "Belum dibuat")}</span>
+                ${payment ? `<small>${esc(payment.gateway_transaction_id)} · ${rupiah(payment.total_amount)}</small>` : ""}
+              </div>
+              <div class="actions">
+                ${
+                  payment?.status === "pending"
+                    ? `
+                  <button class="btn secondary small" data-payment-action="check" data-payment-id="${payment.id}" data-order-id="${order.id}" type="button">Cek</button>
+                  <button class="btn danger small" data-payment-action="cancel" data-payment-id="${payment.id}" data-order-id="${order.id}" type="button">Batalkan</button>
+                `
+                    : ""
+                }
+                ${
+                  !payment ||
+                  ["expired", "cancelled", "failed"].includes(payment.status)
+                    ? `
+                  <button class="btn small" data-payment-action="recreate" data-payment-id="${payment?.id || ""}" data-order-id="${order.id}" type="button">Buat Ulang</button>
+                `
+                    : ""
+                }
+                ${
+                  payment?.status === "paid"
+                    ? `
+                  <button class="btn danger small" data-payment-action="refund_mark" data-payment-id="${payment.id}" data-order-id="${order.id}" type="button">Tandai Refund</button>
+                `
+                    : ""
+                }
+              </div>
+            </div>
+            ${
+              order.rental_start
+                ? `
+              <div class="notice rental-order-period">
+                <b>📅 Periode sewa</b><br>
+                ${esc(formatRentalDate(order.rental_start))} —
+                ${esc(formatRentalDate(order.rental_end))}
+                (${Number(order.rental_days || 1)} hari)
+              </div>
+            `
+                : ""
+            }
             <div class="data-grid">
               <div class="data"><b>Nama</b><br>${esc(order.customer_name)}</div>
               <div class="data"><b>HP</b><br>${esc(order.phone)}</div>
@@ -1188,23 +1729,31 @@
               <div class="data"><b>Jaminan</b><br>${esc(order.guarantee_type || "-")}</div>
             </div>
 
-            ${(order.order_items || []).map(line => `
+            ${(order.order_items || [])
+              .map(
+                (line) => `
               <div class="order-line">
                 <span>${esc(line.title_snapshot)} × ${line.quantity}</span>
                 <b>${rupiah(line.line_total)}</b>
               </div>
-            `).join("")}
+            `,
+              )
+              .join("")}
 
             <div class="two" style="margin-top:14px">
               <select id="status-${order.id}" class="input">
-                ${Object.entries(statusLabels).map(([value, label]) => `
+                ${Object.entries(statusLabels)
+                  .map(
+                    ([value, label]) => `
                   <option
                     value="${value}"
                     ${order.status === value ? "selected" : ""}
                   >
                     ${label}
                   </option>
-                `).join("")}
+                `,
+                  )
+                  .join("")}
               </select>
 
               <input
@@ -1225,74 +1774,97 @@
             </button>
           </div>
         </details>`;
-    }
-
-    async function refreshOrders() {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*,order_items(*)")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        showAdminMessage(error.message, "error");
-        return;
       }
 
-      orders = data || [];
-      renderOrdersTab();
-      showAdminMessage("Daftar pesanan dimuat ulang.", "success");
-    }
+      async function refreshOrders() {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*,order_items(*),payment_transactions(*)")
+          .order("created_at", { ascending: false });
 
-    async function saveOrderStatus(id) {
-      const status = document.getElementById(`status-${id}`).value;
-      const notes =
-        document.getElementById(`note-${id}`).value.trim() || null;
+        if (error) {
+          showAdminMessage(error.message, "error");
+          return;
+        }
 
-      const { error } = await supabase.rpc("admin_update_order_status", {
-        p_order_id: id,
-        p_status: status,
-        p_admin_notes: notes
-      });
-
-      if (error) {
-        showAdminMessage(error.message, "error");
-        return;
+        orders = data || [];
+        renderOrdersTab();
+        showAdminMessage("Daftar pesanan dimuat ulang.", "success");
       }
 
-      await refreshOrders();
-      showAdminMessage("Status pesanan berhasil diperbarui.", "success");
-    }
+      async function saveOrderStatus(id) {
+        const status = document.getElementById(`status-${id}`).value;
+        const notes =
+          document.getElementById(`note-${id}`).value.trim() || null;
 
+        const { error } = await supabase.rpc("admin_update_order_status", {
+          p_order_id: id,
+          p_status: status,
+          p_admin_notes: notes,
+        });
 
-async function renderAdministratorsTab() {
-  const content = document.getElementById("adminContent");
+        if (error) {
+          showAdminMessage(error.message, "error");
+          return;
+        }
 
-  content.innerHTML = `
+        await refreshOrders();
+        showAdminMessage("Status pesanan berhasil diperbarui.", "success");
+      }
+
+      async function runAdminPaymentAction(action, paymentId, orderId) {
+        const confirmations = {
+          cancel: "Batalkan transaksi pembayaran ini?",
+          refund_mark:
+            "Tandai pembayaran sebagai refund? Pastikan pengembalian dana sudah dilakukan melalui kanal yang sesuai.",
+        };
+        if (confirmations[action] && !confirm(confirmations[action])) return;
+        const body = { action, payment_id: paymentId, order_id: orderId };
+        if (action === "refund_mark")
+          body.reason = "Refund dicatat administrator";
+        const { data, error } = await supabase.functions.invoke("btzpay", {
+          body,
+        });
+        if (error || !data?.success) {
+          showAdminMessage(
+            data?.error || error?.message || "Operasi pembayaran gagal.",
+            "error",
+          );
+          return;
+        }
+        await refreshOrders();
+        showAdminMessage("Data pembayaran berhasil diperbarui.", "success");
+      }
+
+      async function renderAdministratorsTab() {
+        const content = document.getElementById("adminContent");
+
+        content.innerHTML = `
     <div class="notice">
       Memuat daftar administrator...
     </div>`;
 
-  const { data, error } = await supabase.rpc("list_admin_users");
+        const { data, error } = await supabase.rpc("list_admin_users");
 
-  if (error) {
-    content.innerHTML = `
+        if (error) {
+          content.innerHTML = `
       <div class="notice error">
         Fitur pengelolaan admin belum aktif di database.<br><br>
         Jalankan file <b>admin-management.sql</b> melalui
         Supabase SQL Editor, lalu muat ulang halaman.
         <br><small>${esc(error.message)}</small>
       </div>`;
-    return;
-  }
+          return;
+        }
 
-  administrators = data || [];
-  renderAdministratorContent();
-}
+        administrators = data || [];
+        renderAdministratorContent();
+      }
 
-function renderAdministratorContent() {
-  const content = document.getElementById("adminContent");
+      function renderAdministratorContent() {
+        const content = document.getElementById("adminContent");
 
-  content.innerHTML = `
+        content.innerHTML = `
     <div class="admin-user-layout">
       <section class="card admin-editor-card admin-add-user-card">
         <div class="admin-editor-heading">
@@ -1360,43 +1932,46 @@ function renderAdministratorContent() {
         </div>
 
         <div class="admin-user-list">
-          ${administrators.map(renderAdministratorCard).join("") || `
+          ${
+            administrators.map(renderAdministratorCard).join("") ||
+            `
             <div class="notice">
               Belum ada administrator yang dapat ditampilkan.
             </div>
-          `}
+          `
+          }
         </div>
       </section>
     </div>`;
 
-  document
-    .getElementById("addAdministratorForm")
-    .addEventListener("submit", addAdministrator);
+        document
+          .getElementById("addAdministratorForm")
+          .addEventListener("submit", addAdministrator);
 
-  document
-    .getElementById("refreshAdministrators")
-    .addEventListener("click", async () => {
-      await reloadAdministrators();
-      showAdminMessage("Daftar administrator dimuat ulang.", "success");
-    });
+        document
+          .getElementById("refreshAdministrators")
+          .addEventListener("click", async () => {
+            await reloadAdministrators();
+            showAdminMessage("Daftar administrator dimuat ulang.", "success");
+          });
 
-  document.querySelectorAll("[data-remove-admin]").forEach(button => {
-    button.addEventListener("click", () => {
-      removeAdministrator(button.dataset.removeAdmin);
-    });
-  });
-}
+        document.querySelectorAll("[data-remove-admin]").forEach((button) => {
+          button.addEventListener("click", () => {
+            removeAdministrator(button.dataset.removeAdmin);
+          });
+        });
+      }
 
-function renderAdministratorCard(administrator) {
-  const isCurrent =
-    String(administrator.user_id) === String(currentAdminUserId);
+      function renderAdministratorCard(administrator) {
+        const isCurrent =
+          String(administrator.user_id) === String(currentAdminUserId);
 
-  const displayName =
-    administrator.full_name?.trim() ||
-    administrator.email?.split("@")[0] ||
-    "Administrator";
+        const displayName =
+          administrator.full_name?.trim() ||
+          administrator.email?.split("@")[0] ||
+          "Administrator";
 
-  return `
+        return `
     <article class="card admin-user-card">
       <div class="admin-user-avatar" aria-hidden="true">
         ${esc(displayName.slice(0, 1).toUpperCase())}
@@ -1411,8 +1986,9 @@ function renderAdministratorCard(administrator) {
         <span>${esc(administrator.email || "-")}</span>
         <small>
           Admin sejak
-          ${new Date(administrator.admin_since || administrator.created_at)
-            .toLocaleDateString("id-ID", { dateStyle: "medium" })}
+          ${new Date(
+            administrator.admin_since || administrator.created_at,
+          ).toLocaleDateString("id-ID", { dateStyle: "medium" })}
         </small>
       </div>
 
@@ -1421,137 +1997,145 @@ function renderAdministratorCard(administrator) {
         type="button"
         data-remove-admin="${administrator.user_id}"
         ${isCurrent ? "disabled" : ""}
-        title="${isCurrent
-          ? "Anda tidak dapat mencabut akses akun sendiri"
-          : "Cabut akses administrator"}"
+        title="${
+          isCurrent
+            ? "Anda tidak dapat mencabut akses akun sendiri"
+            : "Cabut akses administrator"
+        }"
       >
         Cabut Akses
       </button>
     </article>`;
-}
+      }
 
-async function addAdministrator(event) {
-  event.preventDefault();
+      async function addAdministrator(event) {
+        event.preventDefault();
 
-  const form = event.currentTarget;
-  const values = Object.fromEntries(new FormData(form));
-  const email = String(values.email || "").trim().toLowerCase();
-  const fullName = String(values.full_name || "").trim() || null;
-  const button = document.getElementById("addAdministratorButton");
+        const form = event.currentTarget;
+        const values = Object.fromEntries(new FormData(form));
+        const email = String(values.email || "")
+          .trim()
+          .toLowerCase();
+        const fullName = String(values.full_name || "").trim() || null;
+        const button = document.getElementById("addAdministratorButton");
 
-  if (!email) {
-    showAdminMessage("Masukkan email pengguna.", "error");
-    return;
-  }
+        if (!email) {
+          showAdminMessage("Masukkan email pengguna.", "error");
+          return;
+        }
 
-  button.disabled = true;
-  button.textContent = "Menambahkan...";
+        button.disabled = true;
+        button.textContent = "Menambahkan...";
 
-  const { error } = await supabase.rpc("add_admin_by_email", {
-    p_email: email,
-    p_full_name: fullName
-  });
+        const { error } = await supabase.rpc("add_admin_by_email", {
+          p_email: email,
+          p_full_name: fullName,
+        });
 
-  button.disabled = false;
-  button.textContent = "Tambahkan sebagai Admin";
+        button.disabled = false;
+        button.textContent = "Tambahkan sebagai Admin";
 
-  if (error) {
-    showAdminMessage(error.message, "error");
-    return;
-  }
+        if (error) {
+          showAdminMessage(error.message, "error");
+          return;
+        }
 
-  form.reset();
-  await reloadAdministrators();
-  showAdminMessage(
-    `${email} berhasil mendapatkan akses administrator.`,
-    "success"
-  );
-}
+        form.reset();
+        await reloadAdministrators();
+        showAdminMessage(
+          `${email} berhasil mendapatkan akses administrator.`,
+          "success",
+        );
+      }
 
-async function removeAdministrator(userId) {
-  const administrator = administrators.find(
-    entry => String(entry.user_id) === String(userId)
-  );
+      async function removeAdministrator(userId) {
+        const administrator = administrators.find(
+          (entry) => String(entry.user_id) === String(userId),
+        );
 
-  if (!administrator) return;
+        if (!administrator) return;
 
-  const confirmed = confirm(
-    `Cabut akses admin dari ${administrator.email}?\n\n` +
-    "Akun pengguna tidak akan dihapus. Role-nya akan kembali menjadi user."
-  );
+        const confirmed = confirm(
+          `Cabut akses admin dari ${administrator.email}?\n\n` +
+            "Akun pengguna tidak akan dihapus. Role-nya akan kembali menjadi user.",
+        );
 
-  if (!confirmed) return;
+        if (!confirmed) return;
 
-  const { error } = await supabase.rpc("remove_admin_access", {
-    p_user_id: userId
-  });
+        const { error } = await supabase.rpc("remove_admin_access", {
+          p_user_id: userId,
+        });
 
-  if (error) {
-    showAdminMessage(error.message, "error");
-    return;
-  }
+        if (error) {
+          showAdminMessage(error.message, "error");
+          return;
+        }
 
-  await reloadAdministrators();
-  showAdminMessage(
-    `Akses admin ${administrator.email} berhasil dicabut.`,
-    "success"
-  );
-}
+        await reloadAdministrators();
+        showAdminMessage(
+          `Akses admin ${administrator.email} berhasil dicabut.`,
+          "success",
+        );
+      }
 
-async function reloadAdministrators() {
-  const { data, error } = await supabase.rpc("list_admin_users");
+      async function reloadAdministrators() {
+        const { data, error } = await supabase.rpc("list_admin_users");
 
-  if (error) throw error;
+        if (error) throw error;
 
-  administrators = data || [];
-  renderAdministratorContent();
-}
+        administrators = data || [];
+        renderAdministratorContent();
+      }
 
-    function showAdminMessage(text, type = "") {
-      const box = document.getElementById("adminMessage");
-      if (!box) return;
-      message(box, text, type);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+      function showAdminMessage(text, type = "") {
+        const box = document.getElementById("adminMessage");
+        if (!box) return;
+        message(box, text, type);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
 
-    async function initialize() {
-      try {
-        const allowed = await verifyAdmin();
-        if (!allowed) return;
+      async function initialize() {
+        try {
+          const allowed = await verifyAdmin();
+          if (!allowed) return;
 
-        await loadAllData();
-        renderShell();
-      } catch (error) {
-        root.innerHTML = `
+          await loadAllData();
+          renderShell();
+        } catch (error) {
+          root.innerHTML = `
           <section class="container section">
             <div class="notice error">
               ${esc(error.message || "Admin panel gagal dimuat.")}
             </div>
           </section>`;
+        }
       }
-    }
 
-    initialize();
-  </script>
-<a
-  class="customer-service-float"
-  href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan."
-  target="_blank"
-  rel="noopener noreferrer"
-  aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp"
-  title="Hubungi CS: +62 895-0934-9428"
->
-  <span class="customer-service-icon" aria-hidden="true">
-    <svg viewBox="0 0 24 24">
-      <path d="M21 11.5a8.5 8.5 0 0 1-12.55 7.47L3 20.5l1.53-5.3A8.5 8.5 0 1 1 21 11.5Z"></path>
-      <path d="M8.3 7.8c.25-.25.7-.2.88.1l1.05 1.72c.14.24.11.54-.08.74l-.62.64a8.1 8.1 0 0 0 3.47 3.47l.64-.62c.2-.19.5-.22.74-.08l1.72 1.05c.3.18.35.63.1.88l-.75.75c-.65.65-1.62.86-2.48.55a10.7 10.7 0 0 1-5.97-5.97c-.31-.86-.1-1.83.55-2.48l.75-.75Z"></path>
-    </svg>
-  </span>
+      initialize();
+    </script>
+    <a
+      class="customer-service-float"
+      href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan."
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp"
+      title="Hubungi CS: +62 895-0934-9428"
+    >
+      <span class="customer-service-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M21 11.5a8.5 8.5 0 0 1-12.55 7.47L3 20.5l1.53-5.3A8.5 8.5 0 1 1 21 11.5Z"
+          ></path>
+          <path
+            d="M8.3 7.8c.25-.25.7-.2.88.1l1.05 1.72c.14.24.11.54-.08.74l-.62.64a8.1 8.1 0 0 0 3.47 3.47l.64-.62c.2-.19.5-.22.74-.08l1.72 1.05c.3.18.35.63.1.88l-.75.75c-.65.65-1.62.86-2.48.55a10.7 10.7 0 0 1-5.97-5.97c-.31-.86-.1-1.83.55-2.48l.75-.75Z"
+          ></path>
+        </svg>
+      </span>
 
-  <span class="customer-service-copy">
-    <strong>Hubungi CS</strong>
-    <small>WhatsApp</small>
-  </span>
-</a>
-</body>
+      <span class="customer-service-copy">
+        <strong>Hubungi CS</strong>
+        <small>WhatsApp</small>
+      </span>
+    </a>
+  </body>
 </html>
