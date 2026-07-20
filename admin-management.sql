@@ -1,6 +1,12 @@
 -- AbidzarOutdoorcamp - Pengelolaan akun administrator
 -- Jalankan setelah backup.txt.
 
+-- Kompatibilitas untuk database versi lama.
+alter table public.profiles
+  add column if not exists created_at timestamptz not null default now();
+alter table public.profiles
+  add column if not exists updated_at timestamptz not null default now();
+
 -- Versi lama mungkin memiliki susunan kolom return berbeda dan tidak dapat
 -- diganti dengan CREATE OR REPLACE. Hapus signature lama lebih dulu.
 drop function if exists public.list_admin_users();

@@ -223,6 +223,9 @@
       let orderStatusFilter = "all";
       let orderDateFrom = "";
       let orderDateTo = "";
+      let customers = [];
+      let adminRatings = [];
+      let customerNotifications = [];
       let siteSettings = { ...DEFAULT_SITE_SETTINGS };
 
       function slugify(value) {
@@ -285,7 +288,7 @@
       }
 
       async function loadAllData() {
-        const [itemResult, categoryResult, orderResult, loadedSettings] =
+        let [itemResult, categoryResult, orderResult, loadedSettings] =
           await Promise.all([
             supabase
               .from("items")
@@ -308,6 +311,18 @@
 
             loadSiteSettings(),
           ]);
+
+        if (
+          orderResult.error &&
+          String(orderResult.error.message || "").includes(
+            "order_status_history",
+          )
+        ) {
+          orderResult = await supabase
+            .from("orders")
+            .select("*,order_items(*),payment_transactions(*)")
+            .order("created_at", { ascending: false });
+        }
 
         if (itemResult.error) throw itemResult.error;
         if (categoryResult.error) throw categoryResult.error;
@@ -399,6 +414,30 @@
             </button>
 
             <button
+              class="admin-tab ${activeTab === "customers" ? "active" : ""}"
+              data-admin-tab="customers"
+              type="button"
+            >
+              👤 Pelanggan
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "reviews" ? "active" : ""}"
+              data-admin-tab="reviews"
+              type="button"
+            >
+              ⭐ Ulasan
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "notifications" ? "active" : ""}"
+              data-admin-tab="notifications"
+              type="button"
+            >
+              📣 Notifikasi
+            </button>
+
+            <button
               class="admin-tab ${activeTab === "administrators" ? "active" : ""}"
               data-admin-tab="administrators"
               type="button"
@@ -432,6 +471,9 @@
         else if (activeTab === "settings") renderSettingsTab();
         else if (activeTab === "schedule") renderRentalScheduleTab();
         else if (activeTab === "payment_logs") renderPaymentLogsTab();
+        else if (activeTab === "customers") renderCustomersTab();
+        else if (activeTab === "reviews") renderReviewsTab();
+        else if (activeTab === "notifications") renderNotificationsTab();
         else renderAdministratorsTab();
       }
 
@@ -2971,12 +3013,24 @@
       }
 
       async function refreshOrders() {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from("orders")
           .select(
             "*,order_items(*),payment_transactions(*),order_status_history(*),order_refunds(*),order_returns(*)",
           )
           .order("created_at", { ascending: false });
+
+        if (
+          error &&
+          String(error.message || "").includes("order_status_history")
+        ) {
+          const fallback = await supabase
+            .from("orders")
+            .select("*,order_items(*),payment_transactions(*)")
+            .order("created_at", { ascending: false });
+          data = fallback.data;
+          error = fallback.error;
+        }
 
         if (error) {
           showAdminMessage(error.message, "error");
@@ -3177,6 +3231,153 @@
         }
         await refreshOrders();
         showAdminMessage("Data pembayaran berhasil diperbarui.", "success");
+      }
+
+      async function renderCustomersTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = '<div class="notice">Memuat pelanggan...</div>';
+        const { data, error } = await supabase.rpc("list_customer_summaries");
+        if (error)
+          return (content.innerHTML = `<div class="notice error">${esc(error.message)}<br><small>Jalankan customer-review-notification.sql.</small></div>`);
+        customers = data || [];
+        content.innerHTML = `<div class="admin-list-heading"><div><h3>Data Pelanggan</h3><p class="muted">${customers.length} pelanggan · pelanggan langganan ditandai dari jumlah transaksi.</p></div></div><div class="customer-admin-grid">${
+          customers
+            .map((customer) => {
+              const history = orders.filter(
+                (order) => order.user_id === customer.user_id,
+              );
+              const loyal =
+                Number(customer.total_orders) >= 3 ||
+                Number(customer.total_spent) >= 1000000;
+              return `<details class="card customer-admin-card"><summary><div><strong>${esc(customer.full_name || customer.email)}</strong><small>${esc(customer.email)} · ${esc(customer.phone || "Belum ada HP")}</small></div><div class="customer-badges">${loyal ? '<span class="badge">Langganan</span>' : ""}${customer.is_verified ? '<span class="admin-active">Terverifikasi</span>' : '<span class="admin-inactive">Belum verifikasi</span>'}${customer.is_blocked ? '<span class="status-danger">Diblokir</span>' : ""}</div></summary><div class="customer-detail"><div class="data-grid"><div class="data"><b>Total pesanan</b><br>${customer.total_orders}</div><div class="data"><b>Total transaksi</b><br>${rupiah(customer.total_spent)}</div><div class="data"><b>Pembatalan</b><br>${customer.cancelled_orders}</div><div class="data"><b>Terakhir transaksi</b><br>${customer.last_order_at ? new Date(customer.last_order_at).toLocaleString("id-ID") : "-"}</div></div><label class="admin-check"><input type="checkbox" data-customer-verified="${customer.user_id}" ${customer.is_verified ? "checked" : ""}><span>Pelanggan terverifikasi</span></label><label class="admin-check"><input type="checkbox" data-customer-blocked="${customer.user_id}" ${customer.is_blocked ? "checked" : ""}><span>Blokir pelanggan</span></label><label class="field"><span>Alasan blokir</span><input class="input" data-customer-reason="${customer.user_id}" value="${esc(customer.blocked_reason || "")}"></label><label class="field"><span>Catatan internal</span><textarea class="input" data-customer-notes="${customer.user_id}">${esc(customer.internal_notes || "")}</textarea></label><button class="btn small" data-save-customer="${customer.user_id}" type="button">Simpan Pelanggan</button><section class="order-subsection"><h4>Riwayat transaksi & pembatalan</h4>${history.map((order) => `<div class="order-line"><span>${esc(order.order_number)} · ${new Date(order.created_at).toLocaleDateString("id-ID")}<small>${esc(statusLabels[order.status] || order.status)}</small></span><b>${rupiah(order.total)}</b></div>`).join("") || '<p class="muted">Belum ada transaksi.</p>'}</section></div></details>`;
+            })
+            .join("") || '<div class="notice">Belum ada pelanggan.</div>'
+        }</div>`;
+        document.querySelectorAll("[data-save-customer]").forEach(
+          (button) =>
+            (button.onclick = async () => {
+              const id = button.dataset.saveCustomer;
+              const blocked = document.querySelector(
+                `[data-customer-blocked="${id}"]`,
+              ).checked;
+              const reason = document
+                .querySelector(`[data-customer-reason="${id}"]`)
+                .value.trim();
+              if (blocked && !reason)
+                return showAdminMessage("Alasan blokir wajib diisi.", "error");
+              const { error: saveError } = await supabase.rpc(
+                "admin_update_customer",
+                {
+                  p_user_id: id,
+                  p_verified: document.querySelector(
+                    `[data-customer-verified="${id}"]`,
+                  ).checked,
+                  p_blocked: blocked,
+                  p_notes:
+                    document
+                      .querySelector(`[data-customer-notes="${id}"]`)
+                      .value.trim() || null,
+                  p_reason: reason || null,
+                },
+              );
+              if (saveError)
+                return showAdminMessage(saveError.message, "error");
+              await renderCustomersTab();
+              showAdminMessage("Data pelanggan disimpan.", "success");
+            }),
+        );
+      }
+
+      async function renderReviewsTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = '<div class="notice">Memuat ulasan...</div>';
+        const { data, error } = await supabase.rpc(
+          "list_admin_website_ratings",
+        );
+        if (error)
+          return (content.innerHTML = `<div class="notice error">${esc(error.message)}<br><small>Jalankan customer-review-notification.sql.</small></div>`);
+        adminRatings = data || [];
+        content.innerHTML = `<div class="admin-list-heading"><div><h3>Moderasi Rating Website</h3><p class="muted">${adminRatings.length} rating tersimpan.</p></div></div><div class="review-admin-grid">${adminRatings.map((rating) => `<article class="card review-admin-card"><div class="row"><strong>${"★".repeat(rating.score)}${"☆".repeat(5 - rating.score)}</strong><span class="${rating.is_hidden ? "admin-inactive" : "admin-active"}">${rating.is_hidden ? "Disembunyikan" : "Tampil"}</span></div><h3>${esc(rating.full_name || rating.email)}</h3><p>${esc(rating.comment || "Tanpa komentar")}</p><small class="muted">${new Date(rating.created_at).toLocaleString("id-ID")}</small><label class="admin-check"><input type="checkbox" data-review-hidden="${rating.id}" ${rating.is_hidden ? "checked" : ""}><span>Sembunyikan ulasan bermasalah</span></label><label class="field"><span>Balasan admin</span><textarea class="input" data-review-reply="${rating.id}">${esc(rating.admin_reply || "")}</textarea></label><button class="btn small" data-save-review="${rating.id}" type="button">Simpan Moderasi</button></article>`).join("") || '<div class="notice">Belum ada rating.</div>'}</div>`;
+        document.querySelectorAll("[data-save-review]").forEach(
+          (button) =>
+            (button.onclick = async () => {
+              const id = button.dataset.saveReview;
+              const { error: saveError } = await supabase.rpc(
+                "admin_moderate_website_rating",
+                {
+                  p_rating_id: id,
+                  p_hidden: document.querySelector(
+                    `[data-review-hidden="${id}"]`,
+                  ).checked,
+                  p_reply:
+                    document
+                      .querySelector(`[data-review-reply="${id}"]`)
+                      .value.trim() || null,
+                },
+              );
+              if (saveError)
+                return showAdminMessage(saveError.message, "error");
+              await renderReviewsTab();
+              showAdminMessage("Moderasi ulasan disimpan.", "success");
+            }),
+        );
+      }
+
+      async function renderNotificationsTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = '<div class="notice">Memuat notifikasi...</div>';
+        const [notificationResult, customerResult] = await Promise.all([
+          supabase
+            .from("customer_notifications")
+            .select("*,orders(order_number)")
+            .order("scheduled_for", { ascending: false })
+            .limit(200),
+          supabase.rpc("list_customer_summaries"),
+        ]);
+        if (notificationResult.error)
+          return (content.innerHTML = `<div class="notice error">${esc(notificationResult.error.message)}<br><small>Jalankan customer-review-notification.sql.</small></div>`);
+        customerNotifications = notificationResult.data || [];
+        customers = customerResult.data || customers;
+        const typeLabels = {
+          order_created: "Pesanan dibuat",
+          payment_paid: "Pembayaran berhasil",
+          payment_expired: "Pembayaran kedaluwarsa",
+          order_confirmed: "Pesanan dikonfirmasi",
+          pickup_reminder: "Pengingat pengambilan",
+          return_reminder: "Pengingat pengembalian",
+          late_warning: "Peringatan terlambat",
+          trip_reminder: "Trip mendekati keberangkatan",
+          cancelled: "Pembatalan",
+          refund: "Refund",
+        };
+        content.innerHTML = `<div class="admin-list-heading"><div><h3>Pusat Notifikasi</h3><p class="muted">${customerNotifications.filter((entry) => entry.status === "pending").length} menunggu dikirim.</p></div><button id="generateReminders" class="btn" type="button">Buat Pengingat Otomatis</button></div><div class="notification-admin-list">${
+          customerNotifications
+            .map((entry) => {
+              const customer =
+                customers.find((item) => item.user_id === entry.user_id) || {};
+              const digits = String(customer.phone || "")
+                .replace(/\D/g, "")
+                .replace(/^0/, "62");
+              return `<article class="card notification-admin-card"><div><span class="badge">${esc(typeLabels[entry.notification_type] || entry.notification_type)}</span><h3>${esc(entry.title)}</h3><p>${esc(entry.message)}</p><small>${esc(customer.full_name || customer.email || "Pelanggan")} · ${esc(entry.orders?.order_number || "-")} · ${new Date(entry.scheduled_for).toLocaleString("id-ID")}</small></div><div class="actions"><span class="${entry.status === "sent" ? "admin-active" : "admin-inactive"}">${esc(entry.status)}</span>${entry.status === "pending" && digits ? `<a class="btn small" data-send-notification="${entry.id}" target="_blank" href="https://wa.me/${digits}?text=${encodeURIComponent(entry.message)}">Kirim WhatsApp</a>` : ""}</div></article>`;
+            })
+            .join("") || '<div class="notice">Belum ada notifikasi.</div>'
+        }</div>`;
+        document.getElementById("generateReminders").onclick = async () => {
+          const { data, error } = await supabase.rpc(
+            "admin_generate_reminders",
+          );
+          if (error) return showAdminMessage(error.message, "error");
+          await renderNotificationsTab();
+          showAdminMessage(`${data || 0} pengingat baru dibuat.`, "success");
+        };
+        document.querySelectorAll("[data-send-notification]").forEach((link) =>
+          link.addEventListener("click", async () => {
+            await supabase.rpc("admin_mark_notification_sent", {
+              p_notification_id: link.dataset.sendNotification,
+            });
+            setTimeout(renderNotificationsTab, 700);
+          }),
+        );
       }
 
       async function renderAdministratorsTab() {

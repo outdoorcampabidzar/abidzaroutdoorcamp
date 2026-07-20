@@ -1,0 +1,8 @@
+1. Supabase > SQL Editor.
+2. Jalankan seluruh isi customer-review-notification.sql.
+3. Pastikan hasilnya Success, lalu tunggu 10-30 detik.
+4. Upload seluruh isi ZIP terbaru ke GitHub.
+5. Buka Admin Panel dan gunakan menu Pelanggan, Ulasan, atau Notifikasi.
+
+Notifikasi WhatsApp tidak dikirim diam-diam. Admin menekan tombol Kirim WhatsApp, kemudian pesan siap kirim dibuka pada WhatsApp.
+Tombol Buat Pengingat Otomatis membuat pengingat pengambilan, pengembalian, keterlambatan, dan keberangkatan trip berdasarkan tanggal pesanan.

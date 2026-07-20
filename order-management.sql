@@ -119,3 +119,6 @@ begin
 end; $$;
 revoke all on function public.admin_manage_order(uuid,text,numeric,text,text,uuid,integer) from public;
 grant execute on function public.admin_manage_order(uuid,text,numeric,text,text,uuid,integer) to authenticated;
+
+-- Meminta PostgREST/Supabase API membaca relasi tabel yang baru dibuat.
+notify pgrst, 'reload schema';

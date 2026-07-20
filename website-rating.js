@@ -4,7 +4,7 @@ let summary = {
   rating_average: 0,
   rating_count: 0,
   my_score: 0,
-  my_comment: ""
+  my_comment: "",
 };
 
 let hoverScore = 0;
@@ -16,17 +16,20 @@ function staticStars(value = 0) {
   const rounded = Math.round(Number(value || 0));
 
   return [1, 2, 3, 4, 5]
-    .map(score => `
+    .map(
+      (score) => `
       <span class="${score <= rounded ? "filled" : ""}" aria-hidden="true">
         ★
       </span>
-    `)
+    `,
+    )
     .join("");
 }
 
 function interactiveStars() {
   return [1, 2, 3, 4, 5]
-    .map(score => `
+    .map(
+      (score) => `
       <button
         class="website-rating-star"
         type="button"
@@ -36,7 +39,8 @@ function interactiveStars() {
       >
         ★
       </button>
-    `)
+    `,
+    )
     .join("");
 }
 
@@ -54,23 +58,21 @@ function ratingElements() {
     messageBox: document.getElementById("websiteRatingMessage"),
     reviewsList: document.getElementById("websiteReviewsList"),
     reviewsCount: document.getElementById("websiteReviewCount"),
-    reviewsMore: document.getElementById("websiteReviewsLoadMore")
+    reviewsMore: document.getElementById("websiteReviewsLoadMore"),
   };
 }
 
 function paintSelectedStars(score = 0) {
   const selectedScore = Number(score || 0);
 
-  document
-    .querySelectorAll("[data-website-score]")
-    .forEach(button => {
-      const buttonScore = Number(button.dataset.websiteScore);
-      const active = buttonScore <= selectedScore;
-      const exact = buttonScore === Number(summary.my_score || 0);
+  document.querySelectorAll("[data-website-score]").forEach((button) => {
+    const buttonScore = Number(button.dataset.websiteScore);
+    const active = buttonScore <= selectedScore;
+    const exact = buttonScore === Number(summary.my_score || 0);
 
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-pressed", String(exact));
-    });
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(exact));
+  });
 }
 
 function clearMessage() {
@@ -91,7 +93,7 @@ function updateInterface() {
     scoreInput,
     comment,
     submitButton,
-    helper
+    helper,
   } = ratingElements();
 
   if (stars) {
@@ -99,13 +101,11 @@ function updateInterface() {
   }
 
   if (average) {
-    average.textContent =
-      Number(summary.rating_average || 0).toFixed(1);
+    average.textContent = Number(summary.rating_average || 0).toFixed(1);
   }
 
   if (count) {
-    count.textContent =
-      `${Number(summary.rating_count || 0)} penilaian`;
+    count.textContent = `${Number(summary.rating_count || 0)} penilaian`;
   }
 
   if (buttons && !buttons.dataset.initialized) {
@@ -163,7 +163,7 @@ function bindStarButtons() {
 
   buttons.dataset.bound = "true";
 
-  buttons.addEventListener("mouseover", event => {
+  buttons.addEventListener("mouseover", (event) => {
     const button = event.target.closest("[data-website-score]");
     if (!button || !buttons.contains(button)) return;
 
@@ -176,7 +176,7 @@ function bindStarButtons() {
     paintSelectedStars(summary.my_score);
   });
 
-  buttons.addEventListener("focusin", event => {
+  buttons.addEventListener("focusin", (event) => {
     const button = event.target.closest("[data-website-score]");
     if (!button || !buttons.contains(button)) return;
 
@@ -184,14 +184,14 @@ function bindStarButtons() {
     paintSelectedStars(hoverScore);
   });
 
-  buttons.addEventListener("focusout", event => {
+  buttons.addEventListener("focusout", (event) => {
     if (buttons.contains(event.relatedTarget)) return;
 
     hoverScore = 0;
     paintSelectedStars(summary.my_score);
   });
 
-  buttons.addEventListener("click", event => {
+  buttons.addEventListener("click", (event) => {
     const button = event.target.closest("[data-website-score]");
     if (!button || !buttons.contains(button)) return;
 
@@ -233,19 +233,14 @@ function reviewCard(review) {
 }
 
 async function loadReviews() {
-  const {
-    reviewsList,
-    reviewsCount,
-    reviewsMore
-  } = ratingElements();
+  const { reviewsList, reviewsCount, reviewsMore } = ratingElements();
 
   if (!reviewsList) return;
 
   try {
-    const { data, error } = await supabase.rpc(
-      "get_website_reviews",
-      { p_limit: reviewLimit }
-    );
+    const { data, error } = await supabase.rpc("get_website_reviews", {
+      p_limit: reviewLimit,
+    });
 
     if (error) throw error;
 
@@ -268,10 +263,7 @@ async function loadReviews() {
     }
 
     if (reviewsMore) {
-      reviewsMore.classList.toggle(
-        "hidden",
-        reviews.length >= allReviewCount
-      );
+      reviewsMore.classList.toggle("hidden", reviews.length >= allReviewCount);
     }
   } catch (error) {
     reviewsList.innerHTML = `
@@ -294,7 +286,7 @@ async function loadWebsiteRating() {
       rating_average: Number(data?.rating_average || 0),
       rating_count: Number(data?.rating_count || 0),
       my_score: Number(data?.my_score || 0),
-      my_comment: data?.my_comment || ""
+      my_comment: data?.my_comment || "",
     };
 
     updateInterface();
@@ -302,38 +294,27 @@ async function loadWebsiteRating() {
     message(
       messageBox,
       `Rating website belum dapat dimuat: ${error.message}`,
-      "error"
+      "error",
     );
   }
 }
 
 async function saveWebsiteRating() {
-  const {
-    comment,
-    scoreInput,
-    submitButton,
-    messageBox
-  } = ratingElements();
+  const { comment, scoreInput, submitButton, messageBox } = ratingElements();
 
   if (isSaving) return;
 
-  const selectedScore = Number(
-    scoreInput?.value || summary.my_score || 0
-  );
+  const selectedScore = Number(scoreInput?.value || summary.my_score || 0);
 
   if (!selectedScore || selectedScore < 1 || selectedScore > 5) {
-    message(
-      messageBox,
-      "Pilih jumlah bintang terlebih dahulu.",
-      "error"
-    );
+    message(messageBox, "Pilih jumlah bintang terlebih dahulu.", "error");
     return;
   }
 
   try {
     const {
       data: { session },
-      error: sessionError
+      error: sessionError,
     } = await supabase.auth.getSession();
 
     if (sessionError) throw sessionError;
@@ -348,16 +329,14 @@ async function saveWebsiteRating() {
     summary.my_score = selectedScore;
     updateInterface();
 
-    document
-      .querySelectorAll("[data-website-score]")
-      .forEach(button => {
-        button.disabled = true;
-      });
+    document.querySelectorAll("[data-website-score]").forEach((button) => {
+      button.disabled = true;
+    });
 
     message(
       messageBox,
       "Sedang menyimpan rating dan komentar ke database...",
-      "warning"
+      "warning",
     );
 
     const typedComment = String(comment?.value || "")
@@ -367,28 +346,22 @@ async function saveWebsiteRating() {
     // Kolom kosong mempertahankan komentar lama.
     const commentValue = typedComment || summary.my_comment || "";
 
-    const { data, error } = await supabase.rpc(
-      "save_website_review_v2",
-      {
-        p_payload: {
-          score: selectedScore,
-          comment: commentValue
-        }
-      }
-    );
+    const { data, error } = await supabase.rpc("save_website_review_v2", {
+      p_payload: {
+        score: selectedScore,
+        comment: commentValue,
+      },
+    });
 
     if (error) throw error;
 
     const savedComment = String(data?.my_comment || "");
 
     // Pastikan komentar yang diketik benar-benar kembali dari database.
-    if (
-      typedComment &&
-      savedComment.trim() !== typedComment.trim()
-    ) {
+    if (typedComment && savedComment.trim() !== typedComment.trim()) {
       throw new Error(
         "Rating tersimpan, tetapi komentar tidak kembali dari database. " +
-        "Pastikan website-comment-rpc-v2.sql sudah dijalankan."
+          "Pastikan website-comment-rpc-v2.sql sudah dijalankan.",
       );
     }
 
@@ -396,7 +369,7 @@ async function saveWebsiteRating() {
       rating_average: Number(data?.rating_average || 0),
       rating_count: Number(data?.rating_count || 0),
       my_score: Number(data?.my_score || selectedScore),
-      my_comment: savedComment || commentValue
+      my_comment: savedComment || commentValue,
     };
 
     updateInterface();
@@ -407,22 +380,16 @@ async function saveWebsiteRating() {
       summary.my_comment
         ? `Berhasil! Rating dan komentar Anda sudah ditampilkan.`
         : `Berhasil! Rating ${summary.my_score} bintang sudah tersimpan.`,
-      "success"
+      "success",
     );
   } catch (error) {
-    message(
-      messageBox,
-      `Rating gagal dikirim: ${error.message}`,
-      "error"
-    );
+    message(messageBox, `Rating gagal dikirim: ${error.message}`, "error");
   } finally {
     isSaving = false;
 
-    document
-      .querySelectorAll("[data-website-score]")
-      .forEach(button => {
-        button.disabled = false;
-      });
+    document.querySelectorAll("[data-website-score]").forEach((button) => {
+      button.disabled = false;
+    });
 
     updateInterface();
     submitButton?.blur();
@@ -430,20 +397,16 @@ async function saveWebsiteRating() {
 }
 
 export function mountWebsiteRating() {
-  const {
-    form,
-    submitButton,
-    reviewsMore
-  } = ratingElements();
+  const { form, submitButton, reviewsMore } = ratingElements();
 
   if (!form || !submitButton) return;
 
-  form.addEventListener("submit", event => {
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
     saveWebsiteRating();
   });
 
-  submitButton.addEventListener("click", event => {
+  submitButton.addEventListener("click", (event) => {
     event.preventDefault();
     saveWebsiteRating();
   });
