@@ -1,0 +1,9 @@
+FITUR DATA KHUSUS OPEN TRIP
+
+1. Supabase > SQL Editor: jalankan open-trip-management.sql.
+2. Jalankan ulang rental-calendar.sql agar checkout dapat menyimpan peserta per kursi.
+3. Upload seluruh file website ke GitHub, lalu tunggu GitHub Pages diperbarui.
+4. Admin Panel > Open Trip: isi jadwal, meeting point, itinerary, fasilitas, usia, perlengkapan, minimum peserta, deadline, status, dan informasi perjalanan.
+5. Klik Peserta pada kartu trip untuk melihat data per kursi, kontak darurat, mengubah status, menyalin informasi, atau membuka WhatsApp peserta.
+
+Catatan: tombol WhatsApp membuka pesan siap kirim. Website tidak mengirim pesan diam-diam tanpa tindakan admin.

@@ -1566,6 +1566,187 @@ footer {
   }
 }
 
+.admin-advanced-section {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(5, 15, 27, 0.5);
+  overflow: hidden;
+}
+
+.admin-advanced-section > summary {
+  padding: 14px 16px;
+  color: var(--text);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-advanced-body {
+  padding: 0 16px 16px;
+}
+
+.catalog-tools {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.catalog-import-label {
+  cursor: pointer;
+}
+
+.catalog-featured-badge {
+  width: fit-content;
+  color: #ffd56a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.inventory-status-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.inventory-status-pills span {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.catalog-deposit {
+  margin: 0;
+  color: #ffd56a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.archived-catalog-list {
+  display: grid;
+  gap: 12px;
+}
+
+.archived-catalog-card {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+}
+
+.archived-catalog-card img {
+  width: 82px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.archived-catalog-card h3 {
+  margin: 6px 0;
+}
+
+.detail-gallery {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  align-self: start;
+}
+
+.detail-gallery > img {
+  width: 100%;
+  max-height: 600px;
+  border-radius: 20px;
+  object-fit: cover;
+}
+
+.detail-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.detail-thumb {
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #07111f;
+  cursor: pointer;
+}
+
+.detail-thumb.active {
+  border-color: var(--brand);
+}
+
+.detail-thumb img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.detail-options {
+  margin: 16px 0;
+}
+
+.detail-options h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.detail-option-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-option-list span,
+.price-tier-list > div {
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.price-tier-list {
+  display: grid;
+  gap: 8px;
+}
+
+.price-tier-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .catalog-tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .catalog-tools .btn:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .detail-thumbnails {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .archived-catalog-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .archived-catalog-card img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .archived-catalog-card .btn {
+    grid-column: 1 / -1;
+  }
+}
+
 /* ADMINISTRATOR MANAGEMENT */
 .admin-user-layout {
   display: grid;
@@ -5537,6 +5718,191 @@ main {
   white-space: pre-wrap;
 }
 
+.admin-voucher-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.92fr) minmax(0, 1.08fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-voucher-layout > .admin-editor-card {
+  position: static;
+  top: auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.voucher-list-panel,
+.voucher-history-card {
+  min-width: 0;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.voucher-admin-list,
+.voucher-history-list {
+  display: grid;
+  gap: 12px;
+}
+
+.voucher-admin-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.voucher-admin-head,
+.voucher-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.voucher-admin-head h3 {
+  margin: 5px 0 0;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+}
+
+.voucher-admin-card > p,
+.voucher-admin-card > small {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.voucher-admin-card .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.voucher-admin-card .actions .btn {
+  min-height: 38px;
+}
+
+#voucherForm {
+  gap: 15px;
+}
+
+#voucherForm > .btn {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 2px;
+}
+
+#voucherForm .two {
+  align-items: start;
+}
+
+#voucherForm .field,
+#voucherForm .input {
+  min-width: 0;
+}
+
+.voucher-product-scope {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(7, 18, 30, 0.55);
+}
+
+.voucher-item-options {
+  display: grid;
+  gap: 8px;
+  max-height: 250px;
+  margin-top: 10px;
+  overflow: auto;
+}
+
+.voucher-history-card {
+  grid-column: 1 / -1;
+}
+
+.voucher-history-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto minmax(145px, auto);
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.voucher-history-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.voucher-history-row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.voucher-history-row > div span {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .admin-voucher-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .voucher-list-panel,
+  .voucher-history-card {
+    padding: 16px;
+  }
+
+  .voucher-history-row {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+  }
+
+  .voucher-history-row > div {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-voucher-layout {
+    display: block;
+  }
+
+  .admin-voucher-layout > * + * {
+    margin-top: 14px;
+  }
+
+  #voucherForm .two {
+    grid-template-columns: 1fr;
+  }
+
+  .voucher-admin-head {
+    align-items: flex-start;
+  }
+
+  .voucher-admin-card .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .voucher-admin-card .actions .btn:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .voucher-history-row {
+    grid-template-columns: 1fr;
+  }
+
+  .voucher-history-row > * {
+    grid-column: 1;
+  }
+}
+
 .rental-schedule {
   display: grid;
   gap: 14px;
@@ -5666,5 +6032,117 @@ main {
 
   .admin-settings-actions {
     position: static;
+  }
+}
+.trip-admin-section,
+.trip-checkout-section,
+.trip-message-card {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(7, 18, 30, 0.52);
+}
+.trip-seat-group {
+  margin-top: 18px;
+}
+.trip-seat-card {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.trip-participant-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.trip-participant-card {
+  padding: 18px;
+}
+.trip-message-card pre {
+  white-space: pre-wrap;
+  font: inherit;
+  color: var(--muted);
+}
+.compact-input {
+  width: auto;
+  min-width: 150px;
+}
+.trip-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 18px;
+}
+.preline {
+  white-space: pre-line;
+}
+@media (max-width: 760px) {
+  .trip-participant-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.order-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr) 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: 16px;
+}
+.admin-order-toolbox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.order-subsection {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.order-subsection h4 {
+  margin: 0 0 10px;
+}
+.order-line small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.order-timeline > div {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+.order-timeline > div > span {
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 4px rgba(64, 224, 148, 0.12);
+}
+.order-timeline p,
+.order-timeline small {
+  display: block;
+  margin: 0;
+}
+@media (max-width: 900px) {
+  .order-filter-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .order-filter-bar {
+    grid-template-columns: 1fr;
+  }
+  .admin-order-toolbox .btn {
+    width: 100%;
   }
 }

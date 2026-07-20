@@ -16,6 +16,9 @@ function unitLabel(item) {
 }
 
 function renderCard(item) {
+  const tripDetail = Array.isArray(item.trip_details)
+    ? item.trip_details[0] || {}
+    : item.trip_details || {};
   const available = availableQuantity(item);
   const unit = unitLabel(item);
   const availability =
@@ -29,13 +32,14 @@ function renderCard(item) {
 
       <div class="body">
         <div class="row">
-          <span class="badge">${catalogLabel(item)}</span>
+          <span class="badge">${esc(item.item_categories?.name || catalogLabel(item))}</span>
           <span class="${available > 0 ? "stock-available" : "stock-empty"}">
             ${available > 0 ? availability : "Tidak tersedia"}
           </span>
         </div>
 
         <h3>${esc(item.title)}</h3>
+        ${item.is_featured ? '<span class="catalog-featured-badge">★ Unggulan</span>' : ""}
         <p class="muted item-description">
           ${esc((item.description || "").slice(0, 115))}
           ${(item.description || "").length > 115 ? "…" : ""}
@@ -48,6 +52,7 @@ function renderCard(item) {
               ).toLocaleDateString("id-ID", { dateStyle: "long" })}</p>`
             : ""
         }
+        ${item.type === "trip" && tripDetail.status ? `<p class="catalog-meta">🥾 ${esc({ draft: "Draft", open: "Pendaftaran dibuka", full: "Penuh", running: "Sedang berjalan", completed: "Selesai", cancelled: "Dibatalkan" }[tripDetail.status] || tripDetail.status)} · ${esc({ easy: "Mudah", moderate: "Sedang", hard: "Sulit", extreme: "Ekstrem" }[tripDetail.difficulty] || "")}</p>` : ""}
 
         ${
           item.location
@@ -58,6 +63,17 @@ function renderCard(item) {
         ${
           item.requires_guarantee
             ? `<p class="catalog-meta">🔐 Memerlukan jaminan</p>`
+            : ""
+        }
+
+        ${Number(item.deposit || 0) > 0 ? `<p class="catalog-meta">💳 Deposit ${rupiah(item.deposit)}</p>` : ""}
+
+        ${
+          (item.item_variants || []).length
+            ? `<p class="catalog-meta">📐 ${(item.item_variants || [])
+                .slice(0, 3)
+                .map((variant) => esc(variant.name))
+                .join(" · ")}</p>`
             : ""
         }
 
@@ -188,9 +204,14 @@ export async function mountCatalog({ type, gridId, messageId, limit = null }) {
 
   let query = supabase
     .from("items")
-    .select("*")
+    .select(
+      "*,item_categories(id,name,slug),item_images(*),item_variants(*),item_price_tiers(*),trip_details(*)",
+    )
     .eq("is_active", true)
     .eq("type", type)
+    .is("archived_at", null)
+    .order("is_featured", { ascending: false })
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
   if (limit) query = query.limit(limit);

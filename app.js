@@ -215,6 +215,9 @@ export function addCart(item, qty = 1, replace = false) {
     max_quantity: max,
     requires_guarantee: Boolean(item.requires_guarantee),
     guarantee_note: item.guarantee_note || "",
+    deposit: Number(item.deposit || 0),
+    variants: item.item_variants || [],
+    price_tiers: item.item_price_tiers || [],
   };
   if (replace) return saveCart([entry]);
   const cart = getCart();

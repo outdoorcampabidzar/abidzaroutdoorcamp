@@ -225,9 +225,12 @@
 
         const { data, error } = await supabase
           .from("items")
-          .select("*")
+          .select(
+            "*,item_categories(id,name,slug),item_images(*),item_variants(*),item_price_tiers(*),trip_details(*)",
+          )
           .eq("slug", slug)
           .eq("is_active", true)
+          .is("archived_at", null)
           .single();
 
         if (error) {
@@ -236,16 +239,25 @@
         }
 
         item = data;
+        const tripDetail = Array.isArray(item.trip_details)
+          ? item.trip_details[0] || {}
+          : item.trip_details || {};
         const available = availableQuantity();
         const unitName = item.type === "trip" ? "peserta" : "unit";
         const priceUnit = item.type === "trip" ? "peserta" : "unit / hari";
 
+        const gallery = (item.item_images || []).sort(
+          (a, b) => a.sort_order - b.sort_order,
+        );
         root.innerHTML = `
-        <img src="${esc(item.image_url)}" alt="${esc(item.title)}">
+        <div class="detail-gallery">
+          <img id="detailMainImage" src="${esc(gallery[0]?.image_url || item.image_url)}" alt="${esc(item.title)}">
+          ${gallery.length > 1 ? `<div class="detail-thumbnails">${gallery.map((image, index) => `<button type="button" class="detail-thumb ${index === 0 ? "active" : ""}" data-gallery-image="${esc(image.image_url)}"><img src="${esc(image.image_url)}" alt="${esc(image.alt_text || item.title)}"></button>`).join("")}</div>` : ""}
+        </div>
 
         <section>
           <div class="row">
-            <span class="badge">${item.type === "trip" ? "Open Trip" : "Sewa Item"}</span>
+            <span class="badge">${esc(item.item_categories?.name || (item.type === "trip" ? "Open Trip" : "Sewa Item"))}</span>
             <span class="${available > 0 ? "stock-available" : "stock-empty"}">
               ${
                 available > 0
@@ -256,6 +268,7 @@
           </div>
 
           <h1>${esc(item.title)}</h1>
+          ${item.is_featured ? '<span class="catalog-featured-badge">★ Produk unggulan</span>' : ""}
           <p class="muted">${esc(item.description)}</p>
 
           ${item.location ? `<p><b>Lokasi:</b> ${esc(item.location)}</p>` : ""}
@@ -268,12 +281,30 @@
               : ""
           }
 
+          ${item.type === "trip" ? `<section class="detail-options trip-public-detail"><h3>Informasi Open Trip</h3><div class="trip-detail-grid"><p><b>Status:</b> ${esc({ draft: "Draft", open: "Pendaftaran dibuka", full: "Penuh", running: "Berjalan", completed: "Selesai", cancelled: "Dibatalkan" }[tripDetail.status] || "Belum diatur")}</p><p><b>Kesulitan:</b> ${esc({ easy: "Mudah", moderate: "Sedang", hard: "Sulit", extreme: "Ekstrem" }[tripDetail.difficulty] || "-")}</p><p><b>Berangkat:</b> ${tripDetail.departure_at ? new Date(tripDetail.departure_at).toLocaleString("id-ID") : "-"}</p><p><b>Pulang:</b> ${tripDetail.return_at ? new Date(tripDetail.return_at).toLocaleString("id-ID") : "-"}</p><p><b>Meeting point:</b> ${esc(tripDetail.meeting_point || "-")}</p><p><b>Batas usia:</b> ${tripDetail.min_age ?? "-"}–${tripDetail.max_age ?? "-"} tahun</p><p><b>Minimal peserta:</b> ${Number(tripDetail.min_participants || 1)}</p><p><b>Batas daftar:</b> ${tripDetail.registration_deadline ? new Date(tripDetail.registration_deadline).toLocaleString("id-ID") : "-"}</p></div>${tripDetail.itinerary ? `<h3>Itinerary</h3><p class="preline">${esc(tripDetail.itinerary)}</p>` : ""}<div class="two">${tripDetail.included_facilities ? `<div><h3>Termasuk</h3><p class="preline">${esc(tripDetail.included_facilities)}</p></div>` : ""}${tripDetail.excluded_facilities ? `<div><h3>Tidak termasuk</h3><p class="preline">${esc(tripDetail.excluded_facilities)}</p></div>` : ""}</div>${tripDetail.required_equipment ? `<h3>Perlengkapan wajib</h3><p class="preline">${esc(tripDetail.required_equipment)}</p>` : ""}</section>` : ""}
+
           ${
             item.requires_guarantee
               ? `<div class="notice warning">
                 <b>Wajib jaminan</b><br>
                 ${esc(item.guarantee_note || "Rincian diisi saat checkout.")}
               </div>`
+              : ""
+          }
+
+          ${Number(item.deposit || 0) > 0 ? `<div class="notice"><b>Deposit barang</b><br>${rupiah(item.deposit)} per unit</div>` : ""}
+
+          ${(item.item_variants || []).length ? `<section class="detail-options"><h3>Ukuran / Kapasitas</h3><div class="detail-option-list">${item.item_variants.map((variant) => `<span>${esc(variant.name)}${variant.capacity ? ` · ${esc(variant.capacity)}` : ""}${Number(variant.price_adjustment) ? ` · ${rupiah(Number(item.price) + Number(variant.price_adjustment))}` : ""}</span>`).join("")}</div></section>` : ""}
+
+          ${
+            (item.item_price_tiers || []).length
+              ? `<section class="detail-options"><h3>Harga Paket</h3><div class="price-tier-list">${item.item_price_tiers
+                  .sort((a, b) => a.duration_days - b.duration_days)
+                  .map(
+                    (tier) =>
+                      `<div><span>${esc(tier.label)} · ${tier.duration_days} hari</span><strong>${rupiah(tier.price)}</strong></div>`,
+                  )
+                  .join("")}</div></section>`
               : ""
           }
 
@@ -321,6 +352,18 @@
 
           <div id="msg" class="notice hidden" style="margin-top:14px"></div>
         </section>`;
+
+        document.querySelectorAll("[data-gallery-image]").forEach((button) => {
+          button.addEventListener("click", () => {
+            document.getElementById("detailMainImage").src =
+              button.dataset.galleryImage;
+            document
+              .querySelectorAll("[data-gallery-image]")
+              .forEach((entry) =>
+                entry.classList.toggle("active", entry === button),
+              );
+          });
+        });
 
         const quantityInput = document.getElementById("qty");
         quantityInput?.addEventListener("input", updateItemTotal);

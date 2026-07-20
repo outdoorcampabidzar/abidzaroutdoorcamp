@@ -1,0 +1,6 @@
+1. Supabase > SQL Editor: jalankan order-management.sql.
+2. Upload seluruh isi ZIP ke GitHub lalu tunggu GitHub Pages diperbarui.
+3. Buka Admin Panel > Pesanan.
+
+Refund pada menu ini adalah pencatatan administrasi. Pengiriman uang tetap dilakukan melalui kanal pembayaran/DANA, lalu dicatat penuh atau sebagian di admin.
+Tombol Unduh PDF membuka dialog cetak browser; pilih tujuan "Save as PDF".

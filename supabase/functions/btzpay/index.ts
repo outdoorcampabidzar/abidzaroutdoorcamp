@@ -96,32 +96,22 @@ async function createPayment(
 
   const timeoutMinutes = Math.max(
     5,
-    Math.min(1440, Number(settings.payment_timeout_minutes) || 15),
+    Math.min(60, Number(settings.payment_timeout_minutes) || 15),
   );
-  const allowedMethods = [
-    "qrisorkut",
-    "qrisdana",
-    "qrisgopay",
-    "qrisshopeepay",
-  ];
-  const paymentMethod = allowedMethods.includes(settings.payment_method)
-    ? settings.payment_method
-    : "qrisorkut";
+  const paymentMethod = "qrisdana";
+  const amount = Number(order.total);
+  if (!Number.isFinite(amount) || amount < 1)
+    throw new Error(`Nominal pesanan tidak valid: ${String(order.total)}`);
   const callbackUrl = `${supabaseUrl}/functions/v1/btzpay?action=webhook`;
   const returnUrl = `${publicSiteUrl}/payment.html?order=${encodeURIComponent(orderId)}`;
   const result = await paygate.createTransaction({
-    amount: Number(order.total),
-    paymentMethod,
+    action: "create",
+    amount,
+    fee: 0,
     timeout: timeoutMinutes * 60 * 1000,
     callback_url: callbackUrl,
     return_url: returnUrl,
     notes: `Pesanan ${order.order_number}`,
-    customerInfo: {
-      name: order.customer_name,
-      email: order.customer_email,
-      phone: order.phone,
-    },
-    metadata: { orderId: order.id, orderNumber: order.order_number },
   });
   const tx = result.data;
   const { accessKey, ...safeTransaction } = tx;
@@ -379,6 +369,10 @@ Deno.serve(async (req) => {
     return json({ error: "Aksi tidak dikenal" }, 400);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("BTZPAY_ERROR:", errorMessage);
+    const errorData = (error as { data?: unknown })?.data;
+    if (errorData)
+      console.error("BTZPAY_ERROR_DATA:", JSON.stringify(errorData));
     if (action === "webhook") {
       const transactionId = String(
         body.pay_id || body.raw?.data?.transactionId || "",

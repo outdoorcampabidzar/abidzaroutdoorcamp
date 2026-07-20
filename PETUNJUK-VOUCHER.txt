@@ -1,0 +1,29 @@
+MANAJEMEN VOUCHER - ABIDZAROUTDOORCAMP
+========================================
+
+1. Buka Supabase Dashboard > SQL Editor > New query.
+2. Salin seluruh isi voucher-management.sql, lalu klik Run.
+3. Setelah berhasil, salin seluruh isi rental-calendar.sql, lalu klik Run.
+   Urutan ini penting karena create_order memakai aturan voucher yang baru.
+4. Upload file website terbaru ke GitHub Pages.
+5. Login sebagai admin lalu buka Admin Panel > Voucher.
+
+FITUR
+-----
+- Diskon persentase atau nominal.
+- Minimum transaksi dan maksimum diskon.
+- Kuota serta penghitung pemakaian.
+- Satu kali per pelanggan.
+- Periode mulai/berakhir.
+- Cakupan semua, sewa, trip, atau produk tertentu.
+- Aktif/nonaktif.
+- Riwayat pemakaian dan pengembalian voucher.
+
+CATATAN
+-------
+- Kode otomatis disimpan dalam huruf kapital.
+- Voucher produk tertentu harus memiliki minimal satu produk terpilih.
+- Riwayat dibuat saat pesanan masuk status confirmed/paid/completed.
+- Saat pesanan paid dibatalkan/refund, riwayat ditandai Dikembalikan.
+- Checkout hanya menerima voucher melalui RPC; tabel voucher tidak dibuka
+  langsung kepada pelanggan.

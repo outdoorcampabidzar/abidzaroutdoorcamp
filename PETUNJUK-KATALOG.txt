@@ -1,0 +1,45 @@
+PENGELOLAAN KATALOG LANJUTAN
+============================
+
+PEMASANGAN
+1. Buka Supabase > SQL Editor > New query.
+2. Salin seluruh isi catalog-management.sql lalu klik Run.
+3. Jalankan ulang rental-calendar.sql agar harga paket dipakai saat checkout.
+4. Upload website terbaru ke GitHub Pages.
+5. Buka Admin Panel > Sewa Item.
+
+FORMAT DATA LANJUTAN
+Galeri foto:
+  Satu URL gambar per baris, atau gunakan tombol upload beberapa foto.
+
+Varian:
+  Nama | Kapasitas | Tambahan harga | Stok
+  Medium | 3-4 orang | 25000 | 5
+
+Unit inventaris:
+  Nomor inventaris | Kondisi | Status | Catatan
+  TND-001 | good | available | Tenda biru
+
+Kondisi yang diterima: new, good, fair, damaged
+Status yang diterima: available, rented, damaged, maintenance, retired
+
+Harga paket:
+  Nama paket | Jumlah hari | Harga
+  Paket 2 Hari | 2 | 150000
+  Paket Mingguan | 7 | 450000
+
+CSV
+- Klik Ekspor CSV untuk memperoleh format dan data terbaru.
+- Edit file tersebut dengan Excel/Google Sheets lalu simpan sebagai CSV UTF-8.
+- Klik Impor CSV. Produk dengan slug yang sama akan diperbarui (upsert).
+- Data galeri/varian/inventaris/paket di dalam CSV dipisahkan tanda titik koma (;).
+
+ARSIP
+- Tombol Arsipkan menyembunyikan produk tanpa menghapus riwayat pesanan.
+- Buka tombol Arsip untuk melihat dan memulihkan produk.
+- Produk yang dipulihkan berstatus nonaktif sampai admin mengaktifkannya kembali.
+
+CATATAN HARGA
+- Harga harian tetap menjadi fallback.
+- Jika jumlah hari sewa sama dengan paket yang dibuat, harga paket dipakai.
+- Perhitungan checkout dan database menggunakan aturan yang sama.

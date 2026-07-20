@@ -1,0 +1,11 @@
+PENGELOLAAN ADMINISTRATOR
+
+1. Supabase > SQL Editor.
+2. Jalankan admin-management.sql.
+3. Pastikan calon administrator sudah membuat akun melalui halaman Daftar.
+4. Buka Admin Panel > Administrator, lalu masukkan email akun tersebut.
+
+Keamanan:
+- Hanya admin aktif yang dapat melihat, menambah, atau mencabut admin.
+- Admin tidak dapat mencabut akses akunnya sendiri.
+- Minimal satu administrator selalu dipertahankan.

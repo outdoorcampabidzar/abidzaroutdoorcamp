@@ -211,10 +211,18 @@
 
       let activeTab = "rental";
       let items = [];
+      let categories = [];
       let orders = [];
       let administrators = [];
       let currentAdminUserId = null;
       let editingItem = null;
+      let editingVoucher = null;
+      let vouchers = [];
+      let voucherUsages = [];
+      let orderSearch = "";
+      let orderStatusFilter = "all";
+      let orderDateFrom = "";
+      let orderDateTo = "";
       let siteSettings = { ...DEFAULT_SITE_SETTINGS };
 
       function slugify(value) {
@@ -277,24 +285,36 @@
       }
 
       async function loadAllData() {
-        const [itemResult, orderResult, loadedSettings] = await Promise.all([
-          supabase
-            .from("items")
-            .select("*")
-            .order("created_at", { ascending: false }),
+        const [itemResult, categoryResult, orderResult, loadedSettings] =
+          await Promise.all([
+            supabase
+              .from("items")
+              .select(
+                "*,item_categories(id,name,slug),item_images(*),item_variants(*),inventory_units(*),item_price_tiers(*),trip_details(*)",
+              )
+              .is("archived_at", null)
+              .order("is_featured", { ascending: false })
+              .order("sort_order", { ascending: true })
+              .order("created_at", { ascending: false }),
 
-          supabase
-            .from("orders")
-            .select("*,order_items(*),payment_transactions(*)")
-            .order("created_at", { ascending: false }),
+            supabase.from("item_categories").select("*").order("sort_order"),
 
-          loadSiteSettings(),
-        ]);
+            supabase
+              .from("orders")
+              .select(
+                "*,order_items(*),payment_transactions(*),order_status_history(*),order_refunds(*),order_returns(*)",
+              )
+              .order("created_at", { ascending: false }),
+
+            loadSiteSettings(),
+          ]);
 
         if (itemResult.error) throw itemResult.error;
+        if (categoryResult.error) throw categoryResult.error;
         if (orderResult.error) throw orderResult.error;
 
         items = itemResult.data || [];
+        categories = categoryResult.data || [];
         orders = orderResult.data || [];
         siteSettings = { ...DEFAULT_SITE_SETTINGS, ...loadedSettings };
 
@@ -347,6 +367,14 @@
             </button>
 
             <button
+              class="admin-tab ${activeTab === "vouchers" ? "active" : ""}"
+              data-admin-tab="vouchers"
+              type="button"
+            >
+              🎟️ Voucher
+            </button>
+
+            <button
               class="admin-tab ${activeTab === "settings" ? "active" : ""}"
               data-admin-tab="settings"
               type="button"
@@ -387,6 +415,7 @@
           button.addEventListener("click", () => {
             activeTab = button.dataset.adminTab;
             editingItem = null;
+            editingVoucher = null;
             renderShell();
             renderActiveTab();
           });
@@ -399,10 +428,287 @@
         if (activeTab === "rental") renderRentalTab();
         else if (activeTab === "trips") renderTripTab();
         else if (activeTab === "orders") renderOrdersTab();
+        else if (activeTab === "vouchers") renderVoucherTab();
         else if (activeTab === "settings") renderSettingsTab();
         else if (activeTab === "schedule") renderRentalScheduleTab();
         else if (activeTab === "payment_logs") renderPaymentLogsTab();
         else renderAdministratorsTab();
+      }
+
+      function voucherDateInput(value) {
+        if (!value) return "";
+        const date = new Date(value);
+        const local = new Date(
+          date.getTime() - date.getTimezoneOffset() * 60000,
+        );
+        return local.toISOString().slice(0, 16);
+      }
+
+      function voucherScopeLabel(value) {
+        return (
+          {
+            all: "Semua sewa & trip",
+            rental: "Semua item sewa",
+            trip: "Semua open trip",
+            products: "Produk tertentu",
+          }[value] || value
+        );
+      }
+
+      async function loadVoucherData() {
+        const [voucherResult, usageResult] = await Promise.all([
+          supabase
+            .from("vouchers")
+            .select("*,voucher_items(item_id)")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("voucher_usages")
+            .select("*,orders(order_number,customer_name,customer_email)")
+            .order("used_at", { ascending: false })
+            .limit(100),
+        ]);
+        if (voucherResult.error) throw voucherResult.error;
+        if (usageResult.error) throw usageResult.error;
+        vouchers = voucherResult.data || [];
+        voucherUsages = usageResult.data || [];
+      }
+
+      async function renderVoucherTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = '<div class="notice">Memuat voucher...</div>';
+        try {
+          await loadVoucherData();
+        } catch (error) {
+          content.innerHTML = `<div class="notice error">${esc(error.message)}<br><small>Jalankan voucher-management.sql melalui Supabase SQL Editor.</small></div>`;
+          return;
+        }
+
+        const voucher = editingVoucher || {
+          code: "",
+          discount_type: "percent",
+          discount_value: 10,
+          min_purchase: 0,
+          max_discount: null,
+          quota: 100,
+          starts_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
+          once_per_customer: false,
+          applies_to: "all",
+          is_active: true,
+          voucher_items: [],
+        };
+        const selectedItems = new Set(
+          (voucher.voucher_items || []).map((entry) => entry.item_id),
+        );
+
+        content.innerHTML = `
+        <div class="admin-voucher-layout">
+          <section class="card admin-editor-card">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Voucher</span><h3>${editingVoucher ? "Edit Voucher" : "Tambah Voucher"}</h3></div>
+              ${editingVoucher ? '<button id="cancelVoucherEdit" class="btn secondary small" type="button">Batal</button>' : ""}
+            </div>
+            <form id="voucherForm" class="form">
+              <label class="field"><span>Kode voucher *</span>
+                <input class="input" name="code" required maxlength="40" value="${esc(voucher.code)}" placeholder="HEMAT10">
+              </label>
+              <div class="two">
+                <label class="field"><span>Jenis potongan</span>
+                  <select class="input" name="discount_type">
+                    <option value="percent" ${voucher.discount_type === "percent" ? "selected" : ""}>Persentase (%)</option>
+                    <option value="fixed" ${voucher.discount_type === "fixed" ? "selected" : ""}>Nominal (Rp)</option>
+                  </select>
+                </label>
+                <label class="field"><span>Nilai potongan *</span><input class="input" name="discount_value" type="number" min="1" step="1" required value="${Number(voucher.discount_value)}"></label>
+                <label class="field"><span>Minimum transaksi</span><input class="input" name="min_purchase" type="number" min="0" step="1000" value="${Number(voucher.min_purchase || 0)}"></label>
+                <label class="field"><span>Maksimum potongan</span><input class="input" name="max_discount" type="number" min="0" step="1000" value="${voucher.max_discount ?? ""}" placeholder="Kosong = tanpa batas"></label>
+                <label class="field"><span>Kuota penggunaan</span><input class="input" name="quota" type="number" min="0" step="1" value="${Number(voucher.quota || 0)}"></label>
+                <label class="field"><span>Berlaku untuk</span>
+                  <select id="voucherAppliesTo" class="input" name="applies_to">
+                    ${[
+                      ["all", "Semua sewa & trip"],
+                      ["rental", "Semua item sewa"],
+                      ["trip", "Semua open trip"],
+                      ["products", "Produk tertentu"],
+                    ]
+                      .map(
+                        ([value, label]) =>
+                          `<option value="${value}" ${voucher.applies_to === value ? "selected" : ""}>${label}</option>`,
+                      )
+                      .join("")}
+                  </select>
+                </label>
+                <label class="field"><span>Tanggal mulai *</span><input class="input" name="starts_at" type="datetime-local" required value="${voucherDateInput(voucher.starts_at)}"></label>
+                <label class="field"><span>Tanggal berakhir *</span><input class="input" name="expires_at" type="datetime-local" required value="${voucherDateInput(voucher.expires_at)}"></label>
+              </div>
+              <div id="voucherProductScope" class="voucher-product-scope ${voucher.applies_to === "products" ? "" : "hidden"}">
+                <span class="field-label">Pilih produk yang menerima voucher</span>
+                <div class="voucher-item-options">
+                  ${items.map((item) => `<label class="admin-check"><input type="checkbox" name="item_ids" value="${item.id}" ${selectedItems.has(item.id) ? "checked" : ""}><span>${esc(item.title)} <small>(${item.type === "trip" ? "Trip" : "Sewa"})</small></span></label>`).join("")}
+                </div>
+              </div>
+              <label class="admin-check"><input name="once_per_customer" type="checkbox" ${voucher.once_per_customer ? "checked" : ""}><span>Maksimal satu kali per pelanggan</span></label>
+              <label class="admin-check"><input name="is_active" type="checkbox" ${voucher.is_active ? "checked" : ""}><span>Voucher aktif</span></label>
+              <button id="saveVoucherButton" class="btn" type="submit">${editingVoucher ? "Simpan Perubahan" : "Tambah Voucher"}</button>
+            </form>
+          </section>
+
+          <section class="card voucher-list-panel">
+            <div class="admin-list-heading"><div><h3>Daftar Voucher</h3><p class="muted">${vouchers.length} voucher tersimpan.</p></div></div>
+            <div class="voucher-admin-list">
+              ${
+                vouchers
+                  .map(
+                    (entry) => `
+                <article class="card voucher-admin-card">
+                  <div class="voucher-admin-head"><div><span class="${entry.is_active ? "admin-active" : "admin-inactive"}">${entry.is_active ? "Aktif" : "Nonaktif"}</span><h3>${esc(entry.code)}</h3></div><strong>${entry.discount_type === "percent" ? `${Number(entry.discount_value)}%` : rupiah(entry.discount_value)}</strong></div>
+                  <p class="muted">${esc(voucherScopeLabel(entry.applies_to))} · Minimal ${rupiah(entry.min_purchase)} · Terpakai ${Number(entry.used_count)}/${Number(entry.quota)}</p>
+                  <small>${new Date(entry.starts_at).toLocaleString("id-ID")} – ${new Date(entry.expires_at).toLocaleString("id-ID")}</small>
+                  <div class="actions"><button class="btn secondary small" data-edit-voucher="${entry.id}" type="button">Edit</button><button class="btn secondary small" data-toggle-voucher="${entry.id}" type="button">${entry.is_active ? "Nonaktifkan" : "Aktifkan"}</button><button class="btn danger small" data-delete-voucher="${entry.id}" type="button">Hapus</button></div>
+                </article>`,
+                  )
+                  .join("") || '<div class="notice">Belum ada voucher.</div>'
+              }
+            </div>
+          </section>
+
+          <section class="card voucher-history-card">
+          <div class="admin-list-heading"><div><h3>Riwayat Pemakaian</h3><p class="muted">100 pemakaian terbaru.</p></div></div>
+          <div class="voucher-history-list">
+            ${voucherUsages.map((usage) => `<div class="voucher-history-row"><div><b>${esc(usage.voucher_code)}</b><span>${esc(usage.orders?.order_number || "-")} · ${esc(usage.orders?.customer_name || usage.orders?.customer_email || "-")}</span></div><strong>-${rupiah(usage.discount)}</strong><span class="${usage.status === "used" ? "admin-active" : "admin-inactive"}">${usage.status === "used" ? "Dipakai" : "Dikembalikan"}</span><small>${new Date(usage.used_at).toLocaleString("id-ID")}</small></div>`).join("") || '<div class="notice">Belum ada pemakaian voucher.</div>'}
+          </div>
+          </section>
+        </div>`;
+
+        document
+          .getElementById("voucherAppliesTo")
+          .addEventListener("change", (event) => {
+            document
+              .getElementById("voucherProductScope")
+              .classList.toggle("hidden", event.target.value !== "products");
+          });
+        document
+          .getElementById("voucherForm")
+          .addEventListener("submit", saveVoucher);
+        document
+          .getElementById("cancelVoucherEdit")
+          ?.addEventListener("click", () => {
+            editingVoucher = null;
+            renderVoucherTab();
+          });
+        document.querySelectorAll("[data-edit-voucher]").forEach((button) =>
+          button.addEventListener("click", () => {
+            editingVoucher = vouchers.find(
+              (entry) => entry.id === button.dataset.editVoucher,
+            );
+            renderVoucherTab();
+          }),
+        );
+        document
+          .querySelectorAll("[data-toggle-voucher]")
+          .forEach((button) =>
+            button.addEventListener("click", () =>
+              toggleVoucher(button.dataset.toggleVoucher),
+            ),
+          );
+        document
+          .querySelectorAll("[data-delete-voucher]")
+          .forEach((button) =>
+            button.addEventListener("click", () =>
+              deleteVoucher(button.dataset.deleteVoucher),
+            ),
+          );
+      }
+
+      async function saveVoucher(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const values = Object.fromEntries(new FormData(form));
+        const itemIds = new FormData(form).getAll("item_ids");
+        const payload = {
+          code: String(values.code || "")
+            .trim()
+            .toUpperCase(),
+          discount_type: values.discount_type,
+          discount_value: Number(values.discount_value),
+          min_purchase: Number(values.min_purchase || 0),
+          max_discount:
+            values.max_discount === "" ? null : Number(values.max_discount),
+          quota: Number(values.quota || 0),
+          starts_at: new Date(values.starts_at).toISOString(),
+          expires_at: new Date(values.expires_at).toISOString(),
+          applies_to: values.applies_to,
+          once_per_customer: form.elements.once_per_customer.checked,
+          is_active: form.elements.is_active.checked,
+        };
+        if (payload.discount_type === "percent" && payload.discount_value > 100)
+          return showAdminMessage(
+            "Potongan persentase maksimal 100%.",
+            "error",
+          );
+        if (new Date(payload.expires_at) <= new Date(payload.starts_at))
+          return showAdminMessage(
+            "Tanggal berakhir harus setelah tanggal mulai.",
+            "error",
+          );
+        if (payload.applies_to === "products" && !itemIds.length)
+          return showAdminMessage("Pilih minimal satu produk.", "error");
+
+        const result = editingVoucher
+          ? await supabase
+              .from("vouchers")
+              .update(payload)
+              .eq("id", editingVoucher.id)
+              .select("id")
+              .single()
+          : await supabase
+              .from("vouchers")
+              .insert(payload)
+              .select("id")
+              .single();
+        if (result.error)
+          return showAdminMessage(result.error.message, "error");
+        const voucherId = result.data.id;
+        const { error: deleteError } = await supabase
+          .from("voucher_items")
+          .delete()
+          .eq("voucher_id", voucherId);
+        if (deleteError) return showAdminMessage(deleteError.message, "error");
+        if (payload.applies_to === "products") {
+          const { error } = await supabase.from("voucher_items").insert(
+            itemIds.map((itemId) => ({
+              voucher_id: voucherId,
+              item_id: itemId,
+            })),
+          );
+          if (error) return showAdminMessage(error.message, "error");
+        }
+        editingVoucher = null;
+        await renderVoucherTab();
+        showAdminMessage("Voucher berhasil disimpan.", "success");
+      }
+
+      async function toggleVoucher(id) {
+        const voucher = vouchers.find((entry) => entry.id === id);
+        const { error } = await supabase
+          .from("vouchers")
+          .update({ is_active: !voucher.is_active })
+          .eq("id", id);
+        if (error) return showAdminMessage(error.message, "error");
+        await renderVoucherTab();
+      }
+
+      async function deleteVoucher(id) {
+        if (
+          !confirm(
+            "Hapus voucher ini? Voucher yang sudah memiliki riwayat mungkin tidak dapat dihapus.",
+          )
+        )
+          return;
+        const { error } = await supabase.from("vouchers").delete().eq("id", id);
+        if (error) return showAdminMessage(error.message, "error");
+        await renderVoucherTab();
+        showAdminMessage("Voucher berhasil dihapus.", "success");
       }
 
       async function renderPaymentLogsTab() {
@@ -678,7 +984,7 @@
                     .join("")}
                 </select>
               </label>
-              ${settingInput("payment_timeout_minutes", "Batas pembayaran (menit)", { type: "number", min: 5, max: 1440 })}
+              ${settingInput("payment_timeout_minutes", "Batas pembayaran (menit)", { type: "number", min: 5, max: 60, hint: "BTZPay menerima maksimal 60 menit." })}
             </div>
             <div class="notice warning">
               API key tidak disimpan di website. Simpan sebagai secret Edge Function bernama <b>BTZPAY_API_KEY</b>.
@@ -747,7 +1053,7 @@
         values.payment_enabled = form.elements.payment_enabled.checked;
         values.payment_timeout_minutes = Math.max(
           5,
-          Math.min(1440, Number(values.payment_timeout_minutes) || 15),
+          Math.min(60, Number(values.payment_timeout_minutes) || 15),
         );
 
         if (!values.site_name || !values.whatsapp_number) {
@@ -794,6 +1100,9 @@
           image_url: "",
           price: 0,
           stock: 0,
+          deposit: 0,
+          is_featured: false,
+          sort_order: 0,
           requires_guarantee: true,
           guarantee_note: "",
           is_active: true,
@@ -862,6 +1171,18 @@
                 >${esc(item.description || "")}</textarea>
               </label>
 
+              <div class="two">
+                <label class="field">
+                  <span>Kategori barang</span>
+                  <input class="input" name="category_name" list="catalogCategoryOptions" value="${esc(item.item_categories?.name || "")}" placeholder="Contoh: Tenda">
+                  <datalist id="catalogCategoryOptions">${categories.map((category) => `<option value="${esc(category.name)}"></option>`).join("")}</datalist>
+                </label>
+                <label class="field">
+                  <span>Deposit per barang</span>
+                  <input class="input" name="deposit" type="number" min="0" step="1000" value="${Number(item.deposit || 0)}">
+                </label>
+              </div>
+
               <label class="field">
                 <span>URL gambar *</span>
                 <input
@@ -885,6 +1206,62 @@
                   alt="Preview item sewa"
                 >
               </div>
+
+              <details class="admin-advanced-section" open>
+                <summary>Galeri, varian, inventaris & harga paket</summary>
+                <div class="form admin-advanced-body">
+                  <label class="field">
+                    <span>Galeri foto tambahan</span>
+                    <textarea class="input" name="gallery_urls" rows="4" placeholder="Satu URL gambar per baris">${esc(
+                      (item.item_images || [])
+                        .filter(
+                          (image) =>
+                            !image.is_primary &&
+                            image.image_url !== item.image_url,
+                        )
+                        .sort((a, b) => a.sort_order - b.sort_order)
+                        .map((image) => image.image_url)
+                        .join("\n"),
+                    )}</textarea>
+                    <small class="muted">Foto utama menggunakan URL gambar di atas.</small>
+                  </label>
+                  <label class="field catalog-upload-field">
+                    <span>Upload beberapa foto</span>
+                    <input id="catalogGalleryUpload" class="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+                    <small id="catalogUploadStatus" class="muted">Maksimal 8 MB per foto. URL hasil upload masuk otomatis ke galeri.</small>
+                  </label>
+                  <label class="field">
+                    <span>Varian ukuran / kapasitas</span>
+                    <textarea class="input" name="variants" rows="4" placeholder="Nama | Kapasitas | Tambahan harga | Stok">${esc(
+                      (item.item_variants || [])
+                        .sort((a, b) => a.sort_order - b.sort_order)
+                        .map(
+                          (variant) =>
+                            `${variant.name} | ${variant.capacity || ""} | ${Number(variant.price_adjustment || 0)} | ${Number(variant.stock || 0)}`,
+                        )
+                        .join("\n"),
+                    )}</textarea>
+                  </label>
+                  <label class="field">
+                    <span>Unit inventaris</span>
+                    <textarea class="input" name="inventory_units" rows="5" placeholder="Nomor inventaris | Kondisi | Status | Catatan">${esc((item.inventory_units || []).map((unit) => `${unit.inventory_number} | ${unit.condition} | ${unit.status} | ${unit.notes || ""}`).join("\n"))}</textarea>
+                    <small class="muted">Kondisi: new/good/fair/damaged. Status: available/rented/damaged/maintenance/retired.</small>
+                  </label>
+                  <label class="field">
+                    <span>Harga paket</span>
+                    <textarea class="input" name="price_tiers" rows="4" placeholder="Nama paket | Jumlah hari | Harga">${esc(
+                      (item.item_price_tiers || [])
+                        .sort((a, b) => a.duration_days - b.duration_days)
+                        .map(
+                          (tier) =>
+                            `${tier.label} | ${tier.duration_days} | ${Number(tier.price)}`,
+                        )
+                        .join("\n"),
+                    )}</textarea>
+                    <small class="muted">Contoh: Paket 2 Hari | 2 | 150000</small>
+                  </label>
+                </div>
+              </details>
 
               <div class="two">
                 <label class="field">
@@ -932,6 +1309,16 @@
                   >
                   <span>Tampilkan di katalog</span>
                 </label>
+
+                <label class="admin-check">
+                  <input name="is_featured" type="checkbox" ${item.is_featured ? "checked" : ""}>
+                  <span>Produk unggulan</span>
+                </label>
+
+                <label class="field compact-field">
+                  <span>Urutan tampil</span>
+                  <input class="input" name="sort_order" type="number" step="1" value="${Number(item.sort_order || 0)}">
+                </label>
               </div>
 
               <label class="field">
@@ -960,9 +1347,12 @@
                 </p>
               </div>
 
-              <button id="refreshRentals" class="btn secondary small" type="button">
-                Muat Ulang
-              </button>
+              <div class="actions catalog-tools">
+                <button id="exportCatalogCsv" class="btn secondary small" type="button">Ekspor CSV</button>
+                <label class="btn secondary small catalog-import-label">Impor CSV<input id="importCatalogCsv" type="file" accept=".csv,text/csv" hidden></label>
+                <button id="viewArchivedCatalog" class="btn secondary small" type="button">Arsip</button>
+                <button id="refreshRentals" class="btn secondary small" type="button">Muat Ulang</button>
+              </div>
             </div>
 
             <div class="admin-catalog-list">
@@ -988,19 +1378,29 @@
 
           <div class="admin-rental-body">
             <div class="row">
-              <span class="badge">Sewa Item</span>
+              <span class="badge">${esc(item.item_categories?.name || "Sewa Item")}</span>
               <span class="${item.is_active ? "admin-active" : "admin-inactive"}">
                 ${item.is_active ? "Aktif" : "Nonaktif"}
               </span>
             </div>
 
             <h3>${esc(item.title)}</h3>
+            ${item.is_featured ? '<span class="catalog-featured-badge">★ Produk unggulan</span>' : ""}
             <p class="muted admin-clamp">${esc(item.description || "")}</p>
 
             <div class="admin-rental-summary">
               <strong>${rupiah(item.price)}</strong>
               <span>${Number(item.stock || 0)} stok</span>
             </div>
+
+            <div class="inventory-status-pills">
+              <span>Tersedia ${Number((item.inventory_units || []).filter((unit) => unit.status === "available").length || item.stock || 0)}</span>
+              <span>Disewa ${Number((item.inventory_units || []).filter((unit) => unit.status === "rented").length)}</span>
+              <span>Rusak ${Number((item.inventory_units || []).filter((unit) => unit.status === "damaged").length)}</span>
+              <span>Perawatan ${Number((item.inventory_units || []).filter((unit) => unit.status === "maintenance").length)}</span>
+            </div>
+
+            ${Number(item.deposit || 0) > 0 ? `<p class="catalog-deposit">Deposit ${rupiah(item.deposit)}</p>` : ""}
 
             ${
               item.requires_guarantee
@@ -1034,8 +1434,10 @@
                 type="button"
                 data-delete-rental="${item.id}"
               >
-                Hapus
+                Arsipkan
               </button>
+
+              <button class="btn secondary small" type="button" data-duplicate-rental="${item.id}">Duplikasi</button>
             </div>
           </div>
         </article>`;
@@ -1071,6 +1473,9 @@
         });
 
         form.addEventListener("submit", saveRental);
+        document
+          .getElementById("catalogGalleryUpload")
+          ?.addEventListener("change", uploadCatalogImages);
 
         document
           .getElementById("cancelRentalEdit")
@@ -1086,6 +1491,15 @@
             renderRentalTab();
             showAdminMessage("Daftar item sewa dimuat ulang.", "success");
           });
+        document
+          .getElementById("exportCatalogCsv")
+          .addEventListener("click", exportCatalogCsv);
+        document
+          .getElementById("importCatalogCsv")
+          .addEventListener("change", importCatalogCsv);
+        document
+          .getElementById("viewArchivedCatalog")
+          .addEventListener("click", renderArchivedCatalog);
 
         document.querySelectorAll("[data-edit-rental]").forEach((button) => {
           button.addEventListener("click", () => {
@@ -1110,6 +1524,444 @@
             deleteItem(button.dataset.deleteRental, "rental");
           });
         });
+        document
+          .querySelectorAll("[data-duplicate-rental]")
+          .forEach((button) => {
+            button.addEventListener("click", () =>
+              duplicateRental(button.dataset.duplicateRental),
+            );
+          });
+      }
+
+      function csvCell(value) {
+        const text = String(value ?? "");
+        return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+      }
+
+      function parseCsv(text) {
+        const rows = [];
+        let row = [],
+          cell = "",
+          quoted = false;
+        for (let index = 0; index < text.length; index += 1) {
+          const char = text[index];
+          if (quoted && char === '"' && text[index + 1] === '"') {
+            cell += '"';
+            index += 1;
+          } else if (char === '"') quoted = !quoted;
+          else if (char === "," && !quoted) {
+            row.push(cell);
+            cell = "";
+          } else if ((char === "\n" || char === "\r") && !quoted) {
+            if (char === "\r" && text[index + 1] === "\n") index += 1;
+            row.push(cell);
+            if (row.some((value) => value !== "")) rows.push(row);
+            row = [];
+            cell = "";
+          } else cell += char;
+        }
+        row.push(cell);
+        if (row.some((value) => value !== "")) rows.push(row);
+        const headers = rows.shift()?.map((header) => header.trim()) || [];
+        return rows.map((values) =>
+          Object.fromEntries(
+            headers.map((header, index) => [header, values[index] ?? ""]),
+          ),
+        );
+      }
+
+      function catalogRelationText(item, key) {
+        if (key === "gallery_urls")
+          return (item.item_images || [])
+            .filter((image) => !image.is_primary)
+            .map((image) => image.image_url)
+            .join(";");
+        if (key === "variants")
+          return (item.item_variants || [])
+            .map(
+              (variant) =>
+                `${variant.name}|${variant.capacity || ""}|${variant.price_adjustment}|${variant.stock}`,
+            )
+            .join(";");
+        if (key === "inventory_units")
+          return (item.inventory_units || [])
+            .map(
+              (unit) =>
+                `${unit.inventory_number}|${unit.condition}|${unit.status}|${unit.notes || ""}`,
+            )
+            .join(";");
+        return (item.item_price_tiers || [])
+          .map((tier) => `${tier.label}|${tier.duration_days}|${tier.price}`)
+          .join(";");
+      }
+
+      function exportCatalogCsv() {
+        const headers = [
+          "category",
+          "title",
+          "slug",
+          "description",
+          "image_url",
+          "gallery_urls",
+          "price",
+          "deposit",
+          "stock",
+          "is_featured",
+          "sort_order",
+          "requires_guarantee",
+          "guarantee_note",
+          "is_active",
+          "variants",
+          "inventory_units",
+          "price_tiers",
+        ];
+        const rows = rentalItems().map((item) => [
+          item.item_categories?.name || "",
+          item.title,
+          item.slug,
+          item.description,
+          item.image_url,
+          catalogRelationText(item, "gallery_urls"),
+          item.price,
+          item.deposit || 0,
+          item.stock,
+          item.is_featured,
+          item.sort_order || 0,
+          item.requires_guarantee,
+          item.guarantee_note || "",
+          item.is_active,
+          catalogRelationText(item, "variants"),
+          catalogRelationText(item, "inventory_units"),
+          catalogRelationText(item, "price_tiers"),
+        ]);
+        const csv =
+          "\ufeff" +
+          [headers, ...rows]
+            .map((row) => row.map(csvCell).join(","))
+            .join("\r\n");
+        const url = URL.createObjectURL(
+          new Blob([csv], { type: "text/csv;charset=utf-8" }),
+        );
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `katalog-abidzar-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      async function importCatalogCsv(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+          const rows = parseCsv(await file.text());
+          if (!rows.length) throw new Error("CSV tidak memiliki data.");
+          let processed = 0;
+          for (const row of rows) {
+            const categoryId = await resolveCategoryId(row.category);
+            const payload = {
+              type: "product",
+              title: String(row.title || "").trim(),
+              slug: slugify(row.slug || row.title),
+              description: row.description || "",
+              image_url: row.image_url || "",
+              price: Number(row.price || 0),
+              deposit: Number(row.deposit || 0),
+              stock: Math.max(0, Number(row.stock || 0)),
+              category_id: categoryId,
+              is_featured: String(row.is_featured).toLowerCase() === "true",
+              sort_order: Number(row.sort_order || 0),
+              requires_guarantee:
+                String(row.requires_guarantee).toLowerCase() === "true",
+              guarantee_note: row.guarantee_note || null,
+              is_active: String(row.is_active).toLowerCase() !== "false",
+              archived_at: null,
+            };
+            if (!payload.title || !payload.slug)
+              throw new Error("Kolom title dan slug wajib diisi.");
+            const { data, error } = await supabase
+              .from("items")
+              .upsert(payload, { onConflict: "slug" })
+              .select("id")
+              .single();
+            if (error) throw error;
+            await syncRentalRelations(
+              data.id,
+              {
+                gallery_urls: String(row.gallery_urls || "")
+                  .split(";")
+                  .join("\n"),
+                variants: String(row.variants || "")
+                  .split(";")
+                  .join("\n"),
+                inventory_units: String(row.inventory_units || "")
+                  .split(";")
+                  .join("\n"),
+                price_tiers: String(row.price_tiers || "")
+                  .split(";")
+                  .join("\n"),
+              },
+              payload.image_url,
+              payload.title,
+            );
+            processed += 1;
+          }
+          await refreshItems();
+          renderRentalTab();
+          showAdminMessage(`${processed} produk berhasil diimpor.`, "success");
+        } catch (error) {
+          showAdminMessage(`Impor CSV gagal: ${error.message}`, "error");
+        } finally {
+          event.target.value = "";
+        }
+      }
+
+      async function duplicateRental(id) {
+        const source = rentalItems().find((item) => item.id === id);
+        if (!source) return;
+        const suffix = Date.now().toString().slice(-6);
+        const payload = { ...source };
+        [
+          "id",
+          "created_at",
+          "updated_at",
+          "item_categories",
+          "item_images",
+          "item_variants",
+          "inventory_units",
+          "item_price_tiers",
+        ].forEach((key) => delete payload[key]);
+        payload.title = `${source.title} (Salinan)`;
+        payload.slug = `${source.slug}-copy-${suffix}`;
+        payload.is_active = false;
+        payload.is_featured = false;
+        const { data, error } = await supabase
+          .from("items")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) return showAdminMessage(error.message, "error");
+        await syncRentalRelations(
+          data.id,
+          {
+            gallery_urls: catalogRelationText(source, "gallery_urls")
+              .split(";")
+              .join("\n"),
+            variants: catalogRelationText(source, "variants")
+              .split(";")
+              .join("\n"),
+            inventory_units: "",
+            price_tiers: catalogRelationText(source, "price_tiers")
+              .split(";")
+              .join("\n"),
+          },
+          source.image_url,
+          payload.title,
+        );
+        await refreshItems();
+        renderRentalTab();
+        showAdminMessage(
+          "Produk berhasil diduplikasi dalam status nonaktif. Nomor inventaris tidak disalin.",
+          "success",
+        );
+      }
+
+      async function renderArchivedCatalog() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = '<div class="notice">Memuat arsip katalog...</div>';
+        const { data, error } = await supabase
+          .from("items")
+          .select("id,title,slug,image_url,archived_at,type")
+          .not("archived_at", "is", null)
+          .order("archived_at", { ascending: false });
+        if (error) return showAdminMessage(error.message, "error");
+        content.innerHTML = `
+          <div class="admin-list-heading"><div><h3>Arsip Katalog</h3><p class="muted">Produk tetap tersimpan untuk menjaga riwayat pesanan.</p></div><button id="backFromArchive" class="btn secondary small" type="button">Kembali</button></div>
+          <div class="archived-catalog-list">
+            ${(data || []).map((item) => `<article class="card archived-catalog-card"><img src="${esc(item.image_url)}" alt="${esc(item.title)}"><div><span class="badge">${item.type === "trip" ? "Trip" : "Sewa"}</span><h3>${esc(item.title)}</h3><small>Diarsipkan ${new Date(item.archived_at).toLocaleString("id-ID")}</small></div><button class="btn small" type="button" data-restore-item="${item.id}">Pulihkan</button></article>`).join("") || '<div class="notice">Arsip masih kosong.</div>'}
+          </div>`;
+        document
+          .getElementById("backFromArchive")
+          .addEventListener("click", renderRentalTab);
+        document.querySelectorAll("[data-restore-item]").forEach((button) =>
+          button.addEventListener("click", async () => {
+            const { error: restoreError } = await supabase
+              .from("items")
+              .update({ archived_at: null, is_active: false })
+              .eq("id", button.dataset.restoreItem);
+            if (restoreError)
+              return showAdminMessage(restoreError.message, "error");
+            await refreshItems();
+            renderArchivedCatalog();
+            showAdminMessage(
+              "Produk dipulihkan dalam status nonaktif.",
+              "success",
+            );
+          }),
+        );
+      }
+
+      function parseCatalogLines(value, expectedParts) {
+        return String(value || "")
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line, index) => {
+            const parts = line.split("|").map((part) => part.trim());
+            if (parts.length < expectedParts)
+              throw new Error(
+                `Format baris ${index + 1} tidak lengkap: ${line}`,
+              );
+            return parts;
+          });
+      }
+
+      async function uploadCatalogImages(event) {
+        const files = [...(event.target.files || [])];
+        if (!files.length) return;
+        const status = document.getElementById("catalogUploadStatus");
+        const textarea = document.querySelector('[name="gallery_urls"]');
+        const uploaded = [];
+        status.textContent = `Mengupload 0/${files.length} foto...`;
+        try {
+          for (let index = 0; index < files.length; index += 1) {
+            const file = files[index];
+            if (file.size > 8 * 1024 * 1024)
+              throw new Error(`${file.name} lebih besar dari 8 MB.`);
+            const extension =
+              file.name.split(".").pop()?.toLowerCase() || "jpg";
+            const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
+            const { error } = await supabase.storage
+              .from("catalog")
+              .upload(path, file, { cacheControl: "31536000", upsert: false });
+            if (error) throw error;
+            uploaded.push(
+              supabase.storage.from("catalog").getPublicUrl(path).data
+                .publicUrl,
+            );
+            status.textContent = `Mengupload ${index + 1}/${files.length} foto...`;
+          }
+          textarea.value = [textarea.value.trim(), ...uploaded]
+            .filter(Boolean)
+            .join("\n");
+          status.textContent = `${uploaded.length} foto berhasil diupload.`;
+        } catch (error) {
+          status.textContent = `Upload gagal: ${error.message}`;
+        } finally {
+          event.target.value = "";
+        }
+      }
+
+      async function resolveCategoryId(name) {
+        const categoryName = String(name || "").trim();
+        if (!categoryName) return null;
+        const existing = categories.find(
+          (category) =>
+            category.name.toLowerCase() === categoryName.toLowerCase(),
+        );
+        if (existing) return existing.id;
+        const { data, error } = await supabase
+          .from("item_categories")
+          .insert({ name: categoryName, slug: slugify(categoryName) })
+          .select("id")
+          .single();
+        if (error) throw error;
+        categories.push({
+          id: data.id,
+          name: categoryName,
+          slug: slugify(categoryName),
+        });
+        return data.id;
+      }
+
+      async function syncRentalRelations(itemId, values, primaryImage, title) {
+        const gallery = String(values.gallery_urls || "")
+          .split(/\r?\n/)
+          .map((url) => url.trim())
+          .filter(Boolean);
+        const variants = parseCatalogLines(values.variants, 4);
+        const units = parseCatalogLines(values.inventory_units, 3);
+        const tiers = parseCatalogLines(values.price_tiers, 3);
+
+        const tables = [
+          "item_images",
+          "item_variants",
+          "inventory_units",
+          "item_price_tiers",
+        ];
+        for (const table of tables) {
+          const { error } = await supabase
+            .from(table)
+            .delete()
+            .eq("item_id", itemId);
+          if (error) throw error;
+        }
+
+        const imageRows = [primaryImage, ...gallery]
+          .filter(Boolean)
+          .filter((url, index, all) => all.indexOf(url) === index)
+          .map((imageUrl, index) => ({
+            item_id: itemId,
+            image_url: imageUrl,
+            alt_text: title,
+            is_primary: index === 0,
+            sort_order: index,
+          }));
+        if (imageRows.length) {
+          const { error } = await supabase
+            .from("item_images")
+            .insert(imageRows);
+          if (error) throw error;
+        }
+        if (variants.length) {
+          const { error } = await supabase.from("item_variants").insert(
+            variants.map(([name, capacity, adjustment, stock], index) => ({
+              item_id: itemId,
+              name,
+              capacity: capacity || null,
+              price_adjustment: Number(adjustment || 0),
+              stock: Math.max(0, Number(stock || 0)),
+              sort_order: index,
+            })),
+          );
+          if (error) throw error;
+        }
+        if (units.length) {
+          const validConditions = ["new", "good", "fair", "damaged"];
+          const validStatuses = [
+            "available",
+            "rented",
+            "damaged",
+            "maintenance",
+            "retired",
+          ];
+          const rows = units.map(([number, condition, status, notes]) => {
+            if (!validConditions.includes(condition))
+              throw new Error(`Kondisi inventaris ${number} tidak valid.`);
+            if (!validStatuses.includes(status))
+              throw new Error(`Status inventaris ${number} tidak valid.`);
+            return {
+              item_id: itemId,
+              inventory_number: number,
+              condition,
+              status,
+              notes: notes || null,
+            };
+          });
+          const { error } = await supabase.from("inventory_units").insert(rows);
+          if (error) throw error;
+        }
+        if (tiers.length) {
+          const { error } = await supabase.from("item_price_tiers").insert(
+            tiers.map(([label, days, price], index) => ({
+              item_id: itemId,
+              label,
+              duration_days: Math.max(1, Number(days)),
+              price: Math.max(0, Number(price)),
+              sort_order: index,
+            })),
+          );
+          if (error) throw error;
+        }
       }
 
       async function saveRental(event) {
@@ -1120,6 +1972,17 @@
         const formData = new FormData(form);
         const button = document.getElementById("saveRentalButton");
 
+        let categoryId;
+        try {
+          categoryId = await resolveCategoryId(values.category_name);
+          parseCatalogLines(values.variants, 4);
+          parseCatalogLines(values.inventory_units, 3);
+          parseCatalogLines(values.price_tiers, 3);
+        } catch (error) {
+          showAdminMessage(error.message, "error");
+          return;
+        }
+
         const payload = {
           title: String(values.title || "").trim(),
           slug: slugify(values.slug),
@@ -1128,6 +1991,10 @@
           image_url: String(values.image_url || "").trim(),
           price: Number(values.price || 0),
           stock: Number(values.stock || 0),
+          category_id: categoryId,
+          deposit: Number(values.deposit || 0),
+          is_featured: formData.has("is_featured"),
+          sort_order: Number(values.sort_order || 0),
           location: null,
           trip_date: null,
           quota: null,
@@ -1150,9 +2017,11 @@
               .update(payload)
               .eq("id", editingItem.id)
               .eq("type", "product")
-          : supabase.from("items").insert(payload);
+              .select("id")
+              .single()
+          : supabase.from("items").insert(payload).select("id").single();
 
-        const { error } = await query;
+        const { data: savedItem, error } = await query;
 
         button.disabled = false;
         button.textContent = editingItem
@@ -1164,6 +2033,22 @@
             error.code === "23505"
               ? "Slug sudah digunakan. Gunakan slug lain."
               : error.message,
+            "error",
+          );
+          return;
+        }
+
+        try {
+          await syncRentalRelations(
+            savedItem.id,
+            values,
+            payload.image_url,
+            payload.title,
+          );
+        } catch (relationError) {
+          button.disabled = false;
+          showAdminMessage(
+            `Item tersimpan, tetapi data lanjutan gagal: ${relationError.message}`,
             "error",
           );
           return;
@@ -1198,6 +2083,16 @@
           requires_guarantee: false,
           guarantee_note: "",
           is_active: true,
+        };
+        const detail = Array.isArray(item.trip_details)
+          ? item.trip_details[0] || {}
+          : item.trip_details || {};
+        const localDateTime = (value) => {
+          if (!value) return "";
+          const date = new Date(value);
+          return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16);
         };
 
         content.innerHTML = `
@@ -1250,6 +2145,51 @@
                     placeholder="open-trip-dieng"
                   >
                 </label>
+              </div>
+
+              <div class="trip-admin-section">
+                <h3>Jadwal & operasional</h3>
+                <div class="two">
+                  <label class="field"><span>Keberangkatan *</span><input class="input" name="departure_at" type="datetime-local" required value="${localDateTime(detail.departure_at || item.trip_date)}"></label>
+                  <label class="field"><span>Kepulangan *</span><input class="input" name="return_at" type="datetime-local" required value="${localDateTime(detail.return_at)}"></label>
+                  <label class="field"><span>Lokasi meeting point *</span><input class="input" name="meeting_point" required value="${esc(detail.meeting_point || item.location || "")}"></label>
+                  <label class="field"><span>Petunjuk waktu meeting</span><input class="input" name="meeting_time" value="${esc(detail.meeting_time || "")}" placeholder="Hadir 30 menit sebelumnya"></label>
+                  <label class="field"><span>Batas pendaftaran *</span><input class="input" name="registration_deadline" type="datetime-local" required value="${localDateTime(detail.registration_deadline)}"></label>
+                  <label class="field"><span>Status trip *</span><select class="input" name="trip_status">${[
+                    ["draft", "Draft"],
+                    ["open", "Dibuka"],
+                    ["full", "Penuh"],
+                    ["running", "Berjalan"],
+                    ["completed", "Selesai"],
+                    ["cancelled", "Dibatalkan"],
+                  ]
+                    .map(
+                      ([v, l]) =>
+                        `<option value="${v}" ${detail.status === v ? "selected" : ""}>${l}</option>`,
+                    )
+                    .join("")}</select></label>
+                  <label class="field"><span>Tingkat kesulitan</span><select class="input" name="difficulty">${[
+                    ["easy", "Mudah"],
+                    ["moderate", "Sedang"],
+                    ["hard", "Sulit"],
+                    ["extreme", "Ekstrem"],
+                  ]
+                    .map(
+                      ([v, l]) =>
+                        `<option value="${v}" ${(detail.difficulty || "moderate") === v ? "selected" : ""}>${l}</option>`,
+                    )
+                    .join("")}</select></label>
+                  <label class="field"><span>Minimal peserta</span><input class="input" name="min_participants" type="number" min="1" value="${Number(detail.min_participants || 1)}"></label>
+                  <label class="field"><span>Usia minimum</span><input class="input" name="min_age" type="number" min="0" value="${detail.min_age ?? ""}"></label>
+                  <label class="field"><span>Usia maksimum</span><input class="input" name="max_age" type="number" min="0" value="${detail.max_age ?? ""}"></label>
+                </div>
+                <label class="field"><span>Itinerary</span><textarea class="input" name="itinerary" placeholder="Hari/jam | kegiatan">${esc(detail.itinerary || "")}</textarea></label>
+                <div class="two">
+                  <label class="field"><span>Fasilitas termasuk</span><textarea class="input" name="included_facilities">${esc(detail.included_facilities || "")}</textarea></label>
+                  <label class="field"><span>Tidak termasuk</span><textarea class="input" name="excluded_facilities">${esc(detail.excluded_facilities || "")}</textarea></label>
+                </div>
+                <label class="field"><span>Perlengkapan wajib</span><textarea class="input" name="required_equipment">${esc(detail.required_equipment || "")}</textarea></label>
+                <label class="field"><span>Informasi perjalanan untuk peserta</span><textarea class="input" name="travel_information" placeholder="Pesan yang akan disalin/dikirim via WhatsApp">${esc(detail.travel_information || "")}</textarea></label>
               </div>
 
               <label class="field">
@@ -1364,6 +2304,18 @@
       }
 
       function renderTripCard(item) {
+        const detail = Array.isArray(item.trip_details)
+          ? item.trip_details[0] || {}
+          : item.trip_details || {};
+        const statusName =
+          {
+            draft: "Draft",
+            open: "Dibuka",
+            full: "Penuh",
+            running: "Berjalan",
+            completed: "Selesai",
+            cancelled: "Dibatalkan",
+          }[detail.status] || "Belum diatur";
         return `
         <article class="card admin-rental-card">
           <img src="${esc(item.image_url)}" alt="${esc(item.title)}">
@@ -1381,7 +2333,7 @@
 
             <div class="admin-rental-summary">
               <strong>${rupiah(item.price)}</strong>
-              <span>${Number(item.quota || 0)} kursi</span>
+              <span>${Number(item.quota || 0)} kursi · ${statusName}</span>
             </div>
 
             <p class="admin-rental-guarantee">
@@ -1396,6 +2348,7 @@
             </p>
 
             <div class="actions">
+              <button class="btn small" data-trip-participants="${item.id}" type="button">Peserta</button>
               <button
                 class="btn secondary small"
                 data-edit-trip="${item.id}"
@@ -1470,6 +2423,93 @@
             deleteItem(button.dataset.deleteTrip, "trip");
           });
         });
+        document
+          .querySelectorAll("[data-trip-participants]")
+          .forEach((button) => {
+            button.addEventListener("click", () =>
+              renderTripParticipants(button.dataset.tripParticipants),
+            );
+          });
+      }
+
+      async function renderTripParticipants(itemId) {
+        const content = document.getElementById("adminContent");
+        const trip = tripItems().find((entry) => entry.id === itemId);
+        if (!trip) return;
+        content.innerHTML = '<div class="notice">Memuat data peserta...</div>';
+        const { data, error } = await supabase
+          .from("trip_participants")
+          .select("*,orders(order_number,status)")
+          .eq("item_id", itemId)
+          .order("seat_number");
+        if (error) {
+          content.innerHTML = `<div class="notice error">${esc(error.message)}<br><small>Jalankan open-trip-management.sql.</small></div>`;
+          return;
+        }
+        const detail = Array.isArray(trip.trip_details)
+          ? trip.trip_details[0] || {}
+          : trip.trip_details || {};
+        const baseMessage = [
+          `Informasi perjalanan ${trip.title}`,
+          detail.departure_at
+            ? `Keberangkatan: ${new Date(detail.departure_at).toLocaleString("id-ID")}`
+            : "",
+          detail.meeting_point ? `Meeting point: ${detail.meeting_point}` : "",
+          detail.meeting_time || "",
+          detail.travel_information || "",
+        ]
+          .filter(Boolean)
+          .join("\n");
+        content.innerHTML = `
+          <div class="admin-list-heading"><div><span class="badge">Peserta Open Trip</span><h2>${esc(trip.title)}</h2><p class="muted">${data.length} peserta terdaftar dari ${Number(trip.quota || 0)} kursi.</p></div><button id="backToTrips" class="btn secondary" type="button">Kembali</button></div>
+          <section class="card trip-message-card"><h3>Informasi perjalanan</h3><pre>${esc(baseMessage || "Belum ada informasi perjalanan.")}</pre><button id="copyTripInfo" class="btn secondary small" type="button">Salin Informasi</button></section>
+          <div class="trip-participant-grid">${
+            data
+              .map((participant) => {
+                const digits = String(participant.phone || "")
+                  .replace(/\D/g, "")
+                  .replace(/^0/, "62");
+                const messageText = `Halo ${participant.full_name},\n\n${baseMessage}`;
+                return `<article class="card trip-participant-card"><div class="row"><strong>Kursi ${participant.seat_number} · ${esc(participant.full_name)}</strong><span class="badge">${esc(participant.status)}</span></div><p>📱 ${esc(participant.phone)} · Usia ${participant.age}</p><p>Kontak darurat: ${esc(participant.emergency_contact_name)} — ${esc(participant.emergency_contact_phone)}</p><p class="muted">Pesanan ${esc(participant.orders?.order_number || "-")} · ${esc(participant.orders?.status || "-")}</p><div class="actions"><select class="input compact-input" data-participant-status="${participant.id}">${[
+                  ["registered", "Terdaftar"],
+                  ["confirmed", "Dikonfirmasi"],
+                  ["attended", "Hadir"],
+                  ["cancelled", "Batal"],
+                ]
+                  .map(
+                    ([v, l]) =>
+                      `<option value="${v}" ${participant.status === v ? "selected" : ""}>${l}</option>`,
+                  )
+                  .join(
+                    "",
+                  )}</select><a class="btn small" target="_blank" rel="noopener" href="https://wa.me/${digits}?text=${encodeURIComponent(messageText)}">WhatsApp</a></div></article>`;
+              })
+              .join("") || '<div class="notice">Belum ada peserta.</div>'
+          }</div>`;
+        document.getElementById("backToTrips").onclick = renderTripTab;
+        document.getElementById("copyTripInfo").onclick = async () => {
+          await navigator.clipboard.writeText(baseMessage);
+          showAdminMessage("Informasi perjalanan berhasil disalin.", "success");
+        };
+        document
+          .querySelectorAll("[data-participant-status]")
+          .forEach((select) => {
+            select.addEventListener("change", async () => {
+              const { error: statusError } = await supabase.rpc(
+                "admin_update_trip_participant_status",
+                {
+                  p_participant_id: select.dataset.participantStatus,
+                  p_status: select.value,
+                },
+              );
+              showAdminMessage(
+                statusError
+                  ? statusError.message
+                  : "Status peserta diperbarui.",
+                statusError ? "error" : "success",
+              );
+            });
+          });
       }
 
       async function saveTrip(event) {
@@ -1505,9 +2545,11 @@
               .update(payload)
               .eq("id", editingItem.id)
               .eq("type", "trip")
-          : supabase.from("items").insert(payload);
+              .select("id")
+              .single()
+          : supabase.from("items").insert(payload).select("id").single();
 
-        const { error } = await query;
+        const { data: savedTrip, error } = await query;
 
         button.disabled = false;
         button.textContent = editingItem
@@ -1519,6 +2561,48 @@
             error.code === "23505"
               ? "Slug sudah digunakan. Gunakan slug lain."
               : error.message,
+            "error",
+          );
+          return;
+        }
+
+        const nullableNumber = (value) =>
+          value === "" || value == null ? null : Number(value);
+        const detailsPayload = {
+          item_id: savedTrip.id,
+          departure_at: values.departure_at
+            ? new Date(values.departure_at).toISOString()
+            : null,
+          return_at: values.return_at
+            ? new Date(values.return_at).toISOString()
+            : null,
+          meeting_point: String(values.meeting_point || "").trim(),
+          meeting_time: String(values.meeting_time || "").trim() || null,
+          itinerary: String(values.itinerary || "").trim() || null,
+          included_facilities:
+            String(values.included_facilities || "").trim() || null,
+          excluded_facilities:
+            String(values.excluded_facilities || "").trim() || null,
+          difficulty: values.difficulty || "moderate",
+          min_age: nullableNumber(values.min_age),
+          max_age: nullableNumber(values.max_age),
+          required_equipment:
+            String(values.required_equipment || "").trim() || null,
+          min_participants: Math.max(1, Number(values.min_participants || 1)),
+          registration_deadline: values.registration_deadline
+            ? new Date(values.registration_deadline).toISOString()
+            : null,
+          status: values.trip_status || "draft",
+          travel_information:
+            String(values.travel_information || "").trim() || null,
+          updated_at: new Date().toISOString(),
+        };
+        const { error: detailError } = await supabase
+          .from("trip_details")
+          .upsert(detailsPayload, { onConflict: "item_id" });
+        if (detailError) {
+          showAdminMessage(
+            `Trip tersimpan, tetapi detail gagal: ${detailError.message}. Jalankan open-trip-management.sql.`,
             "error",
           );
           return;
@@ -1566,39 +2650,40 @@
         if (!item || item.type !== expectedDatabaseType) return;
 
         const confirmed = confirm(
-          `Hapus "${item.title}"?\n\n` +
-            "Jika item pernah dipesan, database mungkin menolak penghapusan. " +
-            "Gunakan Nonaktifkan untuk menyembunyikannya tanpa menghapus riwayat.",
+          `Arsipkan "${item.title}"?\n\nProduk hilang dari katalog tetapi riwayat pesanan tetap aman.`,
         );
 
         if (!confirmed) return;
 
         const { error } = await supabase
           .from("items")
-          .delete()
+          .update({ archived_at: new Date().toISOString(), is_active: false })
           .eq("id", id)
           .eq("type", expectedDatabaseType);
 
         if (error) {
-          showAdminMessage(
-            error.code === "23503"
-              ? "Item sudah terhubung ke pesanan dan tidak dapat dihapus. Gunakan tombol Nonaktifkan."
-              : error.message,
-            "error",
-          );
+          showAdminMessage(error.message, "error");
           return;
         }
 
         editingItem = null;
         await refreshItems();
         renderActiveTab();
-        showAdminMessage("Item berhasil dihapus.", "success");
+        showAdminMessage(
+          "Item berhasil diarsipkan tanpa menghapus riwayat.",
+          "success",
+        );
       }
 
       async function refreshItems() {
         const { data, error } = await supabase
           .from("items")
-          .select("*")
+          .select(
+            "*,item_categories(id,name,slug),item_images(*),item_variants(*),inventory_units(*),item_price_tiers(*),trip_details(*)",
+          )
+          .is("archived_at", null)
+          .order("is_featured", { ascending: false })
+          .order("sort_order", { ascending: true })
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -1607,22 +2692,51 @@
 
       function renderOrdersTab() {
         const content = document.getElementById("adminContent");
+        const filteredOrders = orders.filter((order) => {
+          const needle = orderSearch.toLowerCase();
+          const matchesSearch =
+            !needle ||
+            [order.order_number, order.customer_name, order.phone].some(
+              (value) =>
+                String(value || "")
+                  .toLowerCase()
+                  .includes(needle),
+            );
+          const matchesStatus =
+            orderStatusFilter === "all" || order.status === orderStatusFilter;
+          const date = String(order.created_at || "").slice(0, 10);
+          return (
+            matchesSearch &&
+            matchesStatus &&
+            (!orderDateFrom || date >= orderDateFrom) &&
+            (!orderDateTo || date <= orderDateTo)
+          );
+        });
 
         content.innerHTML = `
         <div class="admin-list-heading">
           <div>
             <h3>Pesanan Pelanggan</h3>
-            <p class="muted">${orders.length} pesanan tersimpan.</p>
+            <p class="muted">${filteredOrders.length} dari ${orders.length} pesanan.</p>
           </div>
 
-          <button id="refreshOrders" class="btn secondary small" type="button">
-            Muat Ulang
-          </button>
+          <div class="actions"><button id="exportOrdersCsv" class="btn secondary small" type="button">Ekspor CSV</button><button id="exportOrdersExcel" class="btn secondary small" type="button">Ekspor Excel</button><button id="refreshOrders" class="btn secondary small" type="button">Muat Ulang</button></div>
         </div>
+
+        <section class="card order-filter-bar"><input id="orderSearch" class="input" value="${esc(orderSearch)}" placeholder="Cari nomor pesanan, nama, atau HP"><select id="orderStatusFilter" class="input"><option value="all">Semua status</option>${Object.entries(
+          statusLabels,
+        )
+          .map(
+            ([value, label]) =>
+              `<option value="${value}" ${orderStatusFilter === value ? "selected" : ""}>${label}</option>`,
+          )
+          .join(
+            "",
+          )}</select><label class="field"><span>Dari tanggal</span><input id="orderDateFrom" class="input" type="date" value="${orderDateFrom}"></label><label class="field"><span>Sampai tanggal</span><input id="orderDateTo" class="input" type="date" value="${orderDateTo}"></label><button id="resetOrderFilters" class="btn secondary" type="button">Reset</button></section>
 
         <div class="orders">
           ${
-            orders.map(renderOrder).join("") ||
+            filteredOrders.map(renderOrder).join("") ||
             `
             <div class="notice">Belum ada pesanan.</div>
           `
@@ -1633,22 +2747,64 @@
           .getElementById("refreshOrders")
           .addEventListener("click", refreshOrders);
 
+        const applyFilters = () => {
+          orderSearch = document.getElementById("orderSearch").value.trim();
+          orderStatusFilter =
+            document.getElementById("orderStatusFilter").value;
+          orderDateFrom = document.getElementById("orderDateFrom").value;
+          orderDateTo = document.getElementById("orderDateTo").value;
+          renderOrdersTab();
+        };
+        document
+          .getElementById("orderSearch")
+          .addEventListener("change", applyFilters);
+        ["orderStatusFilter", "orderDateFrom", "orderDateTo"].forEach((id) =>
+          document.getElementById(id).addEventListener("change", applyFilters),
+        );
+        document.getElementById("resetOrderFilters").onclick = () => {
+          orderSearch = "";
+          orderStatusFilter = "all";
+          orderDateFrom = "";
+          orderDateTo = "";
+          renderOrdersTab();
+        };
+        document.getElementById("exportOrdersCsv").onclick = () =>
+          exportOrders(filteredOrders, "csv");
+        document.getElementById("exportOrdersExcel").onclick = () =>
+          exportOrders(filteredOrders, "xls");
+
         document.querySelectorAll("[data-save-order]").forEach((button) => {
           button.addEventListener("click", () => {
             saveOrderStatus(button.dataset.saveOrder);
           });
-          document
-            .querySelectorAll("[data-payment-action]")
-            .forEach((button) => {
-              button.addEventListener("click", () =>
-                runAdminPaymentAction(
-                  button.dataset.paymentAction,
-                  button.dataset.paymentId,
-                  button.dataset.orderId,
-                ),
-              );
-            });
         });
+        document
+          .querySelectorAll("[data-payment-action]")
+          .forEach((button) =>
+            button.addEventListener("click", () =>
+              runAdminPaymentAction(
+                button.dataset.paymentAction,
+                button.dataset.paymentId,
+                button.dataset.orderId,
+              ),
+            ),
+          );
+        document
+          .querySelectorAll("[data-print-order]")
+          .forEach(
+            (button) =>
+              (button.onclick = () => printInvoice(button.dataset.printOrder)),
+          );
+        document
+          .querySelectorAll("[data-order-operation]")
+          .forEach(
+            (button) =>
+              (button.onclick = () =>
+                manageOrderOperation(
+                  button.dataset.orderOperation,
+                  button.dataset.orderId,
+                )),
+          );
       }
 
       function renderOrder(order) {
@@ -1682,7 +2838,7 @@
               <div>
                 <b>💳 Pembayaran BTZPay</b><br>
                 <span>${paymentLabels[payment?.status || order.payment_status] || esc(payment?.status || order.payment_status || "Belum dibuat")}</span>
-                ${payment ? `<small>${esc(payment.gateway_transaction_id)} · ${rupiah(payment.total_amount)}</small>` : ""}
+                ${payment ? `<small>ID: ${esc(payment.gateway_transaction_id)} · Metode: ${esc(payment.payment_method)} · Tagihan: ${rupiah(payment.total_amount)}</small><small>Dibuat: ${new Date(payment.created_at).toLocaleString("id-ID")}${payment.paid_at ? ` · Dibayar: ${new Date(payment.paid_at).toLocaleString("id-ID")}` : ""}${payment.expires_at ? ` · Batas: ${new Date(payment.expires_at).toLocaleString("id-ID")}` : ""}</small>` : ""}
               </div>
               <div class="actions">
                 ${
@@ -1727,6 +2883,10 @@
               <div class="data"><b>HP</b><br>${esc(order.phone)}</div>
               <div class="data"><b>Alamat</b><br>${esc(order.address)}, ${esc(order.city)}</div>
               <div class="data"><b>Jaminan</b><br>${esc(order.guarantee_type || "-")}</div>
+              <div class="data"><b>Subtotal</b><br>${rupiah(order.subtotal)}</div>
+              <div class="data"><b>Diskon</b><br>${rupiah(order.discount)}</div>
+              <div class="data"><b>Denda</b><br>${rupiah(order.late_fee || 0)}</div>
+              <div class="data"><b>Deposit</b><br>${rupiah(order.deposit_amount || 0)} · ${esc(order.deposit_status || "none")}</div>
             </div>
 
             ${(order.order_items || [])
@@ -1739,6 +2899,40 @@
             `,
               )
               .join("")}
+
+            <div class="admin-order-toolbox">
+              <a class="btn secondary small" target="_blank" rel="noopener" href="https://wa.me/${String(
+                order.phone || "",
+              )
+                .replace(/\D/g, "")
+                .replace(
+                  /^0/,
+                  "62",
+                )}?text=${encodeURIComponent(`Halo ${order.customer_name}, kami menghubungi terkait pesanan ${order.order_number}.`)}">Hubungi Pelanggan</a>
+              <button class="btn secondary small" data-print-order="${order.id}" type="button">Cetak Invoice</button>
+              <button class="btn secondary small" data-print-order="${order.id}" type="button">Unduh PDF</button>
+              <button class="btn danger small" data-order-operation="cancel" data-order-id="${order.id}" type="button">Batalkan</button>
+              <button class="btn secondary small" data-order-operation="refund" data-order-id="${order.id}" type="button">Refund</button>
+              <button class="btn secondary small" data-order-operation="late_fee" data-order-id="${order.id}" type="button">Denda</button>
+              <button class="btn secondary small" data-order-operation="deposit_received" data-order-id="${order.id}" type="button">Deposit Diterima</button>
+              <button class="btn secondary small" data-order-operation="deposit_returned" data-order-id="${order.id}" type="button">Deposit Dikembalikan</button>
+              <button class="btn secondary small" data-order-operation="return" data-order-id="${order.id}" type="button">Periksa Pengembalian</button>
+            </div>
+
+            ${(order.order_refunds || []).length ? `<section class="order-subsection"><h4>Refund</h4>${order.order_refunds.map((refund) => `<div class="order-line"><span>${esc(refund.refund_type)} · ${esc(refund.reason)}<small>${new Date(refund.created_at).toLocaleString("id-ID")}</small></span><b>${rupiah(refund.amount)}</b></div>`).join("")}</section>` : ""}
+            ${(order.order_returns || []).length ? `<section class="order-subsection"><h4>Pemeriksaan Barang</h4>${order.order_returns.map((entry) => `<div class="order-line"><span>${esc(entry.condition)} · ${esc(entry.notes || "Tanpa catatan")}<small>${new Date(entry.inspected_at).toLocaleString("id-ID")}</small></span><b>${entry.fee ? `Biaya ${rupiah(entry.fee)}` : "Lolos"}</b></div>`).join("")}</section>` : ""}
+            <section class="order-subsection"><h4>Timeline Status</h4><div class="order-timeline">${
+              [...(order.order_status_history || [])]
+                .sort((a, b) =>
+                  String(b.created_at).localeCompare(String(a.created_at)),
+                )
+                .map(
+                  (history) =>
+                    `<div><span></span><p><b>${esc(statusLabels[history.new_status] || history.new_status)}</b><small>${new Date(history.created_at).toLocaleString("id-ID")}${history.note ? ` · ${esc(history.note)}` : ""}</small></p></div>`,
+                )
+                .join("") ||
+              '<p class="muted">Riwayat akan muncul setelah order-management.sql dijalankan.</p>'
+            }</div></section>
 
             <div class="two" style="margin-top:14px">
               <select id="status-${order.id}" class="input">
@@ -1779,7 +2973,9 @@
       async function refreshOrders() {
         const { data, error } = await supabase
           .from("orders")
-          .select("*,order_items(*),payment_transactions(*)")
+          .select(
+            "*,order_items(*),payment_transactions(*),order_status_history(*),order_refunds(*),order_returns(*)",
+          )
           .order("created_at", { ascending: false });
 
         if (error) {
@@ -1810,6 +3006,153 @@
 
         await refreshOrders();
         showAdminMessage("Status pesanan berhasil diperbarui.", "success");
+      }
+
+      function downloadBlob(content, filename, type) {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([content], { type }));
+        link.download = filename;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      }
+
+      function exportOrders(rows, format) {
+        const data = rows.map((order) => ({
+          nomor: order.order_number,
+          tanggal: new Date(order.created_at).toLocaleString("id-ID"),
+          pelanggan: order.customer_name,
+          hp: order.phone,
+          status: statusLabels[order.status] || order.status,
+          pembayaran: order.payment_status || "unpaid",
+          mulai_sewa: order.rental_start || "",
+          selesai_sewa: order.rental_end || "",
+          subtotal: Number(order.subtotal || 0),
+          diskon: Number(order.discount || 0),
+          total: Number(order.total || 0),
+          denda: Number(order.late_fee || 0),
+          deposit: Number(order.deposit_amount || 0),
+          status_deposit: order.deposit_status || "none",
+        }));
+        const headers = Object.keys(data[0] || { nomor: "" });
+        if (format === "csv") {
+          const csv = [
+            headers,
+            ...data.map((row) => headers.map((key) => row[key])),
+          ]
+            .map((row) =>
+              row
+                .map(
+                  (value) => `"${String(value ?? "").replaceAll('"', '""')}"`,
+                )
+                .join(","),
+            )
+            .join("\r\n");
+          downloadBlob(
+            "\ufeff" + csv,
+            `laporan-pesanan-${new Date().toISOString().slice(0, 10)}.csv`,
+            "text/csv;charset=utf-8",
+          );
+          return;
+        }
+        const table = `<table><thead><tr>${headers.map((key) => `<th>${esc(key)}</th>`).join("")}</tr></thead><tbody>${data.map((row) => `<tr>${headers.map((key) => `<td>${esc(row[key])}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+        downloadBlob(
+          `\ufeff<html><meta charset="utf-8"><body>${table}</body></html>`,
+          `laporan-pesanan-${new Date().toISOString().slice(0, 10)}.xls`,
+          "application/vnd.ms-excel",
+        );
+      }
+
+      function printInvoice(orderId) {
+        const order = orders.find((entry) => entry.id === orderId);
+        if (!order) return;
+        const payment = [...(order.payment_transactions || [])].sort((a, b) =>
+          String(b.created_at).localeCompare(String(a.created_at)),
+        )[0];
+        const popup = window.open("", "_blank", "width=900,height=720");
+        popup.document.write(
+          `<!doctype html><html><head><title>Invoice ${esc(order.order_number)}</title><style>body{font-family:Arial,sans-serif;color:#17212b;margin:40px}header{display:flex;justify-content:space-between;border-bottom:2px solid #17212b;padding-bottom:18px}.meta,.totals{margin:22px 0;line-height:1.7}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:last-child{text-align:right}.totals{margin-left:auto;width:320px}.totals div{display:flex;justify-content:space-between}.grand{font-size:20px;font-weight:bold;border-top:2px solid;padding-top:8px}@media print{button{display:none}}</style></head><body><header><div><h1>AbidzarOutdoorcamp</h1><p>Invoice Pesanan</p></div><div><b>${esc(order.order_number)}</b><br>${new Date(order.created_at).toLocaleString("id-ID")}</div></header><div class="meta"><b>Pelanggan:</b> ${esc(order.customer_name)}<br><b>HP:</b> ${esc(order.phone)}<br><b>Alamat:</b> ${esc(order.address)}, ${esc(order.city)}${order.rental_start ? `<br><b>Periode sewa:</b> ${esc(formatRentalDate(order.rental_start))} — ${esc(formatRentalDate(order.rental_end))}` : ""}<br><b>Pembayaran:</b> ${esc(payment?.status || order.payment_status || "unpaid")}</div><table><thead><tr><th>Item</th><th>Jumlah</th><th>Harga</th><th>Total</th></tr></thead><tbody>${(order.order_items || []).map((line) => `<tr><td>${esc(line.title_snapshot)}</td><td>${line.quantity}</td><td>${rupiah(line.price_snapshot)}</td><td>${rupiah(line.line_total)}</td></tr>`).join("")}</tbody></table><div class="totals"><div><span>Subtotal</span><b>${rupiah(order.subtotal)}</b></div><div><span>Diskon</span><b>${rupiah(order.discount)}</b></div><div><span>Denda</span><b>${rupiah(order.late_fee || 0)}</b></div><div class="grand"><span>Total</span><b>${rupiah(Number(order.total || 0) + Number(order.late_fee || 0))}</b></div></div><p>Terima kasih telah menggunakan layanan AbidzarOutdoorcamp.</p><button onclick="window.print()">Cetak / Simpan PDF</button></body></html>`,
+        );
+        popup.document.close();
+        popup.focus();
+      }
+
+      async function manageOrderOperation(action, orderId) {
+        const order = orders.find((entry) => entry.id === orderId);
+        if (!order) return;
+        let amount = null,
+          reason = null,
+          condition = null,
+          itemId = null,
+          quantity = 1;
+        if (action === "cancel") reason = prompt("Alasan pembatalan:");
+        if (action === "refund") {
+          amount = Number(
+            prompt(`Nominal refund (maksimal ${order.total}):`) || 0,
+          );
+          reason = prompt("Alasan refund:") || "Refund admin";
+        }
+        if (action === "late_fee")
+          amount = Number(
+            prompt("Nominal denda keterlambatan:", order.late_fee || 0) || 0,
+          );
+        if (action === "deposit_received")
+          amount = Number(
+            prompt(
+              "Nominal deposit yang diterima:",
+              order.deposit_amount || 0,
+            ) || 0,
+          );
+        if (
+          action === "deposit_returned" &&
+          !confirm("Tandai seluruh deposit sudah dikembalikan?")
+        )
+          return;
+        if (action === "return") {
+          const rentalLines = (order.order_items || []).filter(
+            (line) => line.item_type === "product",
+          );
+          if (!rentalLines.length)
+            return showAdminMessage(
+              "Pesanan tidak memiliki barang sewa.",
+              "error",
+            );
+          const selected = prompt(
+            `Pilih nomor item:\n${rentalLines.map((line, index) => `${index + 1}. ${line.title_snapshot}`).join("\n")}`,
+            "1",
+          );
+          const line = rentalLines[Number(selected) - 1];
+          if (!line) return;
+          itemId = line.item_id;
+          quantity = line.quantity;
+          condition = prompt(
+            "Kondisi: good, dirty, damaged, atau lost",
+            "good",
+          );
+          reason = prompt("Catatan pemeriksaan:") || null;
+          amount = Number(
+            prompt("Biaya kerusakan/kebersihan (0 jika tidak ada):", "0") || 0,
+          );
+        }
+        if (action === "cancel" && !reason) return;
+        const { error } = await supabase.rpc("admin_manage_order", {
+          p_order_id: orderId,
+          p_action: action,
+          p_amount: amount,
+          p_reason: reason,
+          p_condition: condition,
+          p_item_id: itemId,
+          p_quantity: quantity,
+        });
+        if (error)
+          return showAdminMessage(
+            `${error.message}. Jalankan order-management.sql.`,
+            "error",
+          );
+        await refreshOrders();
+        showAdminMessage(
+          "Data operasional pesanan berhasil disimpan.",
+          "success",
+        );
       }
 
       async function runAdminPaymentAction(action, paymentId, orderId) {

@@ -83,6 +83,7 @@ revoke all on function public.rental_available_stock(uuid, date, date) from publ
 grant execute on function public.rental_available_stock(uuid, date, date) to anon, authenticated;
 
 drop function if exists public.create_order(jsonb, jsonb, text, text);
+drop function if exists public.create_order(jsonb, jsonb, text, text, date, date);
 
 create or replace function public.create_order(
   p_customer jsonb,
@@ -90,7 +91,8 @@ create or replace function public.create_order(
   p_voucher_code text default null,
   p_notes text default null,
   p_rental_start date default null,
-  p_rental_end date default null
+  p_rental_end date default null,
+  p_trip_participants jsonb default '[]'::jsonb
 )
 returns jsonb
 language plpgsql
@@ -111,12 +113,15 @@ declare
   v_max_days integer := 30;
   v_has_rental boolean := false;
   v_available integer;
+  v_package_price numeric;
   v_subtotal numeric := 0;
   v_discount numeric := 0;
   v_total numeric := 0;
   v_voucher_code text := nullif(upper(trim(coalesce(p_voucher_code, ''))), '');
   v_voucher public.vouchers%rowtype;
   v_requires_guarantee boolean := false;
+  v_participant jsonb;
+  v_trip_detail public.trip_details%rowtype;
 begin
   if v_user_id is null then raise exception 'Silakan login terlebih dahulu'; end if;
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
@@ -180,9 +185,18 @@ begin
       if v_available < v_quantity then
         raise exception 'Stok % pada tanggal tersebut hanya % unit', v_item.title, v_available;
       end if;
-      v_subtotal := v_subtotal + (v_item.price * v_quantity * v_days);
+      select price into v_package_price from public.item_price_tiers
+      where item_id = v_item.id and duration_days = v_days limit 1;
+      v_subtotal := v_subtotal + (
+        coalesce(v_package_price, v_item.price * v_days) * v_quantity
+      );
     else
-      if coalesce(v_item.quota, 0) < v_quantity then
+      select coalesce(v_item.quota, 0) - count(*) into v_available
+      from public.trip_participants tp
+      join public.orders trip_order on trip_order.id = tp.order_id
+      where tp.item_id = v_item.id and tp.status <> 'cancelled'
+        and trip_order.status not in ('cancelled','failed','refunded');
+      if v_available < v_quantity then
         raise exception 'Kuota % tidak cukup', v_item.title;
       end if;
       v_subtotal := v_subtotal + (v_item.price * v_quantity);
@@ -201,6 +215,16 @@ begin
     where code = v_voucher_code and is_active = true
       and now() between starts_at and expires_at and used_count < quota;
     if not found then raise exception 'Voucher tidak valid atau kuota habis'; end if;
+    if not public.voucher_scope_matches(v_voucher, p_items) then
+      raise exception 'Voucher tidak berlaku untuk isi keranjang ini';
+    end if;
+    if v_voucher.once_per_customer and exists (
+      select 1 from public.orders o
+      where o.user_id = v_user_id and o.voucher_code = v_voucher.code
+        and o.status not in ('cancelled', 'failed', 'refunded')
+    ) then
+      raise exception 'Voucher hanya dapat digunakan satu kali per pelanggan';
+    end if;
     if v_subtotal < v_voucher.min_purchase then
       raise exception 'Minimal pembelian voucher adalah %', v_voucher.min_purchase;
     end if;
@@ -241,18 +265,46 @@ begin
     v_item_id := (v_line ->> 'item_id')::uuid;
     v_quantity := (v_line ->> 'quantity')::integer;
     select * into v_item from public.items where id = v_item_id;
+    if v_item.type = 'trip' then
+      select * into v_trip_detail from public.trip_details where item_id = v_item.id;
+      if found then
+        if v_trip_detail.status <> 'open' then raise exception 'Trip % tidak sedang dibuka', v_item.title; end if;
+        if v_trip_detail.registration_deadline is not null and now() > v_trip_detail.registration_deadline then raise exception 'Pendaftaran trip % sudah ditutup', v_item.title; end if;
+      end if;
+      if (select count(*) from jsonb_array_elements(p_trip_participants) p where (p.value->>'item_id')::uuid = v_item.id) <> v_quantity then
+        raise exception 'Data peserta % harus diisi untuk setiap kursi', v_item.title;
+      end if;
+    end if;
+    v_package_price := null;
+    if v_item.type = 'product' then
+      select price into v_package_price from public.item_price_tiers
+      where item_id = v_item.id and duration_days = v_days limit 1;
+    end if;
 
     insert into public.order_items (
       order_id, item_id, title_snapshot, item_type, price_snapshot, quantity,
       line_total, trip_date_snapshot, rental_start, rental_end, rental_days
     ) values (
-      v_order_id, v_item.id, v_item.title, v_item.type, v_item.price, v_quantity,
-      v_item.price * v_quantity * case when v_item.type = 'product' then v_days else 1 end,
+      v_order_id, v_item.id, v_item.title, v_item.type,
+      case when v_item.type = 'product' then coalesce(v_package_price, v_item.price * v_days) else v_item.price end,
+      v_quantity,
+      case when v_item.type = 'product' then coalesce(v_package_price, v_item.price * v_days) else v_item.price end * v_quantity,
       v_item.trip_date,
       case when v_item.type = 'product' then p_rental_start else null end,
       case when v_item.type = 'product' then p_rental_end else null end,
       case when v_item.type = 'product' then v_days else 1 end
     );
+  end loop;
+
+  for v_participant in select value from jsonb_array_elements(p_trip_participants) loop
+    select * into v_trip_detail from public.trip_details where item_id = (v_participant->>'item_id')::uuid;
+    if nullif(trim(v_participant->>'full_name'),'') is null or nullif(trim(v_participant->>'phone'),'') is null
+      or nullif(trim(v_participant->>'emergency_contact_name'),'') is null or nullif(trim(v_participant->>'emergency_contact_phone'),'') is null
+      then raise exception 'Nama, telepon, dan kontak darurat peserta wajib diisi'; end if;
+    if v_trip_detail.min_age is not null and (v_participant->>'age')::integer < v_trip_detail.min_age then raise exception 'Usia peserta di bawah batas minimum'; end if;
+    if v_trip_detail.max_age is not null and (v_participant->>'age')::integer > v_trip_detail.max_age then raise exception 'Usia peserta di atas batas maksimum'; end if;
+    insert into public.trip_participants(order_id,item_id,user_id,seat_number,full_name,phone,age,identity_last4,emergency_contact_name,emergency_contact_phone,notes)
+    values (v_order_id,(v_participant->>'item_id')::uuid,v_user_id,(v_participant->>'seat_number')::integer,trim(v_participant->>'full_name'),trim(v_participant->>'phone'),(v_participant->>'age')::integer,nullif(trim(v_participant->>'identity_last4'),''),trim(v_participant->>'emergency_contact_name'),trim(v_participant->>'emergency_contact_phone'),nullif(trim(v_participant->>'notes'),''));
   end loop;
 
   update public.profiles set
@@ -270,8 +322,8 @@ begin
 end;
 $$;
 
-revoke all on function public.create_order(jsonb, jsonb, text, text, date, date) from public;
-grant execute on function public.create_order(jsonb, jsonb, text, text, date, date) to authenticated;
+revoke all on function public.create_order(jsonb, jsonb, text, text, date, date, jsonb) from public;
+grant execute on function public.create_order(jsonb, jsonb, text, text, date, date, jsonb) to authenticated;
 
 -- Stok barang sewa sekarang merupakan total unit dan tidak dikurangi permanen.
 -- Ketersediaannya dihitung dari pesanan yang rentang tanggalnya bertabrakan.

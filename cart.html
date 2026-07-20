@@ -380,6 +380,10 @@
                 /></label>
               </div>
             </div>
+            <section
+              id="tripParticipants"
+              class="trip-checkout-section hidden"
+            ></section>
             <label class="field"
               ><span>Catatan pesanan</span
               ><textarea class="input" name="customer_notes"></textarea></label
@@ -438,13 +442,16 @@
         if (!start || !end || end < start) return 1;
         return Math.floor((end - start) / 86400000) + 1;
       };
+      const rentalUnitPrice = (item, days = rentalDays()) => {
+        if (item.type !== "product") return Number(item.price);
+        const tier = (item.price_tiers || []).find(
+          (entry) => Number(entry.duration_days) === Number(days),
+        );
+        return tier ? Number(tier.price) : Number(item.price) * days;
+      };
       const subtotal = () =>
           cart.reduce(
-            (sum, item) =>
-              sum +
-              item.price *
-                item.quantity *
-                (item.type === "product" ? rentalDays() : 1),
+            (sum, item) => sum + rentalUnitPrice(item) * item.quantity,
             0,
           ),
         total = () => Math.max(0, subtotal() - discount);
@@ -465,7 +472,7 @@
         document.getElementById("list").innerHTML = cart
           .map(
             (x) =>
-              `<article class="card cart-item"><img src="${esc(x.image_url)}"><div><span class="badge">${x.type === "trip" ? "Open Trip" : "Sewa Item"}</span><h3>${esc(x.title)}</h3><p class="muted">${x.type === "product" ? "Harga per hari" : "Harga per peserta"}: ${rupiah(x.price)}</p>${x.requires_guarantee ? "<small>🔐 Jaminan wajib</small>" : ""}</div><div class="cart-item-calculation"><label class="field"><span>Jumlah ${x.type === "trip" ? "peserta" : "unit"}</span><input class="input" data-q="${x.item_id}" type="number" min="1" max="${x.max_quantity}" value="${x.quantity}"></label><div class="cart-line-formula">${rupiah(x.price)} × ${x.quantity}${x.type === "product" ? ` × ${days} hari` : ""}</div><div class="cart-line-total"><span>Subtotal item</span><b>${rupiah(x.price * x.quantity * (x.type === "product" ? days : 1))}</b></div><button class="btn danger small" data-r="${x.item_id}">Hapus</button></div></article>`,
+              `<article class="card cart-item"><img src="${esc(x.image_url)}"><div><span class="badge">${x.type === "trip" ? "Open Trip" : "Sewa Item"}</span><h3>${esc(x.title)}</h3><p class="muted">${x.type === "product" ? "Harga per hari" : "Harga per peserta"}: ${rupiah(x.price)}</p>${x.requires_guarantee ? "<small>🔐 Jaminan wajib</small>" : ""}${Number(x.deposit || 0) ? `<small> · Deposit ${rupiah(x.deposit)} / unit</small>` : ""}</div><div class="cart-item-calculation"><label class="field"><span>Jumlah ${x.type === "trip" ? "peserta" : "unit"}</span><input class="input" data-q="${x.item_id}" type="number" min="1" max="${x.max_quantity}" value="${x.quantity}"></label><div class="cart-line-formula">${x.type === "product" && (x.price_tiers || []).some((tier) => Number(tier.duration_days) === days) ? `Paket ${days} hari ${rupiah(rentalUnitPrice(x, days))}` : `${rupiah(x.price)} × ${x.quantity}${x.type === "product" ? ` × ${days} hari` : ""}`}</div><div class="cart-line-total"><span>Subtotal item</span><b>${rupiah(rentalUnitPrice(x, days) * x.quantity)}</b></div><button class="btn danger small" data-r="${x.item_id}">Hapus</button></div></article>`,
           )
           .join("");
         document.querySelectorAll("[data-q]").forEach(
@@ -501,6 +508,35 @@
           : "Opsional, isi bila diperlukan.";
         document.getElementById("guaranteeType").required = required;
         document.getElementById("guaranteeNotes").required = required;
+        renderTripParticipantFields();
+      }
+
+      function renderTripParticipantFields() {
+        const section = document.getElementById("tripParticipants");
+        const trips = cart.filter((item) => item.type === "trip");
+        section.classList.toggle("hidden", !trips.length);
+        section.innerHTML = trips.length
+          ? `<div class="trip-checkout-heading"><span class="badge">Data Peserta</span><h3>Isi data setiap kursi</h3><p class="muted">Data ini dipakai untuk manifest dan keadaan darurat.</p></div>${trips.map((trip) => `<div class="trip-seat-group"><h3>${esc(trip.title)}</h3>${Array.from({ length: Number(trip.quantity) }, (_, index) => `<article class="trip-seat-card"><strong>Peserta / Kursi ${index + 1}</strong><div class="two"><label class="field"><span>Nama lengkap *</span><input class="input" data-trip-field="full_name" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label><label class="field"><span>Nomor WhatsApp *</span><input class="input" data-trip-field="phone" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label><label class="field"><span>Usia *</span><input class="input" data-trip-field="age" data-item-id="${trip.item_id}" data-seat="${index + 1}" type="number" min="1" required></label><label class="field"><span>4 karakter identitas</span><input class="input" data-trip-field="identity_last4" data-item-id="${trip.item_id}" data-seat="${index + 1}" maxlength="4"></label><label class="field"><span>Nama kontak darurat *</span><input class="input" data-trip-field="emergency_contact_name" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label><label class="field"><span>Nomor kontak darurat *</span><input class="input" data-trip-field="emergency_contact_phone" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label></div><label class="field"><span>Catatan kesehatan/kebutuhan khusus</span><input class="input" data-trip-field="notes" data-item-id="${trip.item_id}" data-seat="${index + 1}"></label></article>`).join("")}</div>`).join("")}`
+          : "";
+      }
+
+      function collectTripParticipants() {
+        const participants = [];
+        document.querySelectorAll(".trip-seat-card").forEach((card) => {
+          const fields = card.querySelectorAll("[data-trip-field]");
+          if (!fields.length) return;
+          const first = fields[0];
+          const participant = {
+            item_id: first.dataset.itemId,
+            seat_number: Number(first.dataset.seat),
+          };
+          fields.forEach((input) => {
+            participant[input.dataset.tripField] = input.value.trim();
+          });
+          participant.age = Number(participant.age);
+          participants.push(participant);
+        });
+        return participants;
       }
       async function init() {
         siteSettings = await loadSiteSettings();
@@ -649,6 +685,10 @@
         const { data, error } = await supabase.rpc("preview_voucher", {
           p_code: code,
           p_subtotal: subtotal(),
+          p_items: cart.map((item) => ({
+            item_id: item.item_id,
+            quantity: item.quantity,
+          })),
         });
         if (error) {
           discount = 0;
@@ -725,6 +765,7 @@
           p_notes: v.customer_notes || null,
           p_rental_start: hasRental() ? v.rental_start : null,
           p_rental_end: hasRental() ? v.rental_end : null,
+          p_trip_participants: collectTripParticipants(),
         });
         if (error)
           return message(
