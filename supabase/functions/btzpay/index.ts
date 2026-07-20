@@ -49,13 +49,13 @@ async function authenticatedClient(req: Request) {
   return { client, user };
 }
 
-async function isAdmin(userId: string) {
+async function staffRole(userId: string) {
   const { data } = await admin
     .from("profiles")
     .select("role")
     .eq("id", userId)
     .single();
-  return String(data?.role || "").toLowerCase() === "admin";
+  return String(data?.role || "user").toLowerCase();
 }
 
 async function createPayment(
@@ -282,7 +282,14 @@ Deno.serve(async (req) => {
     }
 
     const { user } = await authenticatedClient(req);
-    const userIsAdmin = await isAdmin(user.id);
+    const role = await staffRole(user.id);
+    const userIsAdmin = [
+      "admin",
+      "super_admin",
+      "order_admin",
+      "finance_admin",
+    ].includes(role);
+    const canRefund = ["admin", "super_admin", "finance_admin"].includes(role);
 
     if (action === "create" || action === "recreate") {
       const orderId = String(body.order_id || "");
@@ -357,7 +364,7 @@ Deno.serve(async (req) => {
       });
       return json({ success: true });
     }
-    if (action === "refund_mark" && userIsAdmin) {
+    if (action === "refund_mark" && canRefund) {
       await admin.rpc("apply_btzpay_status", {
         p_transaction_id: payment.gateway_transaction_id,
         p_status: "refunded",

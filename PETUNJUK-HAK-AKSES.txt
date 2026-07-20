@@ -1,0 +1,20 @@
+HAK AKSES BERTINGKAT & KEAMANAN
+
+1. Pastikan semua SQL fitur sebelumnya sudah dijalankan.
+2. Supabase > SQL Editor: jalankan access-security.sql PALING AKHIR.
+3. SQL akan mengubah role admin lama menjadi super_admin.
+4. Upload seluruh isi ZIP terbaru ke GitHub.
+5. Deploy ulang Edge Function btzpay menggunakan index.ts terbaru.
+6. Login ulang, lalu buka Admin Panel > Administrator.
+
+ROLE:
+- Super Admin: seluruh menu, mengatur petugas, dan membaca log aktivitas.
+- Admin Pesanan: pesanan, pelanggan, notifikasi, dan peserta trip.
+- Admin Katalog: katalog, open trip, pengaturan website, dan moderasi ulasan.
+- Admin Keuangan: pembayaran, voucher, refund, laporan, dan baca pesanan.
+- Petugas Gudang: jadwal, stok/inventaris, deposit, denda, dan pemeriksaan pengembalian.
+
+PENTING:
+- access-security.sql harus dijalankan paling akhir karena mengganti policy RLS lama.
+- Jangan memasukkan service role key ke HTML/JavaScript browser.
+- Setelah SQL berhasil, keluar lalu login kembali agar tampilan menu mengikuti role.

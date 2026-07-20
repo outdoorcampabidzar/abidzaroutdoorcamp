@@ -1264,6 +1264,41 @@ footer {
     grid-row: 2/3;
   }
 }
+.activity-log-list {
+  display: grid;
+  gap: 12px;
+}
+.activity-log-card {
+  padding: 16px;
+}
+.activity-log-card > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.activity-log-card small {
+  display: block;
+  width: 100%;
+  color: var(--muted);
+}
+.activity-log-card details {
+  margin-top: 12px;
+}
+.activity-log-card summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.activity-log-card pre {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(2, 10, 18, 0.55);
+  padding: 12px;
+  border-radius: 10px;
+}
 @media (max-width: 520px) {
   .orders-page-heading {
     flex-direction: column;

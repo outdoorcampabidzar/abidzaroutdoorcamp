@@ -226,6 +226,26 @@
       let customers = [];
       let adminRatings = [];
       let customerNotifications = [];
+      let currentStaffRole = "user";
+      let currentPermissions = new Set();
+
+      function can(permission) {
+        return (
+          currentPermissions.has("*") || currentPermissions.has(permission)
+        );
+      }
+
+      function firstAllowedAdminTab() {
+        if (can("catalog.manage")) return "rental";
+        if (can("orders.view")) return "orders";
+        if (can("vouchers.manage")) return "vouchers";
+        if (can("settings.manage")) return "settings";
+        if (can("finance.manage")) return "payment_logs";
+        if (can("customers.view")) return "customers";
+        if (can("reviews.manage")) return "reviews";
+        if (can("notifications.manage")) return "notifications";
+        return "administrators";
+      }
       let siteSettings = { ...DEFAULT_SITE_SETTINGS };
 
       function slugify(value) {
@@ -264,15 +284,12 @@
           .eq("id", user.id)
           .single();
 
-        let allowed =
-          String(profile?.role || "")
-            .trim()
-            .toLowerCase() === "admin";
-
-        if (!allowed) {
-          const { data: rpcResult } = await supabase.rpc("is_admin");
-          allowed = rpcResult === true;
-        }
+        const { data: access } = await supabase.rpc("get_my_staff_permissions");
+        currentStaffRole = access?.role || String(profile?.role || "user");
+        currentPermissions = new Set(
+          access?.permissions || (currentStaffRole === "admin" ? ["*"] : []),
+        );
+        let allowed = currentPermissions.size > 0;
 
         if (!allowed) {
           root.innerHTML = `
@@ -302,12 +319,14 @@
 
             supabase.from("item_categories").select("*").order("sort_order"),
 
-            supabase
-              .from("orders")
-              .select(
-                "*,order_items(*),payment_transactions(*),order_status_history(*),order_refunds(*),order_returns(*)",
-              )
-              .order("created_at", { ascending: false }),
+            can("orders.view")
+              ? supabase
+                  .from("orders")
+                  .select(
+                    "*,order_items(*),payment_transactions(*),order_status_history(*),order_refunds(*),order_returns(*)",
+                  )
+                  .order("created_at", { ascending: false })
+              : Promise.resolve({ data: [], error: null }),
 
             loadSiteSettings(),
           ]);
@@ -333,7 +352,9 @@
         orders = orderResult.data || [];
         siteSettings = { ...DEFAULT_SITE_SETTINGS, ...loadedSettings };
 
-        const { data: adminData } = await supabase.rpc("list_admin_users");
+        const { data: adminData } = can("*")
+          ? await supabase.rpc("secure_list_staff_users")
+          : { data: [] };
         administrators = adminData || [];
       }
 
@@ -358,7 +379,7 @@
 
           <nav class="admin-section-tabs" aria-label="Menu admin">
             <button
-              class="admin-tab ${activeTab === "rental" ? "active" : ""}"
+              class="admin-tab ${activeTab === "rental" ? "active" : ""} ${can("catalog.manage") ? "" : "hidden"}"
               data-admin-tab="rental"
               type="button"
             >
@@ -366,7 +387,7 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "trips" ? "active" : ""}"
+              class="admin-tab ${activeTab === "trips" ? "active" : ""} ${can("catalog.manage") ? "" : "hidden"}"
               data-admin-tab="trips"
               type="button"
             >
@@ -374,7 +395,7 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "orders" ? "active" : ""}"
+              class="admin-tab ${activeTab === "orders" ? "active" : ""} ${can("orders.view") ? "" : "hidden"}"
               data-admin-tab="orders"
               type="button"
             >
@@ -382,7 +403,7 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "vouchers" ? "active" : ""}"
+              class="admin-tab ${activeTab === "vouchers" ? "active" : ""} ${can("vouchers.manage") ? "" : "hidden"}"
               data-admin-tab="vouchers"
               type="button"
             >
@@ -390,7 +411,7 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "settings" ? "active" : ""}"
+              class="admin-tab ${activeTab === "settings" ? "active" : ""} ${can("settings.manage") ? "" : "hidden"}"
               data-admin-tab="settings"
               type="button"
             >
@@ -398,7 +419,7 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "schedule" ? "active" : ""}"
+              class="admin-tab ${activeTab === "schedule" ? "active" : ""} ${can("orders.view") || can("warehouse.manage") ? "" : "hidden"}"
               data-admin-tab="schedule"
               type="button"
             >
@@ -406,7 +427,7 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "payment_logs" ? "active" : ""}"
+              class="admin-tab ${activeTab === "payment_logs" ? "active" : ""} ${can("finance.manage") ? "" : "hidden"}"
               data-admin-tab="payment_logs"
               type="button"
             >
@@ -414,7 +435,7 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "customers" ? "active" : ""}"
+              class="admin-tab ${activeTab === "customers" ? "active" : ""} ${can("customers.view") ? "" : "hidden"}"
               data-admin-tab="customers"
               type="button"
             >
@@ -422,7 +443,7 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "reviews" ? "active" : ""}"
+              class="admin-tab ${activeTab === "reviews" ? "active" : ""} ${can("reviews.manage") ? "" : "hidden"}"
               data-admin-tab="reviews"
               type="button"
             >
@@ -430,7 +451,7 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "notifications" ? "active" : ""}"
+              class="admin-tab ${activeTab === "notifications" ? "active" : ""} ${can("notifications.manage") ? "" : "hidden"}"
               data-admin-tab="notifications"
               type="button"
             >
@@ -438,12 +459,13 @@
             </button>
 
             <button
-              class="admin-tab ${activeTab === "administrators" ? "active" : ""}"
+              class="admin-tab ${activeTab === "administrators" ? "active" : ""} ${can("*") ? "" : "hidden"}"
               data-admin-tab="administrators"
               type="button"
             >
               👥 Administrator
             </button>
+            <button class="admin-tab ${activeTab === "activity_logs" ? "active" : ""} ${can("*") ? "" : "hidden"}" data-admin-tab="activity_logs" type="button">🛡️ Log Aktivitas</button>
           </nav>
 
           <div id="adminMessage" class="notice hidden"></div>
@@ -474,6 +496,7 @@
         else if (activeTab === "customers") renderCustomersTab();
         else if (activeTab === "reviews") renderReviewsTab();
         else if (activeTab === "notifications") renderNotificationsTab();
+        else if (activeTab === "activity_logs") renderActivityLogsTab();
         else renderAdministratorsTab();
       }
 
@@ -1109,9 +1132,16 @@
         button.disabled = true;
         button.textContent = "Menyimpan...";
 
-        const { data, error } = await supabase.rpc("admin_save_site_settings", {
-          p_settings: values,
-        });
+        const { data, error } = await supabase
+          .from("site_settings")
+          .update({
+            settings: values,
+            updated_at: new Date().toISOString(),
+            updated_by: currentAdminUserId,
+          })
+          .eq("id", "main")
+          .select("settings")
+          .single();
 
         button.disabled = false;
         button.textContent = "Simpan Pengaturan";
@@ -1126,7 +1156,10 @@
           return;
         }
 
-        siteSettings = { ...DEFAULT_SITE_SETTINGS, ...(data || values) };
+        siteSettings = {
+          ...DEFAULT_SITE_SETTINGS,
+          ...(data?.settings || values),
+        };
         applySiteSettings(siteSettings);
         showAdminMessage("Pengaturan website berhasil disimpan.", "success");
       }
@@ -2390,7 +2423,7 @@
             </p>
 
             <div class="actions">
-              <button class="btn small" data-trip-participants="${item.id}" type="button">Peserta</button>
+              ${can("trip_participants.manage") ? `<button class="btn small" data-trip-participants="${item.id}" type="button">Peserta</button>` : ""}
               <button
                 class="btn secondary small"
                 data-edit-trip="${item.id}"
@@ -2538,11 +2571,8 @@
           .forEach((select) => {
             select.addEventListener("change", async () => {
               const { error: statusError } = await supabase.rpc(
-                "admin_update_trip_participant_status",
-                {
-                  p_participant_id: select.dataset.participantStatus,
-                  p_status: select.value,
-                },
+                "secure_admin_update_participant_status",
+                { a: select.dataset.participantStatus, b: select.value },
               );
               showAdminMessage(
                 statusError
@@ -2884,7 +2914,7 @@
               </div>
               <div class="actions">
                 ${
-                  payment?.status === "pending"
+                  payment?.status === "pending" && can("finance.manage")
                     ? `
                   <button class="btn secondary small" data-payment-action="check" data-payment-id="${payment.id}" data-order-id="${order.id}" type="button">Cek</button>
                   <button class="btn danger small" data-payment-action="cancel" data-payment-id="${payment.id}" data-order-id="${order.id}" type="button">Batalkan</button>
@@ -2892,15 +2922,16 @@
                     : ""
                 }
                 ${
-                  !payment ||
-                  ["expired", "cancelled", "failed"].includes(payment.status)
+                  can("finance.manage") &&
+                  (!payment ||
+                    ["expired", "cancelled", "failed"].includes(payment.status))
                     ? `
                   <button class="btn small" data-payment-action="recreate" data-payment-id="${payment?.id || ""}" data-order-id="${order.id}" type="button">Buat Ulang</button>
                 `
                     : ""
                 }
                 ${
-                  payment?.status === "paid"
+                  payment?.status === "paid" && can("finance.manage")
                     ? `
                   <button class="btn danger small" data-payment-action="refund_mark" data-payment-id="${payment.id}" data-order-id="${order.id}" type="button">Tandai Refund</button>
                 `
@@ -2953,12 +2984,11 @@
                 )}?text=${encodeURIComponent(`Halo ${order.customer_name}, kami menghubungi terkait pesanan ${order.order_number}.`)}">Hubungi Pelanggan</a>
               <button class="btn secondary small" data-print-order="${order.id}" type="button">Cetak Invoice</button>
               <button class="btn secondary small" data-print-order="${order.id}" type="button">Unduh PDF</button>
-              <button class="btn danger small" data-order-operation="cancel" data-order-id="${order.id}" type="button">Batalkan</button>
-              <button class="btn secondary small" data-order-operation="refund" data-order-id="${order.id}" type="button">Refund</button>
-              <button class="btn secondary small" data-order-operation="late_fee" data-order-id="${order.id}" type="button">Denda</button>
-              <button class="btn secondary small" data-order-operation="deposit_received" data-order-id="${order.id}" type="button">Deposit Diterima</button>
-              <button class="btn secondary small" data-order-operation="deposit_returned" data-order-id="${order.id}" type="button">Deposit Dikembalikan</button>
-              <button class="btn secondary small" data-order-operation="return" data-order-id="${order.id}" type="button">Periksa Pengembalian</button>
+              ${can("orders.manage") ? `<button class="btn danger small" data-order-operation="cancel" data-order-id="${order.id}" type="button">Batalkan</button>` : ""}
+              ${can("finance.manage") ? `<button class="btn secondary small" data-order-operation="refund" data-order-id="${order.id}" type="button">Refund</button>` : ""}
+              ${can("orders.manage") || can("warehouse.manage") ? `<button class="btn secondary small" data-order-operation="late_fee" data-order-id="${order.id}" type="button">Denda</button>` : ""}
+              ${can("finance.manage") || can("warehouse.manage") ? `<button class="btn secondary small" data-order-operation="deposit_received" data-order-id="${order.id}" type="button">Deposit Diterima</button><button class="btn secondary small" data-order-operation="deposit_returned" data-order-id="${order.id}" type="button">Deposit Dikembalikan</button>` : ""}
+              ${can("warehouse.manage") ? `<button class="btn secondary small" data-order-operation="return" data-order-id="${order.id}" type="button">Periksa Pengembalian</button>` : ""}
             </div>
 
             ${(order.order_refunds || []).length ? `<section class="order-subsection"><h4>Refund</h4>${order.order_refunds.map((refund) => `<div class="order-line"><span>${esc(refund.refund_type)} · ${esc(refund.reason)}<small>${new Date(refund.created_at).toLocaleString("id-ID")}</small></span><b>${rupiah(refund.amount)}</b></div>`).join("")}</section>` : ""}
@@ -3000,14 +3030,18 @@
               >
             </div>
 
-            <button
+            ${
+              can("orders.manage")
+                ? `<button
               class="btn"
               data-save-order="${order.id}"
               style="margin-top:10px"
               type="button"
             >
               Simpan Status
-            </button>
+            </button>`
+                : ""
+            }
           </div>
         </details>`;
       }
@@ -3047,11 +3081,10 @@
         const notes =
           document.getElementById(`note-${id}`).value.trim() || null;
 
-        const { error } = await supabase.rpc("admin_update_order_status", {
-          p_order_id: id,
-          p_status: status,
-          p_admin_notes: notes,
-        });
+        const { error } = await supabase.rpc(
+          "secure_admin_update_order_status",
+          { a: id, b: status, c: notes },
+        );
 
         if (error) {
           showAdminMessage(error.message, "error");
@@ -3188,14 +3221,14 @@
           );
         }
         if (action === "cancel" && !reason) return;
-        const { error } = await supabase.rpc("admin_manage_order", {
-          p_order_id: orderId,
-          p_action: action,
-          p_amount: amount,
-          p_reason: reason,
-          p_condition: condition,
-          p_item_id: itemId,
-          p_quantity: quantity,
+        const { error } = await supabase.rpc("secure_admin_manage_order", {
+          a: orderId,
+          b: action,
+          c: amount,
+          d: reason,
+          e: condition,
+          f: itemId,
+          g: quantity,
         });
         if (error)
           return showAdminMessage(
@@ -3236,7 +3269,7 @@
       async function renderCustomersTab() {
         const content = document.getElementById("adminContent");
         content.innerHTML = '<div class="notice">Memuat pelanggan...</div>';
-        const { data, error } = await supabase.rpc("list_customer_summaries");
+        const { data, error } = await supabase.rpc("secure_list_customers");
         if (error)
           return (content.innerHTML = `<div class="notice error">${esc(error.message)}<br><small>Jalankan customer-review-notification.sql.</small></div>`);
         customers = data || [];
@@ -3266,18 +3299,17 @@
               if (blocked && !reason)
                 return showAdminMessage("Alasan blokir wajib diisi.", "error");
               const { error: saveError } = await supabase.rpc(
-                "admin_update_customer",
+                "secure_admin_update_customer",
                 {
-                  p_user_id: id,
-                  p_verified: document.querySelector(
-                    `[data-customer-verified="${id}"]`,
-                  ).checked,
-                  p_blocked: blocked,
-                  p_notes:
+                  a: id,
+                  b: document.querySelector(`[data-customer-verified="${id}"]`)
+                    .checked,
+                  c: blocked,
+                  d:
                     document
                       .querySelector(`[data-customer-notes="${id}"]`)
                       .value.trim() || null,
-                  p_reason: reason || null,
+                  e: reason || null,
                 },
               );
               if (saveError)
@@ -3291,9 +3323,7 @@
       async function renderReviewsTab() {
         const content = document.getElementById("adminContent");
         content.innerHTML = '<div class="notice">Memuat ulasan...</div>';
-        const { data, error } = await supabase.rpc(
-          "list_admin_website_ratings",
-        );
+        const { data, error } = await supabase.rpc("secure_list_ratings");
         if (error)
           return (content.innerHTML = `<div class="notice error">${esc(error.message)}<br><small>Jalankan customer-review-notification.sql.</small></div>`);
         adminRatings = data || [];
@@ -3303,13 +3333,12 @@
             (button.onclick = async () => {
               const id = button.dataset.saveReview;
               const { error: saveError } = await supabase.rpc(
-                "admin_moderate_website_rating",
+                "secure_admin_moderate_rating",
                 {
-                  p_rating_id: id,
-                  p_hidden: document.querySelector(
-                    `[data-review-hidden="${id}"]`,
-                  ).checked,
-                  p_reply:
+                  a: id,
+                  b: document.querySelector(`[data-review-hidden="${id}"]`)
+                    .checked,
+                  c:
                     document
                       .querySelector(`[data-review-reply="${id}"]`)
                       .value.trim() || null,
@@ -3332,7 +3361,7 @@
             .select("*,orders(order_number)")
             .order("scheduled_for", { ascending: false })
             .limit(200),
-          supabase.rpc("list_customer_summaries"),
+          supabase.rpc("secure_list_customers"),
         ]);
         if (notificationResult.error)
           return (content.innerHTML = `<div class="notice error">${esc(notificationResult.error.message)}<br><small>Jalankan customer-review-notification.sql.</small></div>`);
@@ -3364,7 +3393,7 @@
         }</div>`;
         document.getElementById("generateReminders").onclick = async () => {
           const { data, error } = await supabase.rpc(
-            "admin_generate_reminders",
+            "secure_admin_generate_reminders",
           );
           if (error) return showAdminMessage(error.message, "error");
           await renderNotificationsTab();
@@ -3372,8 +3401,8 @@
         };
         document.querySelectorAll("[data-send-notification]").forEach((link) =>
           link.addEventListener("click", async () => {
-            await supabase.rpc("admin_mark_notification_sent", {
-              p_notification_id: link.dataset.sendNotification,
+            await supabase.rpc("secure_admin_mark_notification_sent", {
+              a: link.dataset.sendNotification,
             });
             setTimeout(renderNotificationsTab, 700);
           }),
@@ -3388,7 +3417,7 @@
       Memuat daftar administrator...
     </div>`;
 
-        const { data, error } = await supabase.rpc("list_admin_users");
+        const { data, error } = await supabase.rpc("secure_list_staff_users");
 
         if (error) {
           content.innerHTML = `
@@ -3405,6 +3434,19 @@
         renderAdministratorContent();
       }
 
+      async function renderActivityLogsTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = '<div class="notice">Memuat log aktivitas...</div>';
+        const { data, error } = await supabase
+          .from("admin_activity_logs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(300);
+        if (error)
+          return (content.innerHTML = `<div class="notice error">${esc(error.message)}<br><small>Jalankan access-security.sql.</small></div>`);
+        content.innerHTML = `<div class="admin-list-heading"><div><h3>Log Aktivitas Admin</h3><p class="muted">300 aktivitas terbaru. Log hanya dapat dibaca Super Admin.</p></div></div><div class="activity-log-list">${(data || []).map((entry) => `<article class="card activity-log-card"><div><span class="badge">${esc(entry.admin_role || "system")}</span><strong>${esc(entry.action.toUpperCase())} · ${esc(entry.table_name)}</strong><small>${new Date(entry.created_at).toLocaleString("id-ID")} · ${esc(entry.admin_user_id || "sistem")} · ID ${esc(entry.record_id || "-")}</small></div><details><summary>Lihat perubahan</summary><pre>${esc(JSON.stringify({ sebelum: entry.old_data, sesudah: entry.new_data }, null, 2))}</pre></details></article>`).join("") || '<div class="notice">Belum ada aktivitas admin.</div>'}</div>`;
+      }
+
       function renderAdministratorContent() {
         const content = document.getElementById("adminContent");
 
@@ -3414,7 +3456,7 @@
         <div class="admin-editor-heading">
           <div>
             <span class="badge">Hak Akses</span>
-            <h3>Tambahkan Administrator</h3>
+            <h3>Tambahkan Petugas</h3>
             <p class="muted">
               Pengguna harus mendaftar dan memiliki akun terlebih dahulu.
             </p>
@@ -3434,6 +3476,8 @@
             >
           </label>
 
+          <label class="field"><span>Hak akses *</span><select class="input" name="role" required><option value="order_admin">Admin Pesanan</option><option value="catalog_admin">Admin Katalog</option><option value="finance_admin">Admin Keuangan</option><option value="warehouse_staff">Petugas Gudang</option><option value="super_admin">Super Admin</option></select></label>
+
           <label class="field">
             <span>Nama tampilan</span>
             <input
@@ -3452,7 +3496,7 @@
           </div>
 
           <button id="addAdministratorButton" class="btn" type="submit">
-            Tambahkan sebagai Admin
+            Tambahkan Petugas
           </button>
         </form>
       </section>
@@ -3460,9 +3504,9 @@
       <section>
         <div class="admin-list-heading">
           <div>
-            <h3>Daftar Administrator</h3>
+            <h3>Daftar Petugas & Administrator</h3>
             <p class="muted">
-              ${administrators.length} akun memiliki akses admin.
+              ${administrators.length} akun memiliki akses operasional.
             </p>
           </div>
 
@@ -3529,10 +3573,7 @@
 
         <span>${esc(administrator.email || "-")}</span>
         <small>
-          Admin sejak
-          ${new Date(
-            administrator.admin_since || administrator.created_at,
-          ).toLocaleDateString("id-ID", { dateStyle: "medium" })}
+          ${esc({ super_admin: "Super Admin", order_admin: "Admin Pesanan", catalog_admin: "Admin Katalog", finance_admin: "Admin Keuangan", warehouse_staff: "Petugas Gudang" }[administrator.role] || administrator.role)} · sejak ${new Date(administrator.created_at).toLocaleDateString("id-ID", { dateStyle: "medium" })}
         </small>
       </div>
 
@@ -3561,6 +3602,7 @@
           .trim()
           .toLowerCase();
         const fullName = String(values.full_name || "").trim() || null;
+        const role = String(values.role || "order_admin");
         const button = document.getElementById("addAdministratorButton");
 
         if (!email) {
@@ -3571,13 +3613,14 @@
         button.disabled = true;
         button.textContent = "Menambahkan...";
 
-        const { error } = await supabase.rpc("add_admin_by_email", {
-          p_email: email,
-          p_full_name: fullName,
+        const { error } = await supabase.rpc("secure_set_staff_role", {
+          a: email,
+          b: role,
+          c: fullName,
         });
 
         button.disabled = false;
-        button.textContent = "Tambahkan sebagai Admin";
+        button.textContent = "Tambahkan Petugas";
 
         if (error) {
           showAdminMessage(error.message, "error");
@@ -3606,8 +3649,8 @@
 
         if (!confirmed) return;
 
-        const { error } = await supabase.rpc("remove_admin_access", {
-          p_user_id: userId,
+        const { error } = await supabase.rpc("secure_remove_staff_role", {
+          a: userId,
         });
 
         if (error) {
@@ -3623,7 +3666,7 @@
       }
 
       async function reloadAdministrators() {
-        const { data, error } = await supabase.rpc("list_admin_users");
+        const { data, error } = await supabase.rpc("secure_list_staff_users");
 
         if (error) throw error;
 
@@ -3644,6 +3687,11 @@
           if (!allowed) return;
 
           await loadAllData();
+          if (
+            (activeTab === "rental" && !can("catalog.manage")) ||
+            (activeTab === "orders" && !can("orders.view"))
+          )
+            activeTab = firstAllowedAdminTab();
           renderShell();
         } catch (error) {
           root.innerHTML = `
