@@ -237,6 +237,32 @@
           : '<p class="muted">Harga paket belum diatur.</p>';
       }
 
+      function updateVariantInterface() {
+        const available = availableQuantity();
+        const quantityInput = document.getElementById("qty");
+        const stockLabel = document.getElementById("selectedStockLabel");
+        const addButton = document.getElementById("add");
+        const orderButton = document.getElementById("order");
+        if (stockLabel) {
+          stockLabel.textContent = available > 0
+            ? `${available} ${item.type === "trip" ? "kursi" : "stok"} tersedia`
+            : "Habis";
+          stockLabel.className = available > 0 ? "stock-available" : "stock-empty";
+        }
+        if (quantityInput) {
+          quantityInput.max = Math.max(1, available);
+          quantityInput.disabled = available < 1;
+          if (Number(quantityInput.value) > available && available > 0)
+            quantityInput.value = available;
+        }
+        if (addButton) addButton.disabled = available < 1;
+        if (orderButton) orderButton.disabled = available < 1;
+        const unitPriceLabel = document.getElementById("unitPrice");
+        if (unitPriceLabel) unitPriceLabel.textContent = rupiah(unitPrice());
+        renderPriceTiers();
+        updateItemTotal();
+      }
+
       function currentQuantity() {
         const input = document.getElementById("qty");
         const max = availableQuantity();
@@ -298,7 +324,7 @@
         <section>
           <div class="row">
             <span class="badge">${esc(item.item_categories?.name || (item.type === "trip" ? "Open Trip" : "Sewa Item"))}</span>
-            <span class="${available > 0 ? "stock-available" : "stock-empty"}">
+            <span id="selectedStockLabel" class="${available > 0 ? "stock-available" : "stock-empty"}">
               ${
                 available > 0
                   ? `${available} ${item.type === "trip" ? "kursi" : "stok"} tersedia`
@@ -399,14 +425,11 @@
         renderPriceTiers();
         quantityInput?.addEventListener("input", updateItemTotal);
         quantityInput?.addEventListener("change", updateItemTotal);
-        document.getElementById("variantSelect")?.addEventListener("change", () => {
-          const max = availableQuantity();
-          quantityInput.max = Math.max(1, max);
-          quantityInput.disabled = max < 1;
-          document.getElementById("unitPrice").textContent = rupiah(unitPrice());
-          renderPriceTiers();
-          updateItemTotal();
-        });
+        document.getElementById("variantSelect")?.addEventListener(
+          "change",
+          updateVariantInterface,
+        );
+        updateVariantInterface();
 
         document.getElementById("add")?.addEventListener("click", () => {
           const quantity = currentQuantity();

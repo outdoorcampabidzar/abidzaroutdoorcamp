@@ -977,6 +977,12 @@
                 wide: true,
                 maxlength: 500,
               })}
+              ${settingInput("admin_1_name", "Nama Admin 1")}
+              ${settingInput("admin_1_whatsapp", "WhatsApp Admin 1", { hint: "Format internasional, contoh 62812..." })}
+              ${settingInput("admin_2_name", "Nama Admin 2")}
+              ${settingInput("admin_2_whatsapp", "WhatsApp Admin 2", { hint: "Boleh dikosongkan jika tidak digunakan." })}
+              ${settingInput("admin_3_name", "Nama Admin 3")}
+              ${settingInput("admin_3_whatsapp", "WhatsApp Admin 3", { hint: "Boleh dikosongkan jika tidak digunakan." })}
             </div>
           </section>
 
@@ -1106,6 +1112,9 @@
         values.whatsapp_number = String(values.whatsapp_number || "").replace(
           /\D/g,
           "",
+        );
+        ["admin_1_whatsapp", "admin_2_whatsapp", "admin_3_whatsapp"].forEach(
+          (key) => (values[key] = String(values[key] || "").replace(/\D/g, "")),
         );
         values.rental_min_days = Math.max(
           1,

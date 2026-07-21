@@ -1,4 +1,4 @@
-import { supabase, rupiah, esc, addCart, message } from "./app.js";
+import { supabase, rupiah, esc, message } from "./app.js";
 
 function availableQuantity(item) {
   return Math.max(
@@ -29,7 +29,6 @@ function renderCard(item) {
     ? item.trip_details[0] || {}
     : item.trip_details || {};
   const available = availableQuantity(item);
-  const unit = unitLabel(item);
   const availability =
     item.type === "trip"
       ? `${available} kursi tersedia`
@@ -91,121 +90,16 @@ function renderCard(item) {
           <b>${rupiah(item.price)}</b>
         </div>
 
-        <div class="item-order-box">
-          <label class="field compact-field">
-            <span>Jumlah ${unit}</span>
-            <input
-              class="input item-quantity"
-              data-quantity="${item.id}"
-              type="number"
-              min="1"
-              max="${Math.max(1, available)}"
-              value="1"
-              ${available < 1 ? "disabled" : ""}
-            >
-          </label>
-
-          <div class="item-line-total">
-            <span>Subtotal</span>
-            <strong data-line-total="${item.id}">
-              ${rupiah(item.price)}
-            </strong>
-          </div>
-        </div>
-
-        <div class="actions item-order-actions">
-          <a class="btn secondary" href="item.html?slug=${encodeURIComponent(item.slug)}">
+        <div class="actions item-order-actions catalog-detail-action">
+          <a class="btn" href="item.html?slug=${encodeURIComponent(item.slug)}">
             Detail
           </a>
-
-          <button
-            class="btn secondary"
-            type="button"
-            data-add="${item.id}"
-            ${available < 1 ? "disabled" : ""}
-          >
-            + Keranjang
-          </button>
-
-          <button
-            class="btn"
-            type="button"
-            data-order="${item.id}"
-            ${available < 1 ? "disabled" : ""}
-          >
-            Pesan
-          </button>
         </div>
-
-        <div data-item-message="${item.id}" class="item-inline-message hidden"></div>
       </div>
     </article>`;
 }
 
-function selectedQuantity(items, itemId, scope = document) {
-  const input = scope.querySelector(`[data-quantity="${itemId}"]`);
-  const item = items.find((entry) => entry.id === itemId);
-  const max = availableQuantity(item);
-  const quantity = Math.max(1, Math.min(max || 1, Number(input?.value || 1)));
-
-  if (input) input.value = quantity;
-  return quantity;
-}
-
-function bindCatalogEvents(items, grid) {
-  grid.querySelectorAll("[data-quantity]").forEach((input) => {
-    const update = () => {
-      const item = items.find((entry) => entry.id === input.dataset.quantity);
-      if (!item) return;
-
-      const quantity = selectedQuantity(items, item.id, grid);
-      const totalElement = grid.querySelector(`[data-line-total="${item.id}"]`);
-
-      if (totalElement) {
-        totalElement.textContent = rupiah(Number(item.price) * quantity);
-      }
-    };
-
-    input.addEventListener("input", update);
-    input.addEventListener("change", update);
-  });
-
-  grid.querySelectorAll("[data-add]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const item = items.find((entry) => entry.id === button.dataset.add);
-      if (!item) return;
-
-      const quantity = selectedQuantity(items, item.id, grid);
-      addCart(item, quantity);
-
-      const feedback = grid.querySelector(`[data-item-message="${item.id}"]`);
-
-      if (feedback) {
-        feedback.textContent = `${quantity} ${unitLabel(item)} ditambahkan ke keranjang.`;
-        feedback.classList.remove("hidden");
-
-        clearTimeout(feedback.hideTimer);
-        feedback.hideTimer = setTimeout(
-          () => feedback.classList.add("hidden"),
-          1800,
-        );
-      }
-    });
-  });
-
-  grid.querySelectorAll("[data-order]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const item = items.find((entry) => entry.id === button.dataset.order);
-      if (!item) return;
-
-      const quantity = selectedQuantity(items, item.id, grid);
-
-      // Keranjang lama dipertahankan.
-      addCart(item, quantity);
-      location.href = "cart.html";
-    });
-  });
-}
+function bindCatalogEvents() {}
 
 export async function mountCatalog({ type, gridId, messageId, limit = null }) {
   const grid = document.getElementById(gridId);

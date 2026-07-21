@@ -10,6 +10,12 @@ export const DEFAULT_SITE_SETTINGS = Object.freeze({
   whatsapp_number: CONFIG.WHATSAPP_NUMBER || "6289509349428",
   whatsapp_message:
     "Halo CS AbidzarOutdoorcamp, saya ingin bertanya mengenai layanan.",
+  admin_1_name: "Admin 1",
+  admin_1_whatsapp: "",
+  admin_2_name: "Admin 2",
+  admin_2_whatsapp: "",
+  admin_3_name: "Admin 3",
+  admin_3_whatsapp: "",
   address: "",
   business_hours: "",
   google_maps_url: "",

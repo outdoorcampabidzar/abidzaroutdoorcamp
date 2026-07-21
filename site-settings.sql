@@ -23,6 +23,9 @@ values ('main', jsonb_build_object(
   'site_name', 'AbidzarOutdoorcamp',
   'whatsapp_number', '6289509349428',
   'whatsapp_message', 'Halo CS AbidzarOutdoorcamp, saya ingin bertanya mengenai layanan.',
+  'admin_1_name', 'Admin 1', 'admin_1_whatsapp', '',
+  'admin_2_name', 'Admin 2', 'admin_2_whatsapp', '',
+  'admin_3_name', 'Admin 3', 'admin_3_whatsapp', '',
   'address', '', 'business_hours', '', 'google_maps_url', '',
   'instagram_url', '', 'tiktok_url', '',
   'hero_eyebrow', 'Outdoor rental & open trip',
@@ -75,6 +78,9 @@ begin
   v_settings := p_settings || jsonb_build_object(
     'site_name', left(trim(coalesce(p_settings->>'site_name', '')), 120),
     'whatsapp_number', regexp_replace(coalesce(p_settings->>'whatsapp_number', ''), '[^0-9]', '', 'g'),
+    'admin_1_whatsapp', regexp_replace(coalesce(p_settings->>'admin_1_whatsapp', ''), '[^0-9]', '', 'g'),
+    'admin_2_whatsapp', regexp_replace(coalesce(p_settings->>'admin_2_whatsapp', ''), '[^0-9]', '', 'g'),
+    'admin_3_whatsapp', regexp_replace(coalesce(p_settings->>'admin_3_whatsapp', ''), '[^0-9]', '', 'g'),
     'rental_min_days', v_min_days,
     'rental_max_days', v_max_days,
     'maintenance_mode', coalesce((p_settings->>'maintenance_mode')::boolean, false)

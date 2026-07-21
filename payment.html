@@ -19,10 +19,12 @@
       </section>
     </main>
     <script type="module">
-      import { supabase, rupiah, esc } from "./app.js";
+      import { supabase, rupiah, esc, loadSiteSettings } from "./app.js";
       const card = document.getElementById("paymentCard");
       const orderId = new URLSearchParams(location.search).get("order");
       let payment = null;
+      let currentOrder = null;
+      let settings = null;
       let timer = null;
       let poller = null;
       let checking = false;
@@ -52,12 +54,14 @@
         } = await supabase.auth.getUser();
         if (!user)
           return (location.href = `login.html?next=${encodeURIComponent(location.pathname + location.search)}`);
+        settings = await loadSiteSettings();
         const { data: order, error } = await supabase
           .from("orders")
-          .select("*")
+          .select("*,order_items(*)")
           .eq("id", orderId)
           .single();
         if (error) return showError(error.message);
+        currentOrder = order;
         const { data: rows } = await supabase
           .from("payment_transactions")
           .select("*")
@@ -94,6 +98,7 @@
           <div class="data"><b>Dibuat</b><br>${new Date(payment.created_at).toLocaleString("id-ID")}</div>
         </div>
         <div id="paymentMessage" class="notice hidden"></div>
+        ${adminOptions().length ? `<div class="payment-admin-invoice"><label class="field"><span>Kirim invoice kepada</span><select id="invoiceAdmin" class="input">${adminOptions().map((admin) => `<option value="${esc(admin.number)}">${esc(admin.name)}</option>`).join("")}</select></label><button id="sendAdminInvoice" class="btn secondary" type="button">Kirim Invoice ke Admin</button></div>` : ""}
         <div class="actions payment-actions">
           ${active && payment.payment_url ? `<a class="btn" href="${esc(payment.payment_url)}" target="_blank" rel="noopener">Buka Halaman Pembayaran</a>` : ""}
           ${active ? '<button id="checkPayment" class="btn secondary" type="button">Cek Pembayaran</button><button id="cancelPayment" class="btn danger" type="button">Batalkan</button>' : ""}
@@ -109,6 +114,9 @@
         document
           .getElementById("recreatePayment")
           ?.addEventListener("click", recreate);
+        document
+          .getElementById("sendAdminInvoice")
+          ?.addEventListener("click", sendInvoiceToAdmin);
         if (active) {
           updateCountdown();
           timer = setInterval(() => {
@@ -117,6 +125,40 @@
           }, 1000);
           poller = setInterval(check, 8000);
         }
+      }
+
+      function adminOptions() {
+        return [1, 2, 3]
+          .map((index) => ({
+            name: String(settings?.[`admin_${index}_name`] || `Admin ${index}`).trim(),
+            number: String(settings?.[`admin_${index}_whatsapp`] || "").replace(/\D/g, ""),
+          }))
+          .filter((admin) => admin.number);
+      }
+
+      function sendInvoiceToAdmin() {
+        const number = document.getElementById("invoiceAdmin")?.value;
+        if (!number || !currentOrder) return showMessage("Nomor WhatsApp admin belum diatur.", "error");
+        const items = (currentOrder.order_items || [])
+          .map((line) => `- ${line.title_snapshot}${line.variant_name_snapshot ? ` (${line.variant_name_snapshot})` : ""} x${line.quantity}: ${rupiah(line.line_total)}`)
+          .join("\n");
+        const text = [
+          "*INVOICE ABIDZAR OUTDOORCAMP*",
+          `Nomor: ${currentOrder.order_number}`,
+          `Pelanggan: ${currentOrder.customer_name}`,
+          `WhatsApp: ${currentOrder.phone}`,
+          currentOrder.rental_start ? `Sewa: ${currentOrder.rental_start} s/d ${currentOrder.rental_end}` : "",
+          "",
+          items,
+          "",
+          `Subtotal: ${rupiah(currentOrder.subtotal)}`,
+          `Diskon: ${rupiah(currentOrder.discount)}`,
+          `Total: ${rupiah(currentOrder.total)}`,
+          `Status pembayaran: ${labels[payment.status] || payment.status}`,
+          `ID transaksi: ${payment.gateway_transaction_id}`,
+          `Tautan: ${location.href}`,
+        ].filter(Boolean).join("\n");
+        window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
       }
 
       function updateCountdown() {

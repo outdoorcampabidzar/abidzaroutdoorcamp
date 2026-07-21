@@ -4606,6 +4606,10 @@ main {
   width: 100%;
 }
 
+.item-order-actions.catalog-detail-action {
+  grid-template-columns: 1fr;
+}
+
 .item-order-actions .btn {
   width: 100%;
   min-width: 0;
@@ -5898,6 +5902,28 @@ main {
 }
 .payment-actions {
   margin-top: 18px;
+}
+
+.payment-admin-invoice {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+@media (max-width: 640px) {
+  .payment-admin-invoice {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-admin-invoice .btn {
+    width: 100%;
+  }
 }
 .compact-payment-status {
   display: flex;
