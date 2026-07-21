@@ -443,9 +443,9 @@
         const tier = (item.price_tiers || []).find(
           (entry) => Number(entry.duration_days) === Number(days),
         );
-        return tier
-          ? Number(tier.price) + Number(item.variant_price_adjustment || 0) * days
-          : Number(item.price) * days;
+        // Harga paket adalah harga final. Tambahan varian hanya dipakai
+        // ketika durasi tidak mempunyai paket khusus.
+        return tier ? Number(tier.price) : Number(item.price) * days;
       };
       const subtotal = () =>
           cart.reduce(

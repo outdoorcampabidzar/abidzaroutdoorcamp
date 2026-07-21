@@ -228,8 +228,9 @@ begin
       select price into v_package_price from public.item_price_tiers
       where item_id = v_item.id and duration_days = v_days limit 1;
       v_subtotal := v_subtotal + (
-        (coalesce(v_package_price, v_item.price * v_days) +
-          case when v_variant_id is null then 0 else v_variant.price_adjustment * v_days end) * v_quantity
+        (case when v_package_price is not null then v_package_price
+          else (v_item.price + case when v_variant_id is null then 0 else v_variant.price_adjustment end) * v_days
+        end) * v_quantity
       );
     else
       select coalesce(v_item.quota, 0) - count(*) into v_available
@@ -337,9 +338,15 @@ begin
       v_order_id, v_item.id, v_variant_id,
       case when v_variant_id is null then null else concat_ws(' · ',v_variant.name,nullif(v_variant.capacity,'')) end,
       v_item.title, v_item.type,
-      case when v_item.type = 'product' then coalesce(v_package_price, v_item.price * v_days) + case when v_variant_id is null then 0 else v_variant.price_adjustment*v_days end else v_item.price end,
+      case when v_item.type = 'product' then
+        case when v_package_price is not null then v_package_price
+          else (v_item.price + case when v_variant_id is null then 0 else v_variant.price_adjustment end) * v_days end
+        else v_item.price end,
       v_quantity,
-      (case when v_item.type = 'product' then coalesce(v_package_price, v_item.price * v_days) + case when v_variant_id is null then 0 else v_variant.price_adjustment*v_days end else v_item.price end) * v_quantity,
+      (case when v_item.type = 'product' then
+        case when v_package_price is not null then v_package_price
+          else (v_item.price + case when v_variant_id is null then 0 else v_variant.price_adjustment end) * v_days end
+        else v_item.price end) * v_quantity,
       v_item.trip_date,
       case when v_item.type = 'product' then p_rental_start else null end,
       case when v_item.type = 'product' then p_rental_end else null end,
