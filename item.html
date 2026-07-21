@@ -212,7 +212,29 @@
       }
 
       function unitPrice() {
-        return Number(item.price);
+        const variantId = selectedVariant()?.id || null;
+        const tier = (item?.item_price_tiers || []).find(
+          (entry) => Number(entry.duration_days) === 1 &&
+            (entry.variant_id === variantId || !entry.variant_id),
+        );
+        return Number(tier?.price ?? item.price);
+      }
+
+      function selectedPriceTiers() {
+        const variantId = selectedVariant()?.id || null;
+        const tiers = item?.item_price_tiers || [];
+        const specific = tiers.filter((entry) => entry.variant_id === variantId);
+        return (specific.length ? specific : tiers.filter((entry) => !entry.variant_id))
+          .sort((a, b) => a.duration_days - b.duration_days);
+      }
+
+      function renderPriceTiers() {
+        const box = document.getElementById("variantPriceTiers");
+        if (!box) return;
+        const tiers = selectedPriceTiers();
+        box.innerHTML = tiers.length
+          ? tiers.map((tier) => `<div><span>${esc(tier.label)} · ${tier.duration_days} hari</span><strong>${rupiah(tier.price)}</strong></div>`).join("")
+          : '<p class="muted">Harga paket belum diatur.</p>';
       }
 
       function currentQuantity() {
@@ -314,17 +336,7 @@
 
           ${(item.item_variants || []).length ? `<section class="detail-options"><label class="field"><span>Ukuran / Kapasitas *</span><select id="variantSelect" class="input">${item.item_variants.filter((variant) => variant.is_active !== false).map((variant) => `<option value="${variant.id}" ${Number(variant.stock) < 1 ? "disabled" : ""}>${esc(variant.name)}${variant.capacity ? ` · ${esc(variant.capacity)}` : ""} — ${Number(variant.stock)} unit tersedia</option>`).join("")}</select></label></section>` : ""}
 
-          ${
-            (item.item_price_tiers || []).length
-              ? `<section class="detail-options"><h3>Harga Paket</h3><div class="price-tier-list">${item.item_price_tiers
-                  .sort((a, b) => a.duration_days - b.duration_days)
-                  .map(
-                    (tier) =>
-                      `<div><span>${esc(tier.label)} · ${tier.duration_days} hari</span><strong>${rupiah(tier.price)}</strong></div>`,
-                  )
-                  .join("")}</div></section>`
-              : ""
-          }
+          ${(item.item_price_tiers || []).length ? `<section class="detail-options"><h3>Harga Paket</h3><div id="variantPriceTiers" class="price-tier-list"></div></section>` : ""}
 
           <div class="detail-order-panel">
             <div class="detail-price-row">
@@ -384,6 +396,7 @@
         });
 
         const quantityInput = document.getElementById("qty");
+        renderPriceTiers();
         quantityInput?.addEventListener("input", updateItemTotal);
         quantityInput?.addEventListener("change", updateItemTotal);
         document.getElementById("variantSelect")?.addEventListener("change", () => {
@@ -391,6 +404,7 @@
           quantityInput.max = Math.max(1, max);
           quantityInput.disabled = max < 1;
           document.getElementById("unitPrice").textContent = rupiah(unitPrice());
+          renderPriceTiers();
           updateItemTotal();
         });
 

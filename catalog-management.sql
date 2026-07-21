@@ -68,6 +68,16 @@ create table if not exists public.item_price_tiers (
   created_at timestamptz not null default now(),
   unique(item_id, duration_days)
 );
+alter table public.item_price_tiers
+  add column if not exists variant_id uuid references public.item_variants(id) on delete cascade;
+alter table public.item_price_tiers
+  drop constraint if exists item_price_tiers_item_id_duration_days_key;
+create unique index if not exists item_price_tiers_variant_duration_idx
+  on public.item_price_tiers(item_id,variant_id,duration_days)
+  where variant_id is not null;
+create unique index if not exists item_price_tiers_default_duration_idx
+  on public.item_price_tiers(item_id,duration_days)
+  where variant_id is null;
 
 create or replace view public.item_inventory_summary
 with (security_invoker = true) as

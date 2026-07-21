@@ -439,9 +439,18 @@
       };
       const rentalUnitPrice = (item, days = rentalDays()) => {
         if (item.type !== "product") return Number(item.price);
-        const tier = (item.price_tiers || []).find(
-          (entry) => Number(entry.duration_days) === Number(days),
-        );
+        const tiers = item.price_tiers || [];
+        const tier =
+          tiers.find(
+            (entry) =>
+              Number(entry.duration_days) === Number(days) &&
+              entry.variant_id === item.variant_id,
+          ) ||
+          tiers.find(
+            (entry) =>
+              Number(entry.duration_days) === Number(days) &&
+              !entry.variant_id,
+          );
         // Harga paket adalah harga final. Tambahan varian hanya dipakai
         // ketika durasi tidak mempunyai paket khusus.
         return tier ? Number(tier.price) : Number(item.price) * days;

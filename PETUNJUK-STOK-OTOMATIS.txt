@@ -11,10 +11,13 @@ Contoh varian di Admin Panel (satu baris per pilihan):
 Tenda 2 Orang | 2 orang | 2
 Tenda 4 Orang | 4 orang | 3
 
-Harga paket (satu baris per durasi):
-1 Hari | 1 | 100000
-2 Hari | 2 | 175000
-3 Hari | 3 | 225000
+Harga paket per kapasitas (satu baris per durasi):
+Tenda 2 Orang | 1 Hari | 1 | 100000
+Tenda 2 Orang | 2 Hari | 2 | 175000
+Tenda 2 Orang | 3 Hari | 3 | 225000
+Tenda 4 Orang | 1 Hari | 1 | 150000
+Tenda 4 Orang | 2 Hari | 2 | 275000
+Tenda 4 Orang | 3 Hari | 3 | 375000
 
 Kolom terakhir adalah stok varian. Saat pesanan berstatus Dibayar, stok varian
 berkurang sesuai jumlah pesanan. Saat status Selesai/Dikembalikan, stok kembali.

@@ -226,7 +226,9 @@ begin
         raise exception 'Stok % pada tanggal tersebut hanya % unit', v_item.title, v_available;
       end if;
       select price into v_package_price from public.item_price_tiers
-      where item_id = v_item.id and duration_days = v_days limit 1;
+      where item_id=v_item.id and duration_days=v_days
+        and (variant_id=v_variant_id or variant_id is null)
+      order by (variant_id=v_variant_id) desc limit 1;
       v_subtotal := v_subtotal + (
         (case when v_package_price is not null then v_package_price
           else v_item.price * v_days
@@ -328,7 +330,9 @@ begin
         v_variant_id := null;
       end if;
       select price into v_package_price from public.item_price_tiers
-      where item_id = v_item.id and duration_days = v_days limit 1;
+      where item_id=v_item.id and duration_days=v_days
+        and (variant_id=v_variant_id or variant_id is null)
+      order by (variant_id=v_variant_id) desc limit 1;
     end if;
 
     insert into public.order_items (

@@ -1326,16 +1326,18 @@
                   </label>
                   <label class="field">
                     <span>Harga paket</span>
-                    <textarea class="input" name="price_tiers" rows="4" placeholder="Nama paket | Jumlah hari | Harga">${esc(
+                    <textarea class="input" name="price_tiers" rows="6" placeholder="Tenda 2 Orang | 1 Hari | 1 | 100000&#10;Tenda 2 Orang | 2 Hari | 2 | 175000&#10;Tenda 4 Orang | 1 Hari | 1 | 150000">${esc(
                       (item.item_price_tiers || [])
                         .sort((a, b) => a.duration_days - b.duration_days)
                         .map(
-                          (tier) =>
-                            `${tier.label} | ${tier.duration_days} | ${Number(tier.price)}`,
+                          (tier) => {
+                            const variant = (item.item_variants || []).find((row) => row.id === tier.variant_id);
+                            return `${variant?.name || "Semua Varian"} | ${tier.label} | ${tier.duration_days} | ${Number(tier.price)}`;
+                          },
                         )
                         .join("\n"),
                     )}</textarea>
-                    <small class="muted">Contoh: 1 Hari | 1 | 100000, lalu 2 Hari | 2 | 175000.</small>
+                    <small class="muted">Format: Nama varian | Nama paket | Jumlah hari | Harga final.</small>
                     <small class="muted">Contoh: Paket 2 Hari | 2 | 150000</small>
                   </label>
                 </div>
@@ -1751,7 +1753,12 @@
             )
             .join(";");
         return (item.item_price_tiers || [])
-          .map((tier) => `${tier.label}|${tier.duration_days}|${tier.price}`)
+          .map((tier) => {
+            const variant = (item.item_variants || []).find(
+              (row) => row.id === tier.variant_id,
+            );
+            return `${variant?.name || "Semua Varian"}|${tier.label}|${tier.duration_days}|${tier.price}`;
+          })
           .join(";");
       }
 
@@ -2040,7 +2047,7 @@
           .filter(Boolean);
         const variants = parseCatalogLines(values.variants, 3);
         const units = parseCatalogLines(values.inventory_units, 3);
-        const tiers = parseCatalogLines(values.price_tiers, 3);
+        const tiers = parseCatalogLines(values.price_tiers, 4);
 
         const tables = [
           "item_images",
@@ -2072,8 +2079,9 @@
             .insert(imageRows);
           if (error) throw error;
         }
+        let savedVariants = [];
         if (variants.length) {
-          const { error } = await supabase.from("item_variants").insert(
+          const { data, error } = await supabase.from("item_variants").insert(
             variants.map(([name, capacity, stock], index) => ({
               item_id: itemId,
               name,
@@ -2082,8 +2090,9 @@
               stock: Math.max(0, Number(stock || 0)),
               sort_order: index,
             })),
-          );
+          ).select("id,name");
           if (error) throw error;
+          savedVariants = data || [];
         }
         if (units.length) {
           const validConditions = ["new", "good", "fair", "damaged"];
@@ -2112,13 +2121,21 @@
         }
         if (tiers.length) {
           const { error } = await supabase.from("item_price_tiers").insert(
-            tiers.map(([label, days, price], index) => ({
+            tiers.map(([variantName, label, days, price], index) => {
+              const variant = savedVariants.find(
+                (row) => row.name.toLowerCase() === variantName.toLowerCase(),
+              );
+              if (!variant && variantName.toLowerCase() !== "semua varian")
+                throw new Error(`Varian harga ${variantName} tidak ditemukan.`);
+              return {
               item_id: itemId,
+              variant_id: variant?.id || null,
               label,
               duration_days: Math.max(1, Number(days)),
               price: Math.max(0, Number(price)),
               sort_order: index,
-            })),
+              };
+            }),
           );
           if (error) throw error;
         }
@@ -2137,7 +2154,7 @@
           categoryId = await resolveCategoryId(values.category_name);
           parseCatalogLines(values.variants, 3);
           parseCatalogLines(values.inventory_units, 3);
-          parseCatalogLines(values.price_tiers, 3);
+          parseCatalogLines(values.price_tiers, 4);
         } catch (error) {
           showAdminMessage(error.message, "error");
           return;
