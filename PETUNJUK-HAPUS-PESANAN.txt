@@ -1,0 +1,15 @@
+HAPUS SEMUA PESANAN
+===================
+
+PEMASANGAN
+1. Supabase > SQL Editor > New query.
+2. Salin seluruh isi order-cleanup.sql.
+3. Klik Run dan pastikan Success.
+4. Upload website terbaru ke GitHub Pages.
+5. Login sebagai Super Admin.
+6. Buka Admin Panel > Pesanan.
+
+Tombol "Hapus Semua Pesanan" hanya muncul untuk Super Admin dan menghapus
+seluruh status: Menunggu, Dikonfirmasi, Dibayar, Selesai, Dikembalikan, dan
+Dibatalkan. Stok serta kuota yang masih tertahan dipulihkan terlebih dahulu.
+Penghapusan bersifat permanen dan tidak dapat dibatalkan.

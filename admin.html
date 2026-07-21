@@ -2877,7 +2877,7 @@
             <p class="muted">${filteredOrders.length} pesanan ditampilkan · ${orders.filter((order) => order.status === "cancelled").length} dibatalkan disembunyikan dari daftar aktif.</p>
           </div>
 
-          <div class="actions"><button id="exportOrdersCsv" class="btn secondary small" type="button">Ekspor CSV</button><button id="exportOrdersExcel" class="btn secondary small" type="button">Ekspor Excel</button><button id="refreshOrders" class="btn secondary small" type="button">Muat Ulang</button></div>
+          <div class="actions"><button id="exportOrdersCsv" class="btn secondary small" type="button">Ekspor CSV</button><button id="exportOrdersExcel" class="btn secondary small" type="button">Ekspor Excel</button>${can("*") && orders.length ? '<button id="deleteAllOrders" class="btn danger small" type="button">Hapus Semua Pesanan</button>' : ""}<button id="refreshOrders" class="btn secondary small" type="button">Muat Ulang</button></div>
         </div>
 
         <section class="card order-filter-bar"><input id="orderSearch" class="input" value="${esc(orderSearch)}" placeholder="Cari nomor pesanan, nama, atau HP"><select id="orderStatusFilter" class="input"><option value="all">Pesanan aktif</option><option value="all_with_cancelled" ${orderStatusFilter === "all_with_cancelled" ? "selected" : ""}>Semua termasuk dibatalkan</option>${Object.entries(
@@ -2903,6 +2903,9 @@
         document
           .getElementById("refreshOrders")
           .addEventListener("click", refreshOrders);
+        document
+          .getElementById("deleteAllOrders")
+          ?.addEventListener("click", deleteAllOrders);
 
         const applyFilters = () => {
           orderSearch = document.getElementById("orderSearch").value.trim();
@@ -3159,6 +3162,52 @@
         orders = data || [];
         renderOrdersTab();
         showAdminMessage("Daftar pesanan dimuat ulang.", "success");
+      }
+
+      async function deleteAllOrders() {
+        const total = orders.length;
+        if (!total) {
+          showAdminMessage("Tidak ada pesanan untuk dihapus.", "warning");
+          return;
+        }
+
+        if (
+          !confirm(
+            `SEMUA ${total} pesanan dari seluruh status akan dihapus permanen beserta transaksi dan riwayatnya. Lanjutkan?`,
+          )
+        )
+          return;
+
+        const verification = prompt(
+          `Ketik HAPUS SEMUA ${total} untuk konfirmasi penghapusan permanen:`,
+        );
+        if (verification !== `HAPUS SEMUA ${total}`) {
+          showAdminMessage(
+            "Konfirmasi tidak cocok. Penghapusan dibatalkan.",
+            "warning",
+          );
+          return;
+        }
+
+        const button = document.getElementById("deleteAllOrders");
+        button.disabled = true;
+        button.textContent = "Menghapus...";
+        const { data, error } = await supabase.rpc("admin_delete_all_orders");
+        if (error) {
+          button.disabled = false;
+          button.textContent = "Hapus Semua Pesanan";
+          showAdminMessage(
+            `${error.message}. Jalankan order-cleanup.sql terlebih dahulu.`,
+            "error",
+          );
+          return;
+        }
+
+        await refreshOrders();
+        showAdminMessage(
+          `${Number(data || total)} pesanan dari seluruh status berhasil dihapus permanen.`,
+          "success",
+        );
       }
 
       async function saveOrderStatus(id) {
