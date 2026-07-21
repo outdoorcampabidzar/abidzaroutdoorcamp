@@ -50,6 +50,31 @@ revoke execute on function public.add_admin_by_email(text,text) from authenticat
 revoke execute on function public.remove_admin_access(uuid) from authenticated;
 revoke execute on function public.admin_save_site_settings(jsonb) from authenticated;
 
+create or replace function public.secure_admin_save_site_settings(p_settings jsonb)
+returns jsonb language plpgsql security definer set search_path=public as $$
+declare v_settings jsonb;
+begin
+  if not (public.has_permission('settings.manage') or public.has_permission('*')) then
+    raise exception 'Izin pengaturan website diperlukan';
+  end if;
+  if p_settings is null or jsonb_typeof(p_settings)<>'object' then
+    raise exception 'Format pengaturan tidak valid';
+  end if;
+  v_settings := p_settings || jsonb_build_object(
+    'whatsapp_number',regexp_replace(coalesce(p_settings->>'whatsapp_number',''),'[^0-9]','','g'),
+    'admin_1_whatsapp',regexp_replace(coalesce(p_settings->>'admin_1_whatsapp',''),'[^0-9]','','g'),
+    'admin_2_whatsapp',regexp_replace(coalesce(p_settings->>'admin_2_whatsapp',''),'[^0-9]','','g'),
+    'admin_3_whatsapp',regexp_replace(coalesce(p_settings->>'admin_3_whatsapp',''),'[^0-9]','','g')
+  );
+  insert into public.site_settings(id,settings,updated_at,updated_by)
+  values('main',v_settings,now(),auth.uid())
+  on conflict(id) do update set settings=excluded.settings,
+    updated_at=excluded.updated_at,updated_by=excluded.updated_by;
+  return v_settings;
+end$$;
+revoke all on function public.secure_admin_save_site_settings(jsonb) from public;
+grant execute on function public.secure_admin_save_site_settings(jsonb) to authenticated;
+
 create or replace function public.secure_admin_update_order_status(a uuid,b text,c text default null) returns void language plpgsql security definer set search_path=public as $$begin if not public.has_permission('orders.manage') then raise exception 'Izin pesanan diperlukan';end if;perform public.admin_update_order_status(a,b,c);end$$;
 create or replace function public.secure_admin_manage_order(a uuid,b text,c numeric default null,d text default null,e text default null,f uuid default null,g integer default 1) returns void language plpgsql security definer set search_path=public as $$begin if (b='refund' and not public.has_permission('finance.manage')) or (b='cancel' and not public.has_permission('orders.manage')) or (b='return' and not public.has_permission('warehouse.manage')) or (b in('deposit_received','deposit_returned') and not(public.has_permission('finance.manage') or public.has_permission('warehouse.manage'))) or (b='late_fee' and not(public.has_permission('orders.manage') or public.has_permission('warehouse.manage'))) then raise exception 'Izin operasional diperlukan';end if;perform public.admin_manage_order(a,b,c,d,e,f,g);end$$;
 create or replace function public.secure_admin_update_customer(a uuid,b boolean,c boolean,d text default null,e text default null) returns void language plpgsql security definer set search_path=public as $$begin if not public.has_permission('customers.manage') then raise exception 'Izin pelanggan diperlukan';end if;perform public.admin_update_customer(a,b,c,d,e);end$$;

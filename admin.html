@@ -1142,24 +1142,18 @@
         button.disabled = true;
         button.textContent = "Menyimpan...";
 
-        const { data, error } = await supabase
-          .from("site_settings")
-          .update({
-            settings: values,
-            updated_at: new Date().toISOString(),
-            updated_by: currentAdminUserId,
-          })
-          .eq("id", "main")
-          .select("settings")
-          .single();
+        const { data, error } = await supabase.rpc(
+          "secure_admin_save_site_settings",
+          { p_settings: values },
+        );
 
         button.disabled = false;
         button.textContent = "Simpan Pengaturan";
 
         if (error) {
           showAdminMessage(
-            error.message.includes("admin_save_site_settings")
-              ? "Fitur database belum dipasang. Jalankan site-settings.sql melalui Supabase SQL Editor."
+            error.message.includes("secure_admin_save_site_settings")
+              ? "Fitur database belum dipasang. Jalankan access-security.sql terbaru melalui Supabase SQL Editor."
               : error.message,
             "error",
           );
@@ -1168,7 +1162,7 @@
 
         siteSettings = {
           ...DEFAULT_SITE_SETTINGS,
-          ...(data?.settings || values),
+          ...(data || values),
         };
         applySiteSettings(siteSettings);
         showAdminMessage("Pengaturan website berhasil disimpan.", "success");
