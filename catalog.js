@@ -233,6 +233,95 @@ export async function mountCatalog({ type, gridId, messageId, limit = null }) {
     return;
   }
 
+  if (type === "product" && document.getElementById("catalogSearch")) {
+    mountRentalFilters(items, grid);
+    return;
+  }
+
   grid.innerHTML = items.map(renderCard).join("");
   bindCatalogEvents(items, grid);
+}
+
+function mountRentalFilters(items, grid) {
+  const search = document.getElementById("catalogSearch");
+  const category = document.getElementById("catalogCategory");
+  const sort = document.getElementById("catalogSort");
+  const availableOnly = document.getElementById("catalogAvailableOnly");
+  const reset = document.getElementById("catalogReset");
+  const resultCount = document.getElementById("catalogResultCount");
+
+  const categories = [
+    ...new Map(
+      items
+        .filter((item) => item.item_categories?.name)
+        .map((item) => [
+          item.item_categories.slug || item.item_categories.name,
+          item.item_categories,
+        ]),
+    ).values(),
+  ].sort((a, b) => a.name.localeCompare(b.name, "id"));
+
+  category.innerHTML = [
+    '<option value="">Semua kategori</option>',
+    ...categories.map(
+      (entry) =>
+        `<option value="${esc(entry.slug || entry.name)}">${esc(entry.name)}</option>`,
+    ),
+  ].join("");
+
+  const draw = () => {
+    const keyword = search.value.trim().toLocaleLowerCase("id");
+    const selectedCategory = category.value;
+    let filtered = items.filter((item) => {
+      const haystack = [
+        item.title,
+        item.description,
+        item.item_categories?.name,
+        ...(item.item_variants || []).map((variant) => variant.name),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase("id");
+      const itemCategory =
+        item.item_categories?.slug || item.item_categories?.name || "";
+      return (
+        (!keyword || haystack.includes(keyword)) &&
+        (!selectedCategory || itemCategory === selectedCategory) &&
+        (!availableOnly.checked || availableQuantity(item) > 0)
+      );
+    });
+
+    filtered = [...filtered].sort((a, b) => {
+      if (sort.value === "price-low") return Number(a.price) - Number(b.price);
+      if (sort.value === "price-high") return Number(b.price) - Number(a.price);
+      if (sort.value === "name") return a.title.localeCompare(b.title, "id");
+      if (sort.value === "stock")
+        return availableQuantity(b) - availableQuantity(a);
+      return (
+        Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) ||
+        Number(a.sort_order || 0) - Number(b.sort_order || 0)
+      );
+    });
+
+    resultCount.textContent = `${filtered.length} dari ${items.length} item ditampilkan`;
+    grid.innerHTML = filtered.length
+      ? filtered.map(renderCard).join("")
+      : '<div class="notice catalog-empty-result">Tidak ada item yang sesuai dengan filter. Coba kata kunci atau kategori lain.</div>';
+    bindCatalogEvents(filtered, grid);
+  };
+
+  search.addEventListener("input", draw);
+  category.addEventListener("change", draw);
+  sort.addEventListener("change", draw);
+  availableOnly.addEventListener("change", draw);
+  reset.addEventListener("click", () => {
+    search.value = "";
+    category.value = "";
+    sort.value = "recommended";
+    availableOnly.checked = false;
+    draw();
+    search.focus();
+  });
+
+  draw();
 }

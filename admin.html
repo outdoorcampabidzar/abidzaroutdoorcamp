@@ -1430,6 +1430,39 @@
               </div>
             </div>
 
+            <div class="admin-catalog-filter">
+              <label class="field">
+                <span>Cari item</span>
+                <input id="adminCatalogSearch" class="input" type="search" placeholder="Cari nama, kategori, atau deskripsi" autocomplete="off">
+              </label>
+              <label class="field">
+                <span>Filter kategori</span>
+                <select id="adminCatalogCategory" class="input">
+                  <option value="">Semua kategori</option>
+                  ${categories
+                    .filter((category) => category.is_active !== false)
+                    .sort((a, b) => a.name.localeCompare(b.name, "id"))
+                    .map(
+                      (category) =>
+                        `<option value="${esc(category.slug)}">${esc(category.name)}</option>`,
+                    )
+                    .join("")}
+                </select>
+              </label>
+              <label class="field">
+                <span>Status</span>
+                <select id="adminCatalogStatus" class="input">
+                  <option value="">Semua status</option>
+                  <option value="active">Aktif</option>
+                  <option value="inactive">Nonaktif</option>
+                  <option value="available">Stok tersedia</option>
+                  <option value="empty">Stok kosong</option>
+                </select>
+              </label>
+              <button id="adminCatalogReset" class="btn secondary" type="button">Reset</button>
+            </div>
+            <p id="adminCatalogResult" class="muted admin-catalog-result" aria-live="polite"></p>
+
             <div class="admin-catalog-list">
               ${
                 rentals.map(renderRentalCard).join("") ||
@@ -1448,7 +1481,14 @@
 
       function renderRentalCard(item) {
         return `
-        <article class="card admin-rental-card">
+        <article
+          class="card admin-rental-card"
+          data-catalog-card
+          data-search="${esc(`${item.title} ${item.description || ""} ${item.item_categories?.name || ""}`.toLocaleLowerCase("id"))}"
+          data-category="${esc(item.item_categories?.slug || "")}"
+          data-active="${item.is_active ? "true" : "false"}"
+          data-stock="${Number(item.stock || 0)}"
+        >
           <img src="${esc(item.image_url)}" alt="${esc(item.title)}">
 
           <div class="admin-rental-body">
@@ -1575,6 +1615,48 @@
         document
           .getElementById("viewArchivedCatalog")
           .addEventListener("click", renderArchivedCatalog);
+
+        const catalogSearch = document.getElementById("adminCatalogSearch");
+        const catalogCategory = document.getElementById("adminCatalogCategory");
+        const catalogStatus = document.getElementById("adminCatalogStatus");
+        const applyCatalogFilter = () => {
+          const keyword = catalogSearch.value.trim().toLocaleLowerCase("id");
+          let visible = 0;
+          document.querySelectorAll("[data-catalog-card]").forEach((card) => {
+            const statusMatch =
+              !catalogStatus.value ||
+              (catalogStatus.value === "active" &&
+                card.dataset.active === "true") ||
+              (catalogStatus.value === "inactive" &&
+                card.dataset.active === "false") ||
+              (catalogStatus.value === "available" &&
+                Number(card.dataset.stock) > 0) ||
+              (catalogStatus.value === "empty" &&
+                Number(card.dataset.stock) < 1);
+            const matches =
+              (!keyword || card.dataset.search.includes(keyword)) &&
+              (!catalogCategory.value ||
+                card.dataset.category === catalogCategory.value) &&
+              statusMatch;
+            card.classList.toggle("hidden", !matches);
+            if (matches) visible += 1;
+          });
+          document.getElementById("adminCatalogResult").textContent =
+            `${visible} dari ${rentalItems().length} item ditampilkan`;
+        };
+        catalogSearch.addEventListener("input", applyCatalogFilter);
+        catalogCategory.addEventListener("change", applyCatalogFilter);
+        catalogStatus.addEventListener("change", applyCatalogFilter);
+        document
+          .getElementById("adminCatalogReset")
+          .addEventListener("click", () => {
+            catalogSearch.value = "";
+            catalogCategory.value = "";
+            catalogStatus.value = "";
+            applyCatalogFilter();
+            catalogSearch.focus();
+          });
+        applyCatalogFilter();
 
         document.querySelectorAll("[data-edit-rental]").forEach((button) => {
           button.addEventListener("click", () => {

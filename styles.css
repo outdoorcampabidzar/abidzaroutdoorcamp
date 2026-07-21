@@ -1624,6 +1624,115 @@ footer {
   justify-content: flex-end;
 }
 
+.admin-catalog-filter {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.4fr) minmax(180px, 0.8fr) minmax(
+      160px,
+      0.7fr
+    ) auto;
+  gap: 12px;
+  align-items: end;
+  margin: 18px 0 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(5, 15, 27, 0.46);
+}
+
+.admin-catalog-filter .field {
+  margin: 0;
+}
+
+.admin-catalog-result {
+  margin: 0 0 12px;
+}
+
+.catalog-filter-panel {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1.6fr) minmax(180px, 0.8fr) minmax(180px, 0.8fr)
+    auto;
+  gap: 14px;
+  align-items: end;
+  margin: 22px 0 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+}
+
+.catalog-filter-panel .field {
+  margin: 0;
+}
+
+.catalog-available-check {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.catalog-available-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+}
+
+.catalog-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  margin-bottom: 12px;
+}
+
+.catalog-result-row p {
+  margin: 0;
+}
+
+.catalog-empty-result {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .admin-catalog-filter {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .catalog-filter-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .catalog-search-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-catalog-filter {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-filter-panel {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .catalog-search-field {
+    grid-column: auto;
+  }
+
+  .catalog-result-row {
+    align-items: flex-start;
+  }
+}
+
 .catalog-import-label {
   cursor: pointer;
 }

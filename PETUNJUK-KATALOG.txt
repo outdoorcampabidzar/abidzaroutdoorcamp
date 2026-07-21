@@ -1,4 +1,4 @@
-PENGELOLAAN KATALOG LANJUTAN
+PENGELOLAAN KATALOG ITEM SEWA
 ============================
 
 PEMASANGAN
@@ -43,3 +43,7 @@ CATATAN HARGA
 - Harga harian tetap menjadi fallback.
 - Jika jumlah hari sewa sama dengan paket yang dibuat, harga paket dipakai.
 - Perhitungan checkout dan database menggunakan aturan yang sama.
+HASIL YANG TERSEDIA
+- Item yang ditambah dari Admin Panel langsung tampil di halaman Sewa Item.
+- Pelanggan dapat mencari item, memilih kategori, menyaring stok tersedia, dan mengurutkan katalog.
+- Admin dapat mengatur nama, deskripsi, kategori, foto utama, galeri, harga harian, stok, deposit, jaminan, varian, nomor inventaris, kondisi, harga paket, produk unggulan, urutan tampil, aktif/nonaktif, duplikasi, impor/ekspor CSV, dan arsip.
