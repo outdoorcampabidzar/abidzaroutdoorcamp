@@ -34,10 +34,13 @@ end $$;
 
 alter table public.order_items
   drop constraint if exists order_items_rental_total_check;
+update public.order_items
+set price_snapshot = line_total / quantity
+where quantity > 0
+  and line_total is distinct from price_snapshot * quantity;
 alter table public.order_items
   add constraint order_items_rental_total_check check (
-    line_total = price_snapshot * quantity *
-      case when item_type = 'product' then greatest(rental_days, 1) else 1 end
+    line_total = price_snapshot * quantity
   );
 
 create or replace function public.rental_available_stock(

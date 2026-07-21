@@ -1626,10 +1626,9 @@ footer {
 
 .admin-catalog-filter {
   display: grid;
-  grid-template-columns: minmax(240px, 1.4fr) minmax(180px, 0.8fr) minmax(
-      160px,
-      0.7fr
-    ) auto;
+  grid-template-columns:
+    minmax(240px, 1.4fr) minmax(180px, 0.8fr) minmax(160px, 0.7fr)
+    auto;
   gap: 12px;
   align-items: end;
   margin: 18px 0 8px;
@@ -6144,37 +6143,17 @@ main {
 
 .rental-duration-picker {
   display: grid;
+  grid-template-columns: minmax(190px, 320px) 1fr;
+  align-items: end;
   gap: 8px;
 }
 
-.rental-duration-picker > span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
+.rental-days-field {
+  margin: 0;
 }
 
-.rental-duration-options {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.rental-duration-button {
-  min-height: 40px;
-  padding: 8px 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.035);
-  color: var(--text);
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.rental-duration-button:hover,
-.rental-duration-button.active {
-  border-color: var(--brand);
-  background: rgba(74, 222, 128, 0.14);
-  color: var(--brand);
+.rental-duration-picker > small {
+  padding-bottom: 13px;
 }
 
 .rental-date-summary {
@@ -6230,9 +6209,12 @@ main {
     flex-direction: column;
   }
 
-  .rental-duration-button {
-    flex: 1;
-    min-width: 70px;
+  .rental-duration-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .rental-duration-picker > small {
+    padding-bottom: 0;
   }
 
   .rental-date-summary {

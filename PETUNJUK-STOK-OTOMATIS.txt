@@ -1,0 +1,23 @@
+STOK OTOMATIS ITEM SEWA
+=======================
+
+PEMASANGAN
+1. Buka Supabase > SQL Editor > New query.
+2. Salin seluruh isi stock-lifecycle.sql lalu klik Run.
+3. Jika memakai hak akses bertingkat, jalankan access-security.sql kembali setelahnya.
+4. Upload seluruh file website terbaru ke GitHub Pages.
+
+CARA KERJA
+- Pesanan pending belum mengurangi stok.
+- Status Dibayar mengurangi stok satu kali sesuai jumlah pesanan.
+- Status Menunggu dan Dikonfirmasi tidak mengubah stok.
+- Status yang disimpan berulang tidak mengurangi stok lagi.
+- Setelah seluruh barang diperiksa, status otomatis berubah menjadi Selesai dan stok dikembalikan.
+- Mengubah status Dibayar menjadi Selesai secara manual juga mengembalikan stok.
+- Pembatalan mengembalikan stok yang sebelumnya sudah dikurangi.
+
+CONTOH
+Stok awal: 5
+Pelanggan menyewa: 2
+Status menjadi Dibayar: stok menjadi 3
+Status menjadi Selesai: stok kembali menjadi 5

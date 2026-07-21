@@ -256,40 +256,23 @@
                 </label>
               </div>
               <div class="rental-duration-picker">
-                <span>Pilih durasi cepat</span>
-                <div
-                  class="rental-duration-options"
-                  aria-label="Pilihan durasi sewa"
-                >
-                  <button
-                    class="rental-duration-button active"
-                    data-rental-days="1"
-                    type="button"
-                  >
-                    1 hari
-                  </button>
-                  <button
-                    class="rental-duration-button"
-                    data-rental-days="2"
-                    type="button"
-                  >
-                    2 hari
-                  </button>
-                  <button
-                    class="rental-duration-button"
-                    data-rental-days="3"
-                    type="button"
-                  >
-                    3 hari
-                  </button>
-                  <button
-                    class="rental-duration-button"
-                    data-rental-days="7"
-                    type="button"
-                  >
-                    7 hari
-                  </button>
-                </div>
+                <label class="field rental-days-field">
+                  <span>Lama sewa (hari) *</span>
+                  <input
+                    id="rentalDaysInput"
+                    class="input"
+                    type="number"
+                    min="1"
+                    max="30"
+                    step="1"
+                    value="1"
+                    inputmode="numeric"
+                    aria-describedby="rentalDaysHelp"
+                  />
+                </label>
+                <small id="rentalDaysHelp" class="muted">
+                  Ketik jumlah hari. Tanggal selesai akan terisi otomatis.
+                </small>
               </div>
               <div id="rentalDateSummary" class="rental-date-summary"></div>
               <div id="availabilityMessage" class="notice hidden"></div>
@@ -469,6 +452,10 @@
         document.getElementById("rentalStart").required = hasRental();
         document.getElementById("rentalEnd").required = hasRental();
         document.getElementById("rentalDuration").textContent = `${days} hari`;
+        const daysInput = document.getElementById("rentalDaysInput");
+        if (daysInput && document.activeElement !== daysInput) {
+          daysInput.value = days;
+        }
         document.getElementById("list").innerHTML = cart
           .map(
             (x) =>
@@ -543,8 +530,18 @@
         const localToday = dateInputValue(new Date());
         const startInput = document.getElementById("rentalStart");
         const endInput = document.getElementById("rentalEnd");
+        const daysInput = document.getElementById("rentalDaysInput");
+        const minDays = Math.max(1, Number(siteSettings?.rental_min_days) || 1);
+        const maxDays = Math.max(
+          minDays,
+          Number(siteSettings?.rental_max_days) || 30,
+        );
         startInput.min = localToday;
         endInput.min = localToday;
+        daysInput.min = minDays;
+        daysInput.max = maxDays;
+        document.getElementById("rentalDaysHelp").textContent =
+          `Ketik ${minDays}–${maxDays} hari. Tanggal selesai akan terisi otomatis.`;
         if (hasRental() && !startInput.value) startInput.value = localToday;
         if (hasRental() && !endInput.value) endInput.value = localToday;
         startInput.addEventListener("change", () => {
@@ -558,14 +555,19 @@
           handleRentalDates();
         });
         endInput.addEventListener("change", handleRentalDates);
-        document.querySelectorAll("[data-rental-days]").forEach((button) => {
-          button.addEventListener("click", () => {
-            if (!startInput.value) startInput.value = localToday;
-            const end = parseDate(startInput.value);
-            end.setDate(end.getDate() + Number(button.dataset.rentalDays) - 1);
-            endInput.value = dateInputValue(end);
-            handleRentalDates();
-          });
+        daysInput.addEventListener("input", () => {
+          if (!startInput.value) startInput.value = localToday;
+          const enteredDays = Math.max(
+            minDays,
+            Math.min(maxDays, Math.floor(Number(daysInput.value) || minDays)),
+          );
+          const end = parseDate(startInput.value);
+          end.setDate(end.getDate() + enteredDays - 1);
+          endInput.value = dateInputValue(end);
+          handleRentalDates();
+        });
+        daysInput.addEventListener("blur", () => {
+          daysInput.value = rentalDays();
         });
         render();
         if (hasRental()) handleRentalDates();
@@ -608,7 +610,7 @@
         if (!startInput.value || !endInput.value) {
           box.classList.add("hidden");
           document.getElementById("rentalDateSummary").textContent =
-            "Pilih tanggal mulai, lalu gunakan pilihan durasi cepat.";
+            "Pilih tanggal mulai, lalu ketik lama sewa dalam hari.";
           return;
         }
 
@@ -628,12 +630,7 @@
           <span><b>Mulai</b> ${esc(indonesiaDate(startInput.value))}</span>
           <span aria-hidden="true">→</span>
           <span><b>Selesai</b> ${esc(indonesiaDate(endInput.value))}</span>`;
-        document.querySelectorAll("[data-rental-days]").forEach((button) => {
-          button.classList.toggle(
-            "active",
-            Number(button.dataset.rentalDays) === days,
-          );
-        });
+        document.getElementById("rentalDaysInput").value = days;
         render();
         if (days < minDays || days > maxDays) {
           return message(

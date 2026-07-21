@@ -206,6 +206,7 @@
         confirmed: "Dikonfirmasi",
         paid: "Dibayar",
         completed: "Selesai",
+        returned: "Dikembalikan",
         cancelled: "Dibatalkan",
       };
 
@@ -2857,7 +2858,9 @@
                   .includes(needle),
             );
           const matchesStatus =
-            orderStatusFilter === "all" || order.status === orderStatusFilter;
+            (orderStatusFilter === "all" && order.status !== "cancelled") ||
+            orderStatusFilter === "all_with_cancelled" ||
+            order.status === orderStatusFilter;
           const date = String(order.created_at || "").slice(0, 10);
           return (
             matchesSearch &&
@@ -2871,13 +2874,13 @@
         <div class="admin-list-heading">
           <div>
             <h3>Pesanan Pelanggan</h3>
-            <p class="muted">${filteredOrders.length} dari ${orders.length} pesanan.</p>
+            <p class="muted">${filteredOrders.length} pesanan ditampilkan · ${orders.filter((order) => order.status === "cancelled").length} dibatalkan disembunyikan dari daftar aktif.</p>
           </div>
 
           <div class="actions"><button id="exportOrdersCsv" class="btn secondary small" type="button">Ekspor CSV</button><button id="exportOrdersExcel" class="btn secondary small" type="button">Ekspor Excel</button><button id="refreshOrders" class="btn secondary small" type="button">Muat Ulang</button></div>
         </div>
 
-        <section class="card order-filter-bar"><input id="orderSearch" class="input" value="${esc(orderSearch)}" placeholder="Cari nomor pesanan, nama, atau HP"><select id="orderStatusFilter" class="input"><option value="all">Semua status</option>${Object.entries(
+        <section class="card order-filter-bar"><input id="orderSearch" class="input" value="${esc(orderSearch)}" placeholder="Cari nomor pesanan, nama, atau HP"><select id="orderStatusFilter" class="input"><option value="all">Pesanan aktif</option><option value="all_with_cancelled" ${orderStatusFilter === "all_with_cancelled" ? "selected" : ""}>Semua termasuk dibatalkan</option>${Object.entries(
           statusLabels,
         )
           .map(
@@ -3048,7 +3051,7 @@
               .map(
                 (line) => `
               <div class="order-line">
-                <span>${esc(line.title_snapshot)} × ${line.quantity}</span>
+                <span>${esc(line.title_snapshot)} × ${line.quantity}${line.item_type === "product" ? ` · Kembali ${Number(line.returned_quantity || 0)}/${line.quantity}` : ""}</span>
                 <b>${rupiah(line.line_total)}</b>
               </div>
             `,
@@ -3070,7 +3073,7 @@
               ${can("finance.manage") ? `<button class="btn secondary small" data-order-operation="refund" data-order-id="${order.id}" type="button">Refund</button>` : ""}
               ${can("orders.manage") || can("warehouse.manage") ? `<button class="btn secondary small" data-order-operation="late_fee" data-order-id="${order.id}" type="button">Denda</button>` : ""}
               ${can("finance.manage") || can("warehouse.manage") ? `<button class="btn secondary small" data-order-operation="deposit_received" data-order-id="${order.id}" type="button">Deposit Diterima</button><button class="btn secondary small" data-order-operation="deposit_returned" data-order-id="${order.id}" type="button">Deposit Dikembalikan</button>` : ""}
-              ${can("warehouse.manage") ? `<button class="btn secondary small" data-order-operation="return" data-order-id="${order.id}" type="button">Periksa Pengembalian</button>` : ""}
+              ${can("warehouse.manage") && order.status === "paid" ? `<button class="btn secondary small" data-order-operation="return" data-order-id="${order.id}" type="button">Periksa Pengembalian</button>` : ""}
             </div>
 
             ${(order.order_refunds || []).length ? `<section class="order-subsection"><h4>Refund</h4>${order.order_refunds.map((refund) => `<div class="order-line"><span>${esc(refund.refund_type)} · ${esc(refund.reason)}<small>${new Date(refund.created_at).toLocaleString("id-ID")}</small></span><b>${rupiah(refund.amount)}</b></div>`).join("")}</section>` : ""}
@@ -3292,7 +3295,30 @@
           const line = rentalLines[Number(selected) - 1];
           if (!line) return;
           itemId = line.item_id;
-          quantity = line.quantity;
+          const remaining = Math.max(
+            0,
+            Number(line.quantity) - Number(line.returned_quantity || 0),
+          );
+          if (!remaining)
+            return showAdminMessage(
+              "Seluruh unit item tersebut sudah dikembalikan.",
+              "error",
+            );
+          quantity = Number(
+            prompt(
+              `Jumlah yang dikembalikan (maksimal ${remaining}):`,
+              remaining,
+            ) || 0,
+          );
+          if (
+            !Number.isInteger(quantity) ||
+            quantity < 1 ||
+            quantity > remaining
+          )
+            return showAdminMessage(
+              `Jumlah pengembalian harus antara 1 sampai ${remaining}.`,
+              "error",
+            );
           condition = prompt(
             "Kondisi: good, dirty, damaged, atau lost",
             "good",

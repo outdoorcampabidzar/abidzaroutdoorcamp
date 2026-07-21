@@ -1,0 +1,13 @@
+PERBAIKAN ERROR CHECKOUT HARGA SEWA
+===================================
+
+Jika muncul error order_items_rental_total_check:
+
+1. Buka Supabase > SQL Editor > New query.
+2. Salin seluruh isi fix-rental-price-constraint.sql.
+3. Klik Run.
+4. Muat ulang halaman checkout dengan Ctrl + F5.
+5. Buat pesanan kembali.
+
+Tidak perlu menghapus item, pesanan lama, atau tabel database.
+SQL menyesuaikan format harga pesanan lama tanpa mengubah total transaksinya.
