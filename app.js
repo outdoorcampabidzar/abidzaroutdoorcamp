@@ -209,7 +209,7 @@ export function addCart(item, qty = 1, replace = false, selectedVariant = null) 
     cart_key: cartKey,
     item_id: item.id,
     title: item.title,
-    price: Number(item.price) + Number(variant?.price_adjustment || 0),
+    price: Number(item.price),
     image_url: item.image_url,
     type: item.type,
     trip_date: item.trip_date,
@@ -220,7 +220,6 @@ export function addCart(item, qty = 1, replace = false, selectedVariant = null) 
     variant_name: variant
       ? [variant.name, variant.capacity].filter(Boolean).join(" · ")
       : "",
-    variant_price_adjustment: Number(variant?.price_adjustment || 0),
     requires_guarantee: Boolean(item.requires_guarantee),
     guarantee_note: item.guarantee_note || "",
     deposit: Number(item.deposit || 0),

@@ -8,8 +8,13 @@ PEMASANGAN
    terlebih dahulu, kemudian stock-lifecycle.sql terbaru.
 
 Contoh varian di Admin Panel (satu baris per pilihan):
-Tenda 2 Orang | 2 orang | 0 | 2
-Tenda 4 Orang | 4 orang | 25000 | 3
+Tenda 2 Orang | 2 orang | 2
+Tenda 4 Orang | 4 orang | 3
+
+Harga paket (satu baris per durasi):
+1 Hari | 1 | 100000
+2 Hari | 2 | 175000
+3 Hari | 3 | 225000
 
 Kolom terakhir adalah stok varian. Saat pesanan berstatus Dibayar, stok varian
 berkurang sesuai jumlah pesanan. Saat status Selesai/Dikembalikan, stok kembali.

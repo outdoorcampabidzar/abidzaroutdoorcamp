@@ -409,8 +409,7 @@
         entry.cart_key = `${entry.item_id}:${variant.id}`;
         entry.variant_id = variant.id;
         entry.variant_name = [variant.name, variant.capacity].filter(Boolean).join(" · ");
-        entry.variant_price_adjustment = Number(variant.price_adjustment || 0);
-        entry.price = Number(entry.price) + entry.variant_price_adjustment;
+        entry.price = Number(entry.price);
         entry.max_quantity = Number(variant.stock || 0);
         entry.quantity = Math.min(Number(entry.quantity || 1), Math.max(1, entry.max_quantity));
       });

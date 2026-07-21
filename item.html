@@ -212,7 +212,7 @@
       }
 
       function unitPrice() {
-        return Number(item.price) + Number(selectedVariant()?.price_adjustment || 0);
+        return Number(item.price);
       }
 
       function currentQuantity() {
@@ -312,7 +312,7 @@
 
           ${Number(item.deposit || 0) > 0 ? `<div class="notice"><b>Deposit barang</b><br>${rupiah(item.deposit)} per unit</div>` : ""}
 
-          ${(item.item_variants || []).length ? `<section class="detail-options"><label class="field"><span>Ukuran / Kapasitas *</span><select id="variantSelect" class="input">${item.item_variants.filter((variant) => variant.is_active !== false).map((variant) => `<option value="${variant.id}" ${Number(variant.stock) < 1 ? "disabled" : ""}>${esc(variant.name)}${variant.capacity ? ` · ${esc(variant.capacity)}` : ""} — ${Number(variant.stock)} unit tersedia${Number(variant.price_adjustment) ? ` — ${rupiah(Number(item.price) + Number(variant.price_adjustment))}` : ""}</option>`).join("")}</select></label></section>` : ""}
+          ${(item.item_variants || []).length ? `<section class="detail-options"><label class="field"><span>Ukuran / Kapasitas *</span><select id="variantSelect" class="input">${item.item_variants.filter((variant) => variant.is_active !== false).map((variant) => `<option value="${variant.id}" ${Number(variant.stock) < 1 ? "disabled" : ""}>${esc(variant.name)}${variant.capacity ? ` · ${esc(variant.capacity)}` : ""} — ${Number(variant.stock)} unit tersedia</option>`).join("")}</select></label></section>` : ""}
 
           ${
             (item.item_price_tiers || []).length

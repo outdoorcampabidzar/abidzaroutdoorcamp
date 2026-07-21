@@ -1308,15 +1308,16 @@
                   </label>
                   <label class="field">
                     <span>Varian ukuran / kapasitas</span>
-                    <textarea class="input" name="variants" rows="4" placeholder="Tenda 2 Orang | 2 orang | 0 | 2&#10;Tenda 4 Orang | 4 orang | 25000 | 3">${esc(
+                    <textarea class="input" name="variants" rows="4" placeholder="Tenda 2 Orang | 2 orang | 2&#10;Tenda 4 Orang | 4 orang | 3">${esc(
                       (item.item_variants || [])
                         .sort((a, b) => a.sort_order - b.sort_order)
                         .map(
                           (variant) =>
-                            `${variant.name} | ${variant.capacity || ""} | ${Number(variant.price_adjustment || 0)} | ${Number(variant.stock || 0)}`,
+                            `${variant.name} | ${variant.capacity || ""} | ${Number(variant.stock || 0)}`,
                         )
                         .join("\n"),
                     )}</textarea>
+                    <small class="muted">Format: Nama varian | Kapasitas | Stok. Harga diatur melalui Harga paket.</small>
                   </label>
                   <label class="field">
                     <span>Unit inventaris</span>
@@ -1334,6 +1335,7 @@
                         )
                         .join("\n"),
                     )}</textarea>
+                    <small class="muted">Contoh: 1 Hari | 1 | 100000, lalu 2 Hari | 2 | 175000.</small>
                     <small class="muted">Contoh: Paket 2 Hari | 2 | 150000</small>
                   </label>
                 </div>
@@ -1738,7 +1740,7 @@
           return (item.item_variants || [])
             .map(
               (variant) =>
-                `${variant.name}|${variant.capacity || ""}|${variant.price_adjustment}|${variant.stock}`,
+                `${variant.name}|${variant.capacity || ""}|${variant.stock}`,
             )
             .join(";");
         if (key === "inventory_units")
@@ -2036,7 +2038,7 @@
           .split(/\r?\n/)
           .map((url) => url.trim())
           .filter(Boolean);
-        const variants = parseCatalogLines(values.variants, 4);
+        const variants = parseCatalogLines(values.variants, 3);
         const units = parseCatalogLines(values.inventory_units, 3);
         const tiers = parseCatalogLines(values.price_tiers, 3);
 
@@ -2072,11 +2074,11 @@
         }
         if (variants.length) {
           const { error } = await supabase.from("item_variants").insert(
-            variants.map(([name, capacity, adjustment, stock], index) => ({
+            variants.map(([name, capacity, stock], index) => ({
               item_id: itemId,
               name,
               capacity: capacity || null,
-              price_adjustment: Number(adjustment || 0),
+              price_adjustment: 0,
               stock: Math.max(0, Number(stock || 0)),
               sort_order: index,
             })),
@@ -2133,7 +2135,7 @@
         let categoryId;
         try {
           categoryId = await resolveCategoryId(values.category_name);
-          parseCatalogLines(values.variants, 4);
+          parseCatalogLines(values.variants, 3);
           parseCatalogLines(values.inventory_units, 3);
           parseCatalogLines(values.price_tiers, 3);
         } catch (error) {

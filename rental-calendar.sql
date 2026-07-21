@@ -229,7 +229,7 @@ begin
       where item_id = v_item.id and duration_days = v_days limit 1;
       v_subtotal := v_subtotal + (
         (case when v_package_price is not null then v_package_price
-          else (v_item.price + case when v_variant_id is null then 0 else v_variant.price_adjustment end) * v_days
+          else v_item.price * v_days
         end) * v_quantity
       );
     else
@@ -340,12 +340,12 @@ begin
       v_item.title, v_item.type,
       case when v_item.type = 'product' then
         case when v_package_price is not null then v_package_price
-          else (v_item.price + case when v_variant_id is null then 0 else v_variant.price_adjustment end) * v_days end
+          else v_item.price * v_days end
         else v_item.price end,
       v_quantity,
       (case when v_item.type = 'product' then
         case when v_package_price is not null then v_package_price
-          else (v_item.price + case when v_variant_id is null then 0 else v_variant.price_adjustment end) * v_days end
+          else v_item.price * v_days end
         else v_item.price end) * v_quantity,
       v_item.trip_date,
       case when v_item.type = 'product' then p_rental_start else null end,
