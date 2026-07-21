@@ -191,10 +191,28 @@
       let item = null;
 
       function availableQuantity() {
+        const variant = selectedVariant();
         return Math.max(
           0,
-          Number(item.type === "trip" ? item.quota : item.stock) || 0,
+          Number(item.type === "trip" ? item.quota : variant ? variant.stock : item.stock) || 0,
         );
+      }
+
+      function selectedVariant() {
+        const id = document.getElementById("variantSelect")?.value;
+        const variants = (item?.item_variants || []).filter(
+          (entry) => entry.is_active !== false,
+        );
+        return (
+          variants.find((entry) => entry.id === id) ||
+          variants.find((entry) => Number(entry.stock) > 0) ||
+          variants[0] ||
+          null
+        );
+      }
+
+      function unitPrice() {
+        return Number(item.price) + Number(selectedVariant()?.price_adjustment || 0);
       }
 
       function currentQuantity() {
@@ -212,7 +230,7 @@
       function updateItemTotal() {
         const quantity = currentQuantity();
         document.getElementById("itemSubtotal").textContent = rupiah(
-          Number(item.price) * quantity,
+          unitPrice() * quantity,
         );
       }
 
@@ -294,7 +312,7 @@
 
           ${Number(item.deposit || 0) > 0 ? `<div class="notice"><b>Deposit barang</b><br>${rupiah(item.deposit)} per unit</div>` : ""}
 
-          ${(item.item_variants || []).length ? `<section class="detail-options"><h3>Ukuran / Kapasitas</h3><div class="detail-option-list">${item.item_variants.map((variant) => `<span>${esc(variant.name)}${variant.capacity ? ` · ${esc(variant.capacity)}` : ""}${Number(variant.price_adjustment) ? ` · ${rupiah(Number(item.price) + Number(variant.price_adjustment))}` : ""}</span>`).join("")}</div></section>` : ""}
+          ${(item.item_variants || []).length ? `<section class="detail-options"><label class="field"><span>Ukuran / Kapasitas *</span><select id="variantSelect" class="input">${item.item_variants.filter((variant) => variant.is_active !== false).map((variant) => `<option value="${variant.id}" ${Number(variant.stock) < 1 ? "disabled" : ""}>${esc(variant.name)}${variant.capacity ? ` · ${esc(variant.capacity)}` : ""} — ${Number(variant.stock)} unit tersedia${Number(variant.price_adjustment) ? ` — ${rupiah(Number(item.price) + Number(variant.price_adjustment))}` : ""}</option>`).join("")}</select></label></section>` : ""}
 
           ${
             (item.item_price_tiers || []).length
@@ -312,7 +330,7 @@
             <div class="detail-price-row">
               <div>
                 <span class="muted">Harga per ${priceUnit}</span>
-                <div class="price">${rupiah(item.price)}</div>
+                <div id="unitPrice" class="price">${rupiah(item.price)}</div>
               </div>
 
               <label class="field detail-quantity-field">
@@ -331,7 +349,7 @@
 
             <div class="detail-subtotal">
               <span>Subtotal item</span>
-              <strong id="itemSubtotal">${rupiah(item.price)}</strong>
+              <strong id="itemSubtotal">${rupiah(unitPrice())}</strong>
             </div>
 
             <div class="actions detail-order-actions">
@@ -368,10 +386,17 @@
         const quantityInput = document.getElementById("qty");
         quantityInput?.addEventListener("input", updateItemTotal);
         quantityInput?.addEventListener("change", updateItemTotal);
+        document.getElementById("variantSelect")?.addEventListener("change", () => {
+          const max = availableQuantity();
+          quantityInput.max = Math.max(1, max);
+          quantityInput.disabled = max < 1;
+          document.getElementById("unitPrice").textContent = rupiah(unitPrice());
+          updateItemTotal();
+        });
 
         document.getElementById("add")?.addEventListener("click", () => {
           const quantity = currentQuantity();
-          addCart(item, quantity);
+          addCart(item, quantity, false, selectedVariant());
           message(
             document.getElementById("msg"),
             `${quantity} ${unitName} ditambahkan ke keranjang.`,
@@ -383,7 +408,7 @@
           const quantity = currentQuantity();
 
           // Tetap menambah ke keranjang lama, bukan menggantinya.
-          addCart(item, quantity);
+          addCart(item, quantity, false, selectedVariant());
           location.href = "cart.html";
         });
       }

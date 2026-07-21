@@ -20,6 +20,16 @@ begin
   if v_deleted = 0 then return 0; end if;
 
   -- Perlindungan untuk data lama: pulihkan stok jika masih tercatat terpotong.
+  update public.item_variants v
+  set stock=v.stock+restore.quantity
+  from (
+    select oi.variant_id,sum(oi.quantity)::integer quantity
+    from public.order_items oi join public.orders o on o.id=oi.order_id
+    where o.status='cancelled' and oi.item_type='product'
+      and oi.variant_id is not null and coalesce(oi.stock_deducted,false)
+    group by oi.variant_id
+  ) restore where v.id=restore.variant_id;
+
   update public.items i
   set stock = i.stock + restore.quantity
   from (
@@ -28,7 +38,7 @@ begin
     join public.orders o on o.id=oi.order_id
     where o.status='cancelled'
       and oi.item_type='product'
-      and coalesce(oi.stock_deducted,false)
+      and oi.variant_id is null and coalesce(oi.stock_deducted,false)
     group by oi.item_id
   ) restore
   where i.id=restore.item_id;
@@ -82,12 +92,22 @@ begin
   if v_deleted = 0 then return 0; end if;
 
   -- Kembalikan stok item yang masih tercatat terpotong (umumnya status Dibayar).
+  update public.item_variants v
+  set stock=v.stock+restore.quantity
+  from (
+    select oi.variant_id,sum(oi.quantity)::integer quantity
+    from public.order_items oi
+    where oi.item_type='product' and oi.variant_id is not null
+      and coalesce(oi.stock_deducted,false)
+    group by oi.variant_id
+  ) restore where v.id=restore.variant_id;
+
   update public.items i
   set stock = i.stock + restore.quantity
   from (
     select oi.item_id, sum(oi.quantity)::integer as quantity
     from public.order_items oi
-    where oi.item_type='product' and coalesce(oi.stock_deducted,false)
+    where oi.item_type='product' and oi.variant_id is null and coalesce(oi.stock_deducted,false)
     group by oi.item_id
   ) restore
   where i.id=restore.item_id;
@@ -125,8 +145,9 @@ begin
     select gateway_transaction_id from public.payment_transactions
   );
 
-  delete from public.voucher_usages;
-  delete from public.orders;
+  -- Supabase Safe Update mewajibkan klausa WHERE pada operasi DELETE.
+  delete from public.voucher_usages where id is not null;
+  delete from public.orders where id is not null;
 
   -- Bersihkan jejak audit yang hanya menunjuk data pesanan yang sudah dihapus.
   delete from public.admin_activity_logs

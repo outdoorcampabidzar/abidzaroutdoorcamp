@@ -8,6 +8,9 @@ alter table public.orders add column if not exists rental_days integer;
 alter table public.order_items add column if not exists rental_start date;
 alter table public.order_items add column if not exists rental_end date;
 alter table public.order_items add column if not exists rental_days integer not null default 1;
+alter table public.order_items
+  add column if not exists variant_id uuid references public.item_variants(id) on delete set null,
+  add column if not exists variant_name_snapshot text;
 
 create index if not exists orders_rental_range_idx
   on public.orders(rental_start, rental_end)
@@ -85,6 +88,28 @@ $$;
 revoke all on function public.rental_available_stock(uuid, date, date) from public;
 grant execute on function public.rental_available_stock(uuid, date, date) to anon, authenticated;
 
+create or replace function public.rental_available_variant_stock(
+  p_item_id uuid, p_variant_id uuid, p_start date, p_end date
+) returns integer language plpgsql security definer set search_path=public as $$
+declare v_stock integer; v_reserved integer;
+begin
+  if p_start is null or p_end is null or p_end < p_start then
+    raise exception 'Rentang tanggal sewa tidak valid';
+  end if;
+  select stock into v_stock from public.item_variants
+  where id=p_variant_id and item_id=p_item_id and is_active=true;
+  if not found then raise exception 'Ukuran atau kapasitas tidak tersedia'; end if;
+  select coalesce(sum(oi.quantity),0)::integer into v_reserved
+  from public.order_items oi join public.orders o on o.id=oi.order_id
+  where oi.item_id=p_item_id and oi.variant_id=p_variant_id
+    and oi.item_type='product'
+    and (o.status in ('pending','confirmed') or (o.status='paid' and not coalesce(oi.stock_deducted,false)))
+    and oi.rental_start<=p_end and oi.rental_end>=p_start;
+  return greatest(v_stock-v_reserved,0);
+end; $$;
+revoke all on function public.rental_available_variant_stock(uuid,uuid,date,date) from public;
+grant execute on function public.rental_available_variant_stock(uuid,uuid,date,date) to anon,authenticated;
+
 drop function if exists public.create_order(jsonb, jsonb, text, text);
 drop function if exists public.create_order(jsonb, jsonb, text, text, date, date);
 
@@ -109,6 +134,8 @@ declare
   v_order_number text;
   v_line jsonb;
   v_item public.items%rowtype;
+  v_variant public.item_variants%rowtype;
+  v_variant_id uuid;
   v_item_id uuid;
   v_quantity integer;
   v_days integer := 1;
@@ -163,6 +190,7 @@ begin
     begin
       v_item_id := (v_line ->> 'item_id')::uuid;
       v_quantity := (v_line ->> 'quantity')::integer;
+      v_variant_id := nullif(v_line ->> 'variant_id','')::uuid;
     exception when others then
       raise exception 'Format item keranjang tidak valid';
     end;
@@ -184,14 +212,24 @@ begin
         raise exception 'Durasi sewa harus antara % sampai % hari', v_min_days, v_max_days;
       end if;
 
-      v_available := public.rental_available_stock(v_item.id, p_rental_start, p_rental_end);
+      if exists(select 1 from public.item_variants where item_id=v_item.id and is_active=true) then
+        if v_variant_id is null then raise exception 'Pilih ukuran atau kapasitas untuk %',v_item.title; end if;
+        select * into v_variant from public.item_variants
+        where id=v_variant_id and item_id=v_item.id and is_active=true;
+        if not found then raise exception 'Ukuran atau kapasitas % tidak valid',v_item.title; end if;
+        v_available := public.rental_available_variant_stock(v_item.id,v_variant_id,p_rental_start,p_rental_end);
+      else
+        v_variant_id := null;
+        v_available := public.rental_available_stock(v_item.id, p_rental_start, p_rental_end);
+      end if;
       if v_available < v_quantity then
         raise exception 'Stok % pada tanggal tersebut hanya % unit', v_item.title, v_available;
       end if;
       select price into v_package_price from public.item_price_tiers
       where item_id = v_item.id and duration_days = v_days limit 1;
       v_subtotal := v_subtotal + (
-        coalesce(v_package_price, v_item.price * v_days) * v_quantity
+        (coalesce(v_package_price, v_item.price * v_days) +
+          case when v_variant_id is null then 0 else v_variant.price_adjustment * v_days end) * v_quantity
       );
     else
       select coalesce(v_item.quota, 0) - count(*) into v_available
@@ -267,6 +305,7 @@ begin
   for v_line in select value from jsonb_array_elements(p_items) loop
     v_item_id := (v_line ->> 'item_id')::uuid;
     v_quantity := (v_line ->> 'quantity')::integer;
+    v_variant_id := nullif(v_line ->> 'variant_id','')::uuid;
     select * into v_item from public.items where id = v_item_id;
     if v_item.type = 'trip' then
       select * into v_trip_detail from public.trip_details where item_id = v_item.id;
@@ -280,18 +319,27 @@ begin
     end if;
     v_package_price := null;
     if v_item.type = 'product' then
+      if v_variant_id is not null then
+        select * into v_variant from public.item_variants
+        where id=v_variant_id and item_id=v_item.id and is_active=true;
+        if not found then raise exception 'Ukuran atau kapasitas tidak valid'; end if;
+      else
+        v_variant_id := null;
+      end if;
       select price into v_package_price from public.item_price_tiers
       where item_id = v_item.id and duration_days = v_days limit 1;
     end if;
 
     insert into public.order_items (
-      order_id, item_id, title_snapshot, item_type, price_snapshot, quantity,
+      order_id, item_id, variant_id, variant_name_snapshot, title_snapshot, item_type, price_snapshot, quantity,
       line_total, trip_date_snapshot, rental_start, rental_end, rental_days
     ) values (
-      v_order_id, v_item.id, v_item.title, v_item.type,
-      case when v_item.type = 'product' then coalesce(v_package_price, v_item.price * v_days) else v_item.price end,
+      v_order_id, v_item.id, v_variant_id,
+      case when v_variant_id is null then null else concat_ws(' · ',v_variant.name,nullif(v_variant.capacity,'')) end,
+      v_item.title, v_item.type,
+      case when v_item.type = 'product' then coalesce(v_package_price, v_item.price * v_days) + case when v_variant_id is null then 0 else v_variant.price_adjustment*v_days end else v_item.price end,
       v_quantity,
-      case when v_item.type = 'product' then coalesce(v_package_price, v_item.price * v_days) else v_item.price end * v_quantity,
+      (case when v_item.type = 'product' then coalesce(v_package_price, v_item.price * v_days) + case when v_variant_id is null then 0 else v_variant.price_adjustment*v_days end else v_item.price end) * v_quantity,
       v_item.trip_date,
       case when v_item.type = 'product' then p_rental_start else null end,
       case when v_item.type = 'product' then p_rental_end else null end,

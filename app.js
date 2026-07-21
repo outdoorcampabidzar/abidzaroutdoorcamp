@@ -198,21 +198,29 @@ export function saveCart(cart) {
   updateCartBadge();
 }
 
-export function addCart(item, qty = 1, replace = false) {
+export function addCart(item, qty = 1, replace = false, selectedVariant = null) {
+  const variant = selectedVariant?.id ? selectedVariant : null;
   const max = Math.max(
     1,
-    Number(item.type === "trip" ? item.quota : item.stock) || 99,
+    Number(item.type === "trip" ? item.quota : variant ? variant.stock : item.stock) || 0,
   );
+  const cartKey = `${item.id}:${variant?.id || "default"}`;
   const entry = {
+    cart_key: cartKey,
     item_id: item.id,
     title: item.title,
-    price: Number(item.price),
+    price: Number(item.price) + Number(variant?.price_adjustment || 0),
     image_url: item.image_url,
     type: item.type,
     trip_date: item.trip_date,
     location: item.location,
     quantity: Math.min(max, Math.max(1, Number(qty))),
     max_quantity: max,
+    variant_id: variant?.id || null,
+    variant_name: variant
+      ? [variant.name, variant.capacity].filter(Boolean).join(" · ")
+      : "",
+    variant_price_adjustment: Number(variant?.price_adjustment || 0),
     requires_guarantee: Boolean(item.requires_guarantee),
     guarantee_note: item.guarantee_note || "",
     deposit: Number(item.deposit || 0),
@@ -221,7 +229,9 @@ export function addCart(item, qty = 1, replace = false) {
   };
   if (replace) return saveCart([entry]);
   const cart = getCart();
-  const old = cart.find((x) => x.item_id === item.id);
+  const old = cart.find(
+    (x) => (x.cart_key || `${x.item_id}:default`) === cartKey,
+  );
   if (old) old.quantity = Math.min(max, Number(old.quantity) + entry.quantity);
   else cart.push(entry);
   saveCart(cart);

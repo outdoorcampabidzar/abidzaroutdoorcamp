@@ -292,6 +292,7 @@
                 <div class="compact-order-line">
                   <span>
                     ${esc(item.title_snapshot)}
+                    ${item.variant_name_snapshot ? `<small>· ${esc(item.variant_name_snapshot)}</small>` : ""}
                     <small>× ${item.quantity}</small>
                     ${
                       item.item_type === "product" && item.rental_days

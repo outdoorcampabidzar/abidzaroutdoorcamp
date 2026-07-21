@@ -46,9 +46,13 @@ begin
       for update
     loop
       if not v_line.stock_deducted then
-        update public.items
-        set stock = stock - v_line.quantity
-        where id = v_line.item_id and stock >= v_line.quantity;
+        if v_line.variant_id is not null then
+          update public.item_variants set stock=stock-v_line.quantity
+          where id=v_line.variant_id and item_id=v_line.item_id and stock>=v_line.quantity;
+        else
+          update public.items set stock=stock-v_line.quantity
+          where id=v_line.item_id and stock>=v_line.quantity;
+        end if;
 
         if not found then
           raise exception 'Stok % tidak cukup. Tersedia lebih sedikit dari jumlah pesanan.',
@@ -73,9 +77,11 @@ begin
     loop
       v_outstanding := v_line.quantity;
       if v_outstanding > 0 then
-        update public.items
-        set stock = stock + v_outstanding
-        where id = v_line.item_id;
+        if v_line.variant_id is not null then
+          update public.item_variants set stock=stock+v_outstanding where id=v_line.variant_id;
+        else
+          update public.items set stock=stock+v_outstanding where id=v_line.item_id;
+        end if;
       end if;
 
       update public.order_items
@@ -154,7 +160,11 @@ begin
       and oi.stock_deducted
     for update of oi
   loop
-    update public.items set stock=stock+v_line.quantity where id=v_line.item_id;
+    if v_line.variant_id is not null then
+      update public.item_variants set stock=stock+v_line.quantity where id=v_line.variant_id;
+    else
+      update public.items set stock=stock+v_line.quantity where id=v_line.item_id;
+    end if;
     update public.order_items
     set stock_deducted=false,
         returned_quantity=case
@@ -172,9 +182,13 @@ begin
       and not oi.stock_deducted
     for update of oi
   loop
-    update public.items
-    set stock=stock-v_line.quantity
-    where id=v_line.item_id and stock>=v_line.quantity;
+    if v_line.variant_id is not null then
+      update public.item_variants set stock=stock-v_line.quantity
+      where id=v_line.variant_id and stock>=v_line.quantity;
+    else
+      update public.items set stock=stock-v_line.quantity
+      where id=v_line.item_id and stock>=v_line.quantity;
+    end if;
     if not found then
       raise exception 'Stok % tidak cukup untuk menyelaraskan pesanan aktif lama',
         v_line.title_snapshot;

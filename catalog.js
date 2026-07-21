@@ -3,7 +3,16 @@ import { supabase, rupiah, esc, addCart, message } from "./app.js";
 function availableQuantity(item) {
   return Math.max(
     0,
-    Number(item.type === "trip" ? item.quota : item.stock) || 0,
+    Number(
+      item.type === "trip"
+        ? item.quota
+        : (item.item_variants || []).length
+          ? (item.item_variants || []).reduce(
+              (sum, variant) => sum + Number(variant.stock || 0),
+              0,
+            )
+          : item.stock,
+    ) || 0,
   );
 }
 

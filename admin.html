@@ -1308,7 +1308,7 @@
                   </label>
                   <label class="field">
                     <span>Varian ukuran / kapasitas</span>
-                    <textarea class="input" name="variants" rows="4" placeholder="Nama | Kapasitas | Tambahan harga | Stok">${esc(
+                    <textarea class="input" name="variants" rows="4" placeholder="Tenda 2 Orang | 2 orang | 0 | 2&#10;Tenda 4 Orang | 4 orang | 25000 | 3">${esc(
                       (item.item_variants || [])
                         .sort((a, b) => a.sort_order - b.sort_order)
                         .map(
@@ -3054,7 +3054,7 @@
               .map(
                 (line) => `
               <div class="order-line">
-                <span>${esc(line.title_snapshot)} × ${line.quantity}${line.item_type === "product" ? ` · Kembali ${Number(line.returned_quantity || 0)}/${line.quantity}` : ""}</span>
+                <span>${esc(line.title_snapshot)}${line.variant_name_snapshot ? ` · ${esc(line.variant_name_snapshot)}` : ""} × ${line.quantity}${line.item_type === "product" ? ` · Kembali ${Number(line.returned_quantity || 0)}/${line.quantity}` : ""}</span>
                 <b>${rupiah(line.line_total)}</b>
               </div>
             `,

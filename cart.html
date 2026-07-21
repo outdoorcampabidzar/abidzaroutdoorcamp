@@ -402,6 +402,19 @@
         discount = 0,
         user = null,
         siteSettings = null;
+      // Migrasi keranjang lama: pilih otomatis varian pertama yang masih tersedia.
+      cart.forEach((entry) => {
+        if (entry.type !== "product" || entry.variant_id || !(entry.variants || []).length) return;
+        const variant = entry.variants.find((row) => Number(row.stock) > 0) || entry.variants[0];
+        entry.cart_key = `${entry.item_id}:${variant.id}`;
+        entry.variant_id = variant.id;
+        entry.variant_name = [variant.name, variant.capacity].filter(Boolean).join(" · ");
+        entry.variant_price_adjustment = Number(variant.price_adjustment || 0);
+        entry.price = Number(entry.price) + entry.variant_price_adjustment;
+        entry.max_quantity = Number(variant.stock || 0);
+        entry.quantity = Math.min(Number(entry.quantity || 1), Math.max(1, entry.max_quantity));
+      });
+      saveCart(cart);
       const hasRental = () => cart.some((x) => x.type === "product");
       const parseDate = (value) =>
         value ? new Date(`${value}T00:00:00`) : null;
@@ -430,7 +443,9 @@
         const tier = (item.price_tiers || []).find(
           (entry) => Number(entry.duration_days) === Number(days),
         );
-        return tier ? Number(tier.price) : Number(item.price) * days;
+        return tier
+          ? Number(tier.price) + Number(item.variant_price_adjustment || 0) * days
+          : Number(item.price) * days;
       };
       const subtotal = () =>
           cart.reduce(
@@ -459,13 +474,13 @@
         document.getElementById("list").innerHTML = cart
           .map(
             (x) =>
-              `<article class="card cart-item"><img src="${esc(x.image_url)}"><div><span class="badge">${x.type === "trip" ? "Open Trip" : "Sewa Item"}</span><h3>${esc(x.title)}</h3><p class="muted">${x.type === "product" ? "Harga per hari" : "Harga per peserta"}: ${rupiah(x.price)}</p>${x.requires_guarantee ? "<small>🔐 Jaminan wajib</small>" : ""}${Number(x.deposit || 0) ? `<small> · Deposit ${rupiah(x.deposit)} / unit</small>` : ""}</div><div class="cart-item-calculation"><label class="field"><span>Jumlah ${x.type === "trip" ? "peserta" : "unit"}</span><input class="input" data-q="${x.item_id}" type="number" min="1" max="${x.max_quantity}" value="${x.quantity}"></label><div class="cart-line-formula">${x.type === "product" && (x.price_tiers || []).some((tier) => Number(tier.duration_days) === days) ? `Paket ${days} hari ${rupiah(rentalUnitPrice(x, days))}` : `${rupiah(x.price)} × ${x.quantity}${x.type === "product" ? ` × ${days} hari` : ""}`}</div><div class="cart-line-total"><span>Subtotal item</span><b>${rupiah(rentalUnitPrice(x, days) * x.quantity)}</b></div><button class="btn danger small" data-r="${x.item_id}">Hapus</button></div></article>`,
+              `<article class="card cart-item"><img src="${esc(x.image_url)}"><div><span class="badge">${x.type === "trip" ? "Open Trip" : "Sewa Item"}</span><h3>${esc(x.title)}</h3>${x.variant_name ? `<p><b>Ukuran/Kapasitas:</b> ${esc(x.variant_name)}</p>` : ""}<p class="muted">${x.type === "product" ? "Harga per hari" : "Harga per peserta"}: ${rupiah(x.price)}</p>${x.requires_guarantee ? "<small>🔐 Jaminan wajib</small>" : ""}${Number(x.deposit || 0) ? `<small> · Deposit ${rupiah(x.deposit)} / unit</small>` : ""}</div><div class="cart-item-calculation"><label class="field"><span>Jumlah ${x.type === "trip" ? "peserta" : "unit"}</span><input class="input" data-q="${esc(x.cart_key || `${x.item_id}:default`)}" type="number" min="1" max="${x.max_quantity}" value="${x.quantity}"></label><div class="cart-line-formula">${x.type === "product" && (x.price_tiers || []).some((tier) => Number(tier.duration_days) === days) ? `Paket ${days} hari ${rupiah(rentalUnitPrice(x, days))}` : `${rupiah(x.price)} × ${x.quantity}${x.type === "product" ? ` × ${days} hari` : ""}`}</div><div class="cart-line-total"><span>Subtotal item</span><b>${rupiah(rentalUnitPrice(x, days) * x.quantity)}</b></div><button class="btn danger small" data-r="${esc(x.cart_key || `${x.item_id}:default`)}">Hapus</button></div></article>`,
           )
           .join("");
         document.querySelectorAll("[data-q]").forEach(
           (i) =>
             (i.onchange = () => {
-              const x = cart.find((y) => y.item_id === i.dataset.q);
+              const x = cart.find((y) => (y.cart_key || `${y.item_id}:default`) === i.dataset.q);
               x.quantity = Math.max(
                 1,
                 Math.min(x.max_quantity, Number(i.value)),
@@ -479,7 +494,7 @@
         document.querySelectorAll("[data-r]").forEach(
           (b) =>
             (b.onclick = () => {
-              cart = cart.filter((x) => x.item_id !== b.dataset.r);
+              cart = cart.filter((x) => (x.cart_key || `${x.item_id}:default`) !== b.dataset.r);
               discount = 0;
               voucher = null;
               saveCart(cart);
@@ -644,14 +659,16 @@
           cart
             .filter((item) => item.type === "product")
             .map(async (item) => {
-              const { data, error } = await supabase.rpc(
-                "rental_available_stock",
-                {
-                  p_item_id: item.item_id,
-                  p_start: startInput.value,
-                  p_end: endInput.value,
-                },
-              );
+              const rpcName = item.variant_id
+                ? "rental_available_variant_stock"
+                : "rental_available_stock";
+              const params = {
+                p_item_id: item.item_id,
+                p_start: startInput.value,
+                p_end: endInput.value,
+              };
+              if (item.variant_id) params.p_variant_id = item.variant_id;
+              const { data, error } = await supabase.rpc(rpcName, params);
               return { item, available: Number(data), error };
             }),
         );
@@ -754,6 +771,7 @@
         const items = cart.map((x) => ({
           item_id: x.item_id,
           quantity: x.quantity,
+          variant_id: x.variant_id || null,
         }));
         const { data, error } = await supabase.rpc("create_order", {
           p_customer: customer,

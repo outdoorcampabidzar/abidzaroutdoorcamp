@@ -4,6 +4,15 @@ STOK OTOMATIS ITEM SEWA
 PEMASANGAN
 1. Buka Supabase > SQL Editor > New query.
 2. Salin seluruh isi stock-lifecycle.sql lalu klik Run.
+   Untuk stok berdasarkan ukuran/kapasitas, jalankan rental-calendar.sql terbaru
+   terlebih dahulu, kemudian stock-lifecycle.sql terbaru.
+
+Contoh varian di Admin Panel (satu baris per pilihan):
+Tenda 2 Orang | 2 orang | 0 | 2
+Tenda 4 Orang | 4 orang | 25000 | 3
+
+Kolom terakhir adalah stok varian. Saat pesanan berstatus Dibayar, stok varian
+berkurang sesuai jumlah pesanan. Saat status Selesai/Dikembalikan, stok kembali.
 3. Jika memakai hak akses bertingkat, jalankan access-security.sql kembali setelahnya.
 4. Upload seluruh file website terbaru ke GitHub Pages.
 
