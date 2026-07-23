@@ -308,7 +308,7 @@
       >
 
       <label class="field">
-        <span>Komentar singkat <small>(opsional)</small></span>
+        <span>Komentar singkat *</span>
         <small class="rating-comment-helper">
           Kolom kosong tidak akan menghapus komentar yang sudah tersimpan.
         </small>
@@ -316,6 +316,8 @@
           id="websiteRatingComment"
           class="input"
           name="comment"
+          required
+          minlength="3"
           maxlength="300"
           placeholder="Contoh: Pemesanan mudah dan tampilan sudah jelas."
         ></textarea>
@@ -357,7 +359,7 @@
 </section>
 <script type="module">
     import { mountCatalog } from "./catalog.js";
-    import { mountWebsiteRating } from "./website-rating.js";
+    import { mountWebsiteRating } from "./website-rating.js?v=20260723-3";
 
     mountCatalog({
       type: "product",

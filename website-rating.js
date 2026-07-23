@@ -343,14 +343,16 @@ async function saveWebsiteRating() {
       .trim()
       .slice(0, 300);
 
-    // Kolom kosong mempertahankan komentar lama.
     const commentValue = typedComment || summary.my_comment || "";
+    if (!commentValue || commentValue.length < 3) {
+      throw new Error(
+        "Tulis komentar minimal 3 karakter agar ulasan dapat ditampilkan.",
+      );
+    }
 
-    const { data, error } = await supabase.rpc("save_website_review_v2", {
-      p_payload: {
-        score: selectedScore,
-        comment: commentValue,
-      },
+    const { data, error } = await supabase.rpc("submit_website_rating", {
+      p_score: selectedScore,
+      p_comment: commentValue,
     });
 
     if (error) throw error;
