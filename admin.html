@@ -1262,17 +1262,25 @@
                 </label>
               </div>
 
-              <label class="field">
-                <span>URL gambar *</span>
+              <label class="field catalog-upload-field">
+                <span>Upload gambar utama *</span>
                 <input
                   id="rentalImageUrl"
-                  class="input"
                   name="image_url"
-                  type="url"
+                  type="hidden"
                   value="${esc(item.image_url || "")}"
-                  required
-                  placeholder="https://domain.com/gambar.jpg"
                 >
+                <input
+                  id="catalogPrimaryUpload"
+                  class="input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                >
+                <small id="catalogPrimaryUploadStatus" class="muted">${
+                  item.image_url
+                    ? "Gambar utama tersimpan. Pilih file baru untuk menggantinya."
+                    : "Pilih JPG, PNG, WEBP, atau GIF. Maksimal 8 MB."
+                }</small>
               </label>
 
               <div
@@ -1289,9 +1297,7 @@
               <details class="admin-advanced-section" open>
                 <summary>Galeri, varian, inventaris & harga paket</summary>
                 <div class="form admin-advanced-body">
-                  <label class="field">
-                    <span>Galeri foto tambahan</span>
-                    <textarea class="input" name="gallery_urls" rows="4" placeholder="Satu URL gambar per baris">${esc(
+                  <textarea class="hidden" name="gallery_urls" aria-hidden="true">${esc(
                       (item.item_images || [])
                         .filter(
                           (image) =>
@@ -1302,12 +1308,10 @@
                         .map((image) => image.image_url)
                         .join("\n"),
                     )}</textarea>
-                    <small class="muted">Foto utama menggunakan URL gambar di atas.</small>
-                  </label>
                   <label class="field catalog-upload-field">
-                    <span>Upload beberapa foto</span>
+                    <span>Upload galeri foto tambahan</span>
                     <input id="catalogGalleryUpload" class="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
-                    <small id="catalogUploadStatus" class="muted">Maksimal 8 MB per foto. URL hasil upload masuk otomatis ke galeri.</small>
+                    <small id="catalogUploadStatus" class="muted">Pilih beberapa file sekaligus. Maksimal 8 MB per foto.</small>
                   </label>
                   <label class="field">
                     <span>Varian ukuran / kapasitas</span>
@@ -1585,17 +1589,14 @@
           slugInput.value = slugify(slugInput.value);
         });
 
-        imageInput.addEventListener("input", () => {
-          const value = imageInput.value.trim();
-          preview.src = value;
-          previewWrap.classList.toggle("hidden", !value);
-        });
-
         preview.addEventListener("error", () => {
           previewWrap.classList.add("hidden");
         });
 
         form.addEventListener("submit", saveRental);
+        document
+          .getElementById("catalogPrimaryUpload")
+          ?.addEventListener("change", uploadCatalogPrimaryImage);
         document
           .getElementById("catalogGalleryUpload")
           ?.addEventListener("change", uploadCatalogImages);
@@ -1985,6 +1986,73 @@
           });
       }
 
+      async function uploadCatalogFile(file) {
+        if (file.size > 8 * 1024 * 1024)
+          throw new Error(`${file.name} lebih besar dari 8 MB.`);
+        const allowedTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "image/gif",
+        ];
+        if (!allowedTypes.includes(file.type))
+          throw new Error(`${file.name} bukan format gambar yang didukung.`);
+        const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
+        const { error } = await supabase.storage
+          .from("catalog")
+          .upload(path, file, { cacheControl: "31536000", upsert: false });
+        if (error) throw error;
+        return supabase.storage.from("catalog").getPublicUrl(path).data
+          .publicUrl;
+      }
+
+      async function uploadCatalogPrimaryImage(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const status = document.getElementById("catalogPrimaryUploadStatus");
+        const imageInput = document.getElementById("rentalImageUrl");
+        const previewWrap = document.getElementById("rentalPreviewWrap");
+        const preview = document.getElementById("rentalPreview");
+        event.target.disabled = true;
+        status.textContent = "Mengupload gambar utama...";
+        try {
+          const publicUrl = await uploadCatalogFile(file);
+          imageInput.value = publicUrl;
+          preview.src = publicUrl;
+          previewWrap.classList.remove("hidden");
+          status.textContent = "Gambar utama berhasil diupload.";
+        } catch (error) {
+          status.textContent = `Upload gagal: ${error.message}`;
+          event.target.value = "";
+        } finally {
+          event.target.disabled = false;
+        }
+      }
+
+      async function uploadTripPrimaryImage(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const status = document.getElementById("tripPrimaryUploadStatus");
+        const imageInput = document.getElementById("tripImageUrl");
+        const previewWrap = document.getElementById("tripPreviewWrap");
+        const preview = document.getElementById("tripPreview");
+        event.target.disabled = true;
+        status.textContent = "Mengupload gambar utama...";
+        try {
+          const publicUrl = await uploadCatalogFile(file);
+          imageInput.value = publicUrl;
+          preview.src = publicUrl;
+          previewWrap.classList.remove("hidden");
+          status.textContent = "Gambar utama berhasil diupload.";
+        } catch (error) {
+          status.textContent = `Upload gagal: ${error.message}`;
+          event.target.value = "";
+        } finally {
+          event.target.disabled = false;
+        }
+      }
+
       async function uploadCatalogImages(event) {
         const files = [...(event.target.files || [])];
         if (!files.length) return;
@@ -1995,19 +2063,7 @@
         try {
           for (let index = 0; index < files.length; index += 1) {
             const file = files[index];
-            if (file.size > 8 * 1024 * 1024)
-              throw new Error(`${file.name} lebih besar dari 8 MB.`);
-            const extension =
-              file.name.split(".").pop()?.toLowerCase() || "jpg";
-            const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
-            const { error } = await supabase.storage
-              .from("catalog")
-              .upload(path, file, { cacheControl: "31536000", upsert: false });
-            if (error) throw error;
-            uploaded.push(
-              supabase.storage.from("catalog").getPublicUrl(path).data
-                .publicUrl,
-            );
+            uploaded.push(await uploadCatalogFile(file));
             status.textContent = `Mengupload ${index + 1}/${files.length} foto...`;
           }
           textarea.value = [textarea.value.trim(), ...uploaded]
@@ -2182,6 +2238,14 @@
           guarantee_note: String(values.guarantee_note || "").trim() || null,
           is_active: formData.has("is_active"),
         };
+
+        if (!payload.image_url) {
+          showAdminMessage(
+            "Upload gambar utama terlebih dahulu sampai prosesnya berhasil.",
+            "error",
+          );
+          return;
+        }
 
         if (!payload.slug) {
           showAdminMessage("Slug item tidak valid.", "error");
@@ -2383,16 +2447,19 @@
                 >${esc(item.description || "")}</textarea>
               </label>
 
-              <label class="field">
-                <span>URL gambar *</span>
-                <input
-                  class="input"
-                  name="image_url"
-                  type="url"
-                  value="${esc(item.image_url || "")}"
-                  required
-                >
+              <label class="field catalog-upload-field">
+                <span>Upload gambar utama *</span>
+                <input id="tripImageUrl" name="image_url" type="hidden" value="${esc(item.image_url || "")}">
+                <input id="tripPrimaryUpload" class="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+                <small id="tripPrimaryUploadStatus" class="muted">${
+                  item.image_url
+                    ? "Gambar utama tersimpan. Pilih file baru untuk menggantinya."
+                    : "Pilih JPG, PNG, WEBP, atau GIF. Maksimal 8 MB."
+                }</small>
               </label>
+              <div id="tripPreviewWrap" class="admin-image-preview ${item.image_url ? "" : "hidden"}">
+                <img id="tripPreview" src="${esc(item.image_url || "")}" alt="Preview open trip">
+              </div>
 
               <div class="two">
                 <label class="field">
@@ -2573,6 +2640,9 @@
         });
 
         form.addEventListener("submit", saveTrip);
+        document
+          .getElementById("tripPrimaryUpload")
+          ?.addEventListener("change", uploadTripPrimaryImage);
 
         document
           .getElementById("cancelTripEdit")
@@ -2712,6 +2782,14 @@
           guarantee_note: null,
           is_active: formData.has("is_active"),
         };
+
+        if (!payload.image_url) {
+          showAdminMessage(
+            "Upload gambar utama terlebih dahulu sampai prosesnya berhasil.",
+            "error",
+          );
+          return;
+        }
 
         button.disabled = true;
         button.textContent = "Menyimpan...";
