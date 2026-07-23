@@ -287,7 +287,7 @@ export async function setupNav() {
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role,full_name")
+      .select("role,full_name,avatar_url")
       .eq("id", user.id)
       .single();
 
@@ -328,7 +328,15 @@ export async function setupNav() {
     });
 
     userAvatars.forEach((element) => {
-      element.textContent = initial;
+      element.innerHTML = "";
+      if (profile?.avatar_url) {
+        const image = document.createElement("img");
+        image.src = profile.avatar_url;
+        image.alt = `Foto profil ${displayName}`;
+        element.appendChild(image);
+      } else {
+        element.textContent = initial;
+      }
     });
   }
 

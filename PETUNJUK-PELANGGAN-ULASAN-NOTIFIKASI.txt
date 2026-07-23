@@ -6,3 +6,17 @@
 
 Notifikasi WhatsApp tidak dikirim diam-diam. Admin menekan tombol Kirim WhatsApp, kemudian pesan siap kirim dibuka pada WhatsApp.
 Tombol Buat Pengingat Otomatis membuat pengingat pengambilan, pengembalian, keterlambatan, dan keberangkatan trip berdasarkan tanggal pesanan.
+PERBAIKAN KOMENTAR RATING
+
+Jika bintang tersimpan tetapi komentar bernilai NULL atau tidak tampil:
+1. Buka Supabase > SQL Editor.
+2. Salin seluruh isi website-comment-rpc-v2.sql.
+3. Klik Run.
+4. Kembali ke website, muat ulang, lalu kirim rating dan komentar sekali lagi.
+
+FOTO PROFIL PADA ULASAN
+
+1. Jalankan profile-avatar.sql melalui Supabase SQL Editor.
+2. Upload profile.html, profile.js, app.js, website-rating.js, dan styles.css.
+3. Pengguna membuka Profil Saya, memilih foto, lalu menekan Simpan Profil.
+4. Foto tersebut otomatis tampil pada ulasan dan menu akun.

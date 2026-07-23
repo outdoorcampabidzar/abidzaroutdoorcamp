@@ -8,6 +8,7 @@ alter table public.profiles add column if not exists blocked_reason text;
 alter table public.profiles add column if not exists blocked_at timestamptz;
 alter table public.profiles add column if not exists created_at timestamptz not null default now();
 alter table public.profiles add column if not exists updated_at timestamptz not null default now();
+alter table public.profiles add column if not exists avatar_url text;
 
 alter table public.website_ratings add column if not exists is_hidden boolean not null default false;
 alter table public.website_ratings add column if not exists admin_reply text;
@@ -128,11 +129,13 @@ begin
   return jsonb_build_object('rating_average',v_average,'rating_count',v_count,'my_score',coalesce(v_my_score,0),'my_comment',coalesce(v_my_comment,''));
 end; $$;
 
-create or replace function public.get_website_reviews(p_limit integer default 6)
-returns table(display_name text,score integer,comment text,created_at timestamptz,updated_at timestamptz,is_mine boolean,total_count bigint)
+drop function if exists public.get_website_reviews(integer);
+create function public.get_website_reviews(p_limit integer default 6)
+returns table(display_name text,avatar_url text,score integer,comment text,created_at timestamptz,updated_at timestamptz,is_mine boolean,total_count bigint)
 language sql stable security definer set search_path=public,auth as $$
 with visible as (
   select case when nullif(trim(coalesce(p.full_name,'')),'') is not null then split_part(trim(p.full_name),' ',1) else 'Pengguna' end::text,
+    p.avatar_url::text,
     wr.score,
     (coalesce(wr.comment,'')||case when nullif(trim(coalesce(wr.admin_reply,'')),'') is not null then E'\n\nBalasan admin: '||wr.admin_reply else '' end)::text,
     wr.created_at,wr.updated_at,(wr.user_id=auth.uid()),count(*) over()
@@ -154,4 +157,6 @@ grant execute on function public.list_admin_website_ratings() to authenticated;
 grant execute on function public.admin_moderate_website_rating(uuid,boolean,text) to authenticated;
 grant execute on function public.admin_generate_reminders() to authenticated;
 grant execute on function public.admin_mark_notification_sent(uuid) to authenticated;
+grant execute on function public.get_website_rating() to anon, authenticated;
+grant execute on function public.get_website_reviews(integer) to anon, authenticated;
 notify pgrst, 'reload schema';

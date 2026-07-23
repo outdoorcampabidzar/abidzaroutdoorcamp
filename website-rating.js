@@ -208,7 +208,11 @@ function reviewCard(review) {
     <article class="card website-review-card">
       <div class="website-review-top">
         <div class="website-review-avatar" aria-hidden="true">
-          ${esc(displayName.slice(0, 1).toUpperCase())}
+          ${
+            review.avatar_url
+              ? `<img src="${esc(review.avatar_url)}" alt="">`
+              : esc(displayName.slice(0, 1).toUpperCase())
+          }
         </div>
 
         <div class="website-review-user">

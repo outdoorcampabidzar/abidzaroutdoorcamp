@@ -6,6 +6,7 @@ const resetButton = document.getElementById("passwordReset");
 const messageBox = document.getElementById("profileMessage");
 
 let currentUser = null;
+let currentAvatarUrl = "";
 
 function initial(value) {
   return String(value || "U").trim().slice(0, 1).toUpperCase() || "U";
@@ -26,7 +27,17 @@ function updateSummary(profile) {
     ? "Administrator"
     : "Pengguna";
 
-  document.querySelector("[data-profile-avatar]").textContent = initial(name);
+  const avatar = document.querySelector("[data-profile-avatar]");
+  const avatarUrl = String(profile?.avatar_url || currentAvatarUrl || "").trim();
+  avatar.innerHTML = "";
+  if (avatarUrl) {
+    const image = document.createElement("img");
+    image.src = avatarUrl;
+    image.alt = `Foto profil ${name}`;
+    avatar.appendChild(image);
+  } else {
+    avatar.textContent = initial(name);
+  }
   document.querySelector("[data-profile-name]").textContent = name;
   document.querySelector("[data-profile-email]").textContent = currentUser?.email || "-";
   document.querySelector("[data-profile-role]").textContent = role;
@@ -44,7 +55,7 @@ async function loadProfile() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("full_name,phone,address,city,postal_code,role")
+    .select("full_name,phone,address,city,postal_code,role,avatar_url")
     .eq("id", user.id)
     .single();
 
@@ -54,6 +65,7 @@ async function loadProfile() {
   }
 
   const profile = data || {};
+  currentAvatarUrl = profile.avatar_url || "";
 
   form.elements.full_name.value = profile.full_name || "";
   form.elements.email.value = user.email || "";
@@ -71,16 +83,45 @@ form.addEventListener("submit", async event => {
   if (!form.reportValidity()) return;
 
   const values = Object.fromEntries(new FormData(form));
+  const avatarFile = document.getElementById("profileAvatarFile").files?.[0];
+  if (avatarFile) {
+    if (avatarFile.size > 3 * 1024 * 1024) {
+      message(messageBox, "Foto profil maksimal 3 MB.", "error");
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(avatarFile.type)) {
+      message(messageBox, "Gunakan foto JPG, PNG, atau WEBP.", "error");
+      return;
+    }
+  }
   const payload = {
     full_name: String(values.full_name || "").trim(),
     phone: normalizePhone(values.phone),
     city: String(values.city || "").trim(),
     address: String(values.address || "").trim(),
-    postal_code: String(values.postal_code || "").trim() || null
+    postal_code: String(values.postal_code || "").trim() || null,
+    avatar_url: currentAvatarUrl || null
   };
 
   saveButton.disabled = true;
   saveButton.textContent = "Menyimpan...";
+
+  if (avatarFile) {
+    const extension = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${currentUser.id}/avatar.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, avatarFile, { upsert: true, cacheControl: "3600" });
+    if (uploadError) {
+      saveButton.disabled = false;
+      saveButton.textContent = "Simpan Profil";
+      message(messageBox, `Upload foto gagal: ${uploadError.message}`, "error");
+      return;
+    }
+    currentAvatarUrl =
+      `${supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
+    payload.avatar_url = currentAvatarUrl;
+  }
 
   const { error } = await supabase
     .from("profiles")
@@ -95,6 +136,7 @@ form.addEventListener("submit", async event => {
     return;
   }
 
+  document.getElementById("profileAvatarFile").value = "";
   updateSummary({ ...payload, role: document.querySelector("[data-profile-role]").textContent === "Administrator" ? "admin" : "user" });
   message(messageBox, "Profil berhasil diperbarui.", "success");
 });
