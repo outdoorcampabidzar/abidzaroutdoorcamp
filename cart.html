@@ -526,8 +526,20 @@
         const trips = cart.filter((item) => item.type === "trip");
         section.classList.toggle("hidden", !trips.length);
         section.innerHTML = trips.length
-          ? `<div class="trip-checkout-heading"><span class="badge">Data Peserta</span><h3>Isi data setiap kursi</h3><p class="muted">Data ini dipakai untuk manifest dan keadaan darurat.</p></div>${trips.map((trip) => `<div class="trip-seat-group"><h3>${esc(trip.title)}</h3>${Array.from({ length: Number(trip.quantity) }, (_, index) => `<article class="trip-seat-card"><strong>Peserta / Kursi ${index + 1}</strong><div class="two"><label class="field"><span>Nama lengkap *</span><input class="input" data-trip-field="full_name" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label><label class="field"><span>Nomor WhatsApp *</span><input class="input" data-trip-field="phone" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label><label class="field"><span>Usia *</span><input class="input" data-trip-field="age" data-item-id="${trip.item_id}" data-seat="${index + 1}" type="number" min="1" required></label><label class="field"><span>4 karakter identitas</span><input class="input" data-trip-field="identity_last4" data-item-id="${trip.item_id}" data-seat="${index + 1}" maxlength="4"></label><label class="field"><span>Nama kontak darurat *</span><input class="input" data-trip-field="emergency_contact_name" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label><label class="field"><span>Nomor kontak darurat *</span><input class="input" data-trip-field="emergency_contact_phone" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label></div><label class="field"><span>Catatan kesehatan/kebutuhan khusus</span><input class="input" data-trip-field="notes" data-item-id="${trip.item_id}" data-seat="${index + 1}"></label></article>`).join("")}</div>`).join("")}`
+          ? `<div class="trip-checkout-heading"><span class="badge">Data Peserta</span><h3>Pilih tanggal dan isi data setiap kursi</h3><p class="muted">Tanggal perjalanan ditentukan oleh peserta dan tersimpan bersama pesanan.</p></div>${trips.map((trip) => `<div class="trip-seat-group"><h3>${esc(trip.title)}</h3><label class="field"><span>Tanggal perjalanan yang dipilih *</span><input class="input trip-date-input" type="date" data-trip-date="${trip.item_id}" value="${esc(trip.requested_trip_date || "")}" required></label>${Array.from({ length: Number(trip.quantity) }, (_, index) => `<article class="trip-seat-card"><strong>Peserta / Kursi ${index + 1}</strong><div class="two"><label class="field"><span>Nama lengkap *</span><input class="input" data-trip-field="full_name" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label><label class="field"><span>Nomor WhatsApp *</span><input class="input" data-trip-field="phone" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label><label class="field"><span>Usia *</span><input class="input" data-trip-field="age" data-item-id="${trip.item_id}" data-seat="${index + 1}" type="number" min="1" required></label><label class="field"><span>4 karakter identitas</span><input class="input" data-trip-field="identity_last4" data-item-id="${trip.item_id}" data-seat="${index + 1}" maxlength="4"></label><label class="field"><span>Nama kontak darurat *</span><input class="input" data-trip-field="emergency_contact_name" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label><label class="field"><span>Nomor kontak darurat *</span><input class="input" data-trip-field="emergency_contact_phone" data-item-id="${trip.item_id}" data-seat="${index + 1}" required></label></div><label class="field"><span>Catatan kesehatan/kebutuhan khusus</span><input class="input" data-trip-field="notes" data-item-id="${trip.item_id}" data-seat="${index + 1}"></label></article>`).join("")}</div>`).join("")}`
           : "";
+        const today = dateInputValue(new Date());
+        section.querySelectorAll("[data-trip-date]").forEach((input) => {
+          input.min = today;
+          input.addEventListener("change", () => {
+            const trip = cart.find(
+              (entry) => entry.item_id === input.dataset.tripDate,
+            );
+            if (!trip) return;
+            trip.requested_trip_date = input.value;
+            saveCart(cart);
+          });
+        });
       }
 
       function collectTripParticipants() {
@@ -780,6 +792,8 @@
           item_id: x.item_id,
           quantity: x.quantity,
           variant_id: x.variant_id || null,
+          trip_date:
+            x.type === "trip" ? x.requested_trip_date || null : null,
         }));
         const { data, error } = await supabase.rpc("create_order", {
           p_customer: customer,
@@ -822,9 +836,9 @@
                 : []),
               `   Total  : ${rupiah(lineTotal)}`,
             ];
-            if (x.type === "trip" && x.trip_date)
+            if (x.type === "trip" && x.requested_trip_date)
               detail.push(
-                `   Tanggal: ${new Date(x.trip_date + "T00:00:00").toLocaleDateString("id-ID", { dateStyle: "long" })}`,
+                `   Tanggal: ${new Date(x.requested_trip_date + "T00:00:00").toLocaleDateString("id-ID", { dateStyle: "long" })}`,
               );
             if (x.location) detail.push(`   Lokasi : ${x.location}`);
             return detail.join("\n");

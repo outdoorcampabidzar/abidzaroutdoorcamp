@@ -2393,12 +2393,10 @@
 
               <div class="trip-admin-section">
                 <h3>Jadwal & operasional</h3>
+                <div class="notice">Tanggal keberangkatan dipilih oleh peserta saat checkout. Admin cukup mengatur lokasi dan informasi operasional.</div>
                 <div class="two">
-                  <label class="field"><span>Keberangkatan *</span><input class="input" name="departure_at" type="datetime-local" required value="${localDateTime(detail.departure_at || item.trip_date)}"></label>
-                  <label class="field"><span>Kepulangan *</span><input class="input" name="return_at" type="datetime-local" required value="${localDateTime(detail.return_at)}"></label>
                   <label class="field"><span>Lokasi meeting point *</span><input class="input" name="meeting_point" required value="${esc(detail.meeting_point || item.location || "")}"></label>
                   <label class="field"><span>Petunjuk waktu meeting</span><input class="input" name="meeting_time" value="${esc(detail.meeting_time || "")}" placeholder="Hadir 30 menit sebelumnya"></label>
-                  <label class="field"><span>Batas pendaftaran *</span><input class="input" name="registration_deadline" type="datetime-local" required value="${localDateTime(detail.registration_deadline)}"></label>
                   <label class="field"><span>Status trip *</span><select class="input" name="trip_status">${[
                     ["draft", "Draft"],
                     ["open", "Dibuka"],
@@ -2489,29 +2487,16 @@
                 </label>
               </div>
 
-              <div class="two">
-                <label class="field">
-                  <span>Lokasi *</span>
-                  <input
-                    class="input"
-                    name="location"
-                    value="${esc(item.location || "")}"
-                    required
-                    maxlength="200"
-                  >
-                </label>
-
-                <label class="field">
-                  <span>Tanggal trip *</span>
-                  <input
-                    class="input"
-                    name="trip_date"
-                    type="date"
-                    value="${item.trip_date ? String(item.trip_date).slice(0, 10) : ""}"
-                    required
-                  >
-                </label>
-              </div>
+              <label class="field">
+                <span>Lokasi *</span>
+                <input
+                  class="input"
+                  name="location"
+                  value="${esc(item.location || "")}"
+                  required
+                  maxlength="200"
+                >
+              </label>
 
               <label class="admin-check">
                 <input
@@ -2583,16 +2568,7 @@
               <span>${Number(item.quota || 0)} kursi · ${statusName}</span>
             </div>
 
-            <p class="admin-rental-guarantee">
-              📅 ${
-                item.trip_date
-                  ? new Date(item.trip_date + "T00:00:00").toLocaleDateString(
-                      "id-ID",
-                      { dateStyle: "long" },
-                    )
-                  : "-"
-              }
-            </p>
+            <p class="admin-rental-guarantee">📅 Tanggal dipilih peserta saat memesan</p>
 
             <div class="actions">
               ${can("trip_participants.manage") ? `<button class="btn small" data-trip-participants="${item.id}" type="button">Peserta</button>` : ""}
@@ -2776,7 +2752,7 @@
           price: Number(values.price || 0),
           stock: 0,
           location: String(values.location || "").trim(),
-          trip_date: values.trip_date || null,
+          trip_date: null,
           quota: Number(values.quota || 0),
           requires_guarantee: false,
           guarantee_note: null,
@@ -2825,12 +2801,8 @@
           value === "" || value == null ? null : Number(value);
         const detailsPayload = {
           item_id: savedTrip.id,
-          departure_at: values.departure_at
-            ? new Date(values.departure_at).toISOString()
-            : null,
-          return_at: values.return_at
-            ? new Date(values.return_at).toISOString()
-            : null,
+          departure_at: null,
+          return_at: null,
           meeting_point: String(values.meeting_point || "").trim(),
           meeting_time: String(values.meeting_time || "").trim() || null,
           itinerary: String(values.itinerary || "").trim() || null,
@@ -2844,9 +2816,7 @@
           required_equipment:
             String(values.required_equipment || "").trim() || null,
           min_participants: Math.max(1, Number(values.min_participants || 1)),
-          registration_deadline: values.registration_deadline
-            ? new Date(values.registration_deadline).toISOString()
-            : null,
+          registration_deadline: null,
           status: values.trip_status || "draft",
           travel_information:
             String(values.travel_information || "").trim() || null,
@@ -3154,7 +3124,7 @@
               .map(
                 (line) => `
               <div class="order-line">
-                <span>${esc(line.title_snapshot)}${line.variant_name_snapshot ? ` · ${esc(line.variant_name_snapshot)}` : ""} × ${line.quantity}${line.item_type === "product" ? ` · Kembali ${Number(line.returned_quantity || 0)}/${line.quantity}` : ""}</span>
+                <span>${esc(line.title_snapshot)}${line.variant_name_snapshot ? ` · ${esc(line.variant_name_snapshot)}` : ""} × ${line.quantity}${line.item_type === "product" ? ` · Kembali ${Number(line.returned_quantity || 0)}/${line.quantity}` : ""}${line.item_type === "trip" && line.trip_date_snapshot ? ` · Tanggal peserta: ${new Date(line.trip_date_snapshot + "T00:00:00").toLocaleDateString("id-ID", { dateStyle: "long" })}` : ""}</span>
                 <b>${rupiah(line.line_total)}</b>
               </div>
             `,

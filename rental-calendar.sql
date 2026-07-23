@@ -311,6 +311,12 @@ begin
     v_variant_id := nullif(v_line ->> 'variant_id','')::uuid;
     select * into v_item from public.items where id = v_item_id;
     if v_item.type = 'trip' then
+      if nullif(v_line->>'trip_date','') is null then
+        raise exception 'Tanggal perjalanan % wajib dipilih peserta', v_item.title;
+      end if;
+      if (v_line->>'trip_date')::date < current_date then
+        raise exception 'Tanggal perjalanan % tidak boleh tanggal yang sudah lewat', v_item.title;
+      end if;
       select * into v_trip_detail from public.trip_details where item_id = v_item.id;
       if found then
         if v_trip_detail.status <> 'open' then raise exception 'Trip % tidak sedang dibuka', v_item.title; end if;
@@ -351,7 +357,7 @@ begin
         case when v_package_price is not null then v_package_price
           else v_item.price * v_days end
         else v_item.price end) * v_quantity,
-      v_item.trip_date,
+      case when v_item.type = 'trip' then (v_line->>'trip_date')::date else null end,
       case when v_item.type = 'product' then p_rental_start else null end,
       case when v_item.type = 'product' then p_rental_end else null end,
       case when v_item.type = 'product' then v_days else 1 end
