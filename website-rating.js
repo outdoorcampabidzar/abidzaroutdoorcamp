@@ -305,9 +305,24 @@ async function saveWebsiteRating() {
   if (isSaving) return;
 
   const selectedScore = Number(scoreInput?.value || summary.my_score || 0);
+  // Ambil teks sebelum tombol membuat textarea kehilangan fokus.
+  // updateInterface() dapat mengisi ulang textarea dari data database.
+  const typedComment = String(comment?.value || "")
+    .trim()
+    .slice(0, 300);
+  const commentValue = typedComment || summary.my_comment || "";
 
   if (!selectedScore || selectedScore < 1 || selectedScore > 5) {
     message(messageBox, "Pilih jumlah bintang terlebih dahulu.", "error");
+    return;
+  }
+
+  if (!commentValue || commentValue.length < 3) {
+    message(
+      messageBox,
+      "Tulis komentar minimal 3 karakter agar ulasan dapat ditampilkan.",
+      "error",
+    );
     return;
   }
 
@@ -328,6 +343,8 @@ async function saveWebsiteRating() {
     isSaving = true;
     summary.my_score = selectedScore;
     updateInterface();
+    // Pertahankan tulisan pengguna selama proses penyimpanan berlangsung.
+    if (comment) comment.value = typedComment || commentValue;
 
     document.querySelectorAll("[data-website-score]").forEach((button) => {
       button.disabled = true;
@@ -338,17 +355,6 @@ async function saveWebsiteRating() {
       "Sedang menyimpan rating dan komentar ke database...",
       "warning",
     );
-
-    const typedComment = String(comment?.value || "")
-      .trim()
-      .slice(0, 300);
-
-    const commentValue = typedComment || summary.my_comment || "";
-    if (!commentValue || commentValue.length < 3) {
-      throw new Error(
-        "Tulis komentar minimal 3 karakter agar ulasan dapat ditampilkan.",
-      );
-    }
 
     const { data, error } = await supabase.rpc("submit_website_rating", {
       p_score: selectedScore,
