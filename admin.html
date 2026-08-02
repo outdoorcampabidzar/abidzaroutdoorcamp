@@ -1168,6 +1168,147 @@
         showAdminMessage("Pengaturan website berhasil disimpan.", "success");
       }
 
+      function renderVariantRow(variant = {}) {
+        return `<div class="catalog-entry-row catalog-variant-row" data-catalog-row>
+          <input class="input" data-catalog-field value="${esc(variant.name || "")}" placeholder="Contoh: Tenda 4 Orang" aria-label="Nama unit atau varian">
+          <input class="input" data-catalog-field value="${esc(variant.capacity || "")}" placeholder="Contoh: 4 orang" aria-label="Ukuran atau kapasitas">
+          <input class="input" data-catalog-field type="number" min="0" step="1" value="${Number(variant.stock || 0)}" placeholder="0" aria-label="Stok">
+          <button class="btn danger small catalog-row-remove" data-remove-catalog-row type="button" aria-label="Hapus varian">Hapus</button>
+        </div>`;
+      }
+
+      function renderInventoryRow(unit = {}) {
+        const condition = unit.condition || "good";
+        const status = unit.status || "available";
+        return `<div class="catalog-entry-row catalog-inventory-row" data-catalog-row>
+          <input class="input" data-catalog-field value="${esc(unit.inventory_number || "")}" placeholder="Contoh: TND-001" aria-label="Nomor unit inventaris">
+          <select class="input" data-catalog-field aria-label="Kondisi unit">
+            ${[["new", "Baru"], ["good", "Baik"], ["fair", "Cukup"], ["damaged", "Rusak"]].map(([value, label]) => `<option value="${value}" ${condition === value ? "selected" : ""}>${label}</option>`).join("")}
+          </select>
+          <select class="input" data-catalog-field aria-label="Status unit">
+            ${[["available", "Tersedia"], ["rented", "Disewa"], ["damaged", "Rusak"], ["maintenance", "Perawatan"], ["retired", "Tidak dipakai"]].map(([value, label]) => `<option value="${value}" ${status === value ? "selected" : ""}>${label}</option>`).join("")}
+          </select>
+          <input class="input" data-catalog-field value="${esc(unit.notes || "")}" placeholder="Catatan opsional" aria-label="Catatan unit">
+          <button class="btn danger small catalog-row-remove" data-remove-catalog-row type="button" aria-label="Hapus unit inventaris">Hapus</button>
+        </div>`;
+      }
+
+      function renderPriceTierRow(tier = {}, item = {}) {
+        const variant = (item.item_variants || []).find(
+          (row) => row.id === tier.variant_id,
+        );
+        return `<div class="catalog-entry-row catalog-price-row" data-catalog-row>
+          <input class="input" data-catalog-field list="catalogVariantNames" value="${esc(variant?.name || tier.variant_name || "Semua Varian")}" placeholder="Semua Varian" aria-label="Varian harga">
+          <input class="input" data-catalog-field value="${esc(tier.label || "")}" placeholder="Contoh: Paket 2 Hari" aria-label="Nama paket">
+          <input class="input" data-catalog-field type="number" min="1" step="1" value="${Number(tier.duration_days || 1)}" placeholder="1" aria-label="Jumlah hari">
+          <input class="input" data-catalog-field type="number" min="0" step="1000" value="${Number(tier.price || 0)}" placeholder="150000" aria-label="Harga paket">
+          <button class="btn danger small catalog-row-remove" data-remove-catalog-row type="button" aria-label="Hapus harga paket">Hapus</button>
+        </div>`;
+      }
+
+      function renderVariantEditor(item) {
+        const variants = [...(item.item_variants || [])].sort(
+          (a, b) => a.sort_order - b.sort_order,
+        );
+        return `<section class="catalog-entry-editor">
+          <div class="catalog-entry-heading"><div><h4>Variasi / ukuran</h4><p class="muted">Isi nama unit, ukuran atau kapasitas, dan jumlah stok.</p></div><button class="btn secondary small" data-add-catalog-row="variants" type="button">+ Tambah variasi</button></div>
+          <div class="catalog-entry-scroll">
+            <div class="catalog-entry-labels catalog-variant-row"><span>Unit / varian</span><span>Ukuran / kapasitas</span><span>Stok</span><span>Aksi</span></div>
+            <div data-catalog-table="variants">${variants.map(renderVariantRow).join("")}</div>
+          </div>
+          <textarea class="hidden" name="variants" data-catalog-value="variants" aria-hidden="true"></textarea>
+        </section>`;
+      }
+
+      function renderInventoryEditor(item) {
+        const units = item.inventory_units || [];
+        return `<section class="catalog-entry-editor">
+          <div class="catalog-entry-heading"><div><h4>Unit inventaris</h4><p class="muted">Satu baris untuk setiap barang fisik yang dimiliki.</p></div><button class="btn secondary small" data-add-catalog-row="inventory_units" type="button">+ Tambah unit</button></div>
+          <div class="catalog-entry-scroll">
+            <div class="catalog-entry-labels catalog-inventory-row"><span>Nomor unit</span><span>Kondisi</span><span>Status</span><span>Catatan</span><span>Aksi</span></div>
+            <div data-catalog-table="inventory_units">${units.map(renderInventoryRow).join("")}</div>
+          </div>
+          <textarea class="hidden" name="inventory_units" data-catalog-value="inventory_units" aria-hidden="true"></textarea>
+        </section>`;
+      }
+
+      function renderPriceTierEditor(item) {
+        const tiers = [...(item.item_price_tiers || [])].sort(
+          (a, b) => a.duration_days - b.duration_days,
+        );
+        return `<section class="catalog-entry-editor">
+          <div class="catalog-entry-heading"><div><h4>Harga paket</h4><p class="muted">Atur harga final berdasarkan varian dan lama penyewaan.</p></div><button class="btn secondary small" data-add-catalog-row="price_tiers" type="button">+ Tambah harga</button></div>
+          <datalist id="catalogVariantNames"></datalist>
+          <div class="catalog-entry-scroll">
+            <div class="catalog-entry-labels catalog-price-row"><span>Varian</span><span>Nama paket</span><span>Hari</span><span>Harga</span><span>Aksi</span></div>
+            <div data-catalog-table="price_tiers">${tiers.map((tier) => renderPriceTierRow(tier, item)).join("")}</div>
+          </div>
+          <textarea class="hidden" name="price_tiers" data-catalog-value="price_tiers" aria-hidden="true"></textarea>
+        </section>`;
+      }
+
+      function syncCatalogEntryTable(form, key) {
+        const table = form.querySelector(`[data-catalog-table="${key}"]`);
+        const output = form.querySelector(`[data-catalog-value="${key}"]`);
+        if (!table || !output) return;
+        output.value = [...table.querySelectorAll("[data-catalog-row]")]
+          .map((row) =>
+            [...row.querySelectorAll("[data-catalog-field]")]
+              .map((field) => String(field.value || "").trim())
+              .join(" | "),
+          )
+          .filter((line) => line.split("|")[0].trim())
+          .join("\n");
+      }
+
+      function refreshCatalogVariantNames(form) {
+        const list = form.querySelector("#catalogVariantNames");
+        if (!list) return;
+        const names = [...form.querySelectorAll('[data-catalog-table="variants"] [data-catalog-row]')]
+          .map((row) => row.querySelector("[data-catalog-field]")?.value.trim())
+          .filter(Boolean);
+        list.innerHTML = ["Semua Varian", ...new Set(names)]
+          .map((name) => `<option value="${esc(name)}"></option>`)
+          .join("");
+      }
+
+      function setupCatalogEntryTables(form) {
+        const syncAll = () => {
+          ["variants", "inventory_units", "price_tiers"].forEach((key) =>
+            syncCatalogEntryTable(form, key),
+          );
+          refreshCatalogVariantNames(form);
+        };
+        form.addEventListener("input", (event) => {
+          if (!event.target.matches("[data-catalog-field]")) return;
+          syncAll();
+        });
+        form.addEventListener("change", (event) => {
+          if (!event.target.matches("[data-catalog-field]")) return;
+          syncAll();
+        });
+        form.addEventListener("click", (event) => {
+          const addButton = event.target.closest("[data-add-catalog-row]");
+          if (addButton) {
+            const key = addButton.dataset.addCatalogRow;
+            const table = form.querySelector(`[data-catalog-table="${key}"]`);
+            if (key === "variants") table.insertAdjacentHTML("beforeend", renderVariantRow());
+            if (key === "inventory_units") table.insertAdjacentHTML("beforeend", renderInventoryRow());
+            if (key === "price_tiers") table.insertAdjacentHTML("beforeend", renderPriceTierRow());
+            table.lastElementChild?.querySelector("[data-catalog-field]")?.focus();
+            syncAll();
+            return;
+          }
+          const removeButton = event.target.closest("[data-remove-catalog-row]");
+          if (removeButton) {
+            removeButton.closest("[data-catalog-row]")?.remove();
+            syncAll();
+          }
+        });
+        form.addEventListener("submit", syncAll, { capture: true });
+        syncAll();
+      }
+
       function renderRentalTab() {
         const content = document.getElementById("adminContent");
         const rentals = rentalItems();
@@ -1313,40 +1454,9 @@
                     <input id="catalogGalleryUpload" class="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
                     <small id="catalogUploadStatus" class="muted">Pilih beberapa file sekaligus. Maksimal 8 MB per foto.</small>
                   </label>
-                  <label class="field">
-                    <span>Varian ukuran / kapasitas</span>
-                    <textarea class="input" name="variants" rows="4" placeholder="Tenda 2 Orang | 2 orang | 2&#10;Tenda 4 Orang | 4 orang | 3">${esc(
-                      (item.item_variants || [])
-                        .sort((a, b) => a.sort_order - b.sort_order)
-                        .map(
-                          (variant) =>
-                            `${variant.name} | ${variant.capacity || ""} | ${Number(variant.stock || 0)}`,
-                        )
-                        .join("\n"),
-                    )}</textarea>
-                    <small class="muted">Format: Nama varian | Kapasitas | Stok. Harga diatur melalui Harga paket.</small>
-                  </label>
-                  <label class="field">
-                    <span>Unit inventaris</span>
-                    <textarea class="input" name="inventory_units" rows="5" placeholder="Nomor inventaris | Kondisi | Status | Catatan">${esc((item.inventory_units || []).map((unit) => `${unit.inventory_number} | ${unit.condition} | ${unit.status} | ${unit.notes || ""}`).join("\n"))}</textarea>
-                    <small class="muted">Kondisi: new/good/fair/damaged. Status: available/rented/damaged/maintenance/retired.</small>
-                  </label>
-                  <label class="field">
-                    <span>Harga paket</span>
-                    <textarea class="input" name="price_tiers" rows="6" placeholder="Tenda 2 Orang | 1 Hari | 1 | 100000&#10;Tenda 2 Orang | 2 Hari | 2 | 175000&#10;Tenda 4 Orang | 1 Hari | 1 | 150000">${esc(
-                      (item.item_price_tiers || [])
-                        .sort((a, b) => a.duration_days - b.duration_days)
-                        .map(
-                          (tier) => {
-                            const variant = (item.item_variants || []).find((row) => row.id === tier.variant_id);
-                            return `${variant?.name || "Semua Varian"} | ${tier.label} | ${tier.duration_days} | ${Number(tier.price)}`;
-                          },
-                        )
-                        .join("\n"),
-                    )}</textarea>
-                    <small class="muted">Format: Nama varian | Nama paket | Jumlah hari | Harga final.</small>
-                    <small class="muted">Contoh: Paket 2 Hari | 2 | 150000</small>
-                  </label>
+                  ${renderVariantEditor(item)}
+                  ${renderInventoryEditor(item)}
+                  ${renderPriceTierEditor(item)}
                 </div>
               </details>
 
@@ -1593,6 +1703,7 @@
           previewWrap.classList.add("hidden");
         });
 
+        setupCatalogEntryTables(form);
         form.addEventListener("submit", saveRental);
         document
           .getElementById("catalogPrimaryUpload")
