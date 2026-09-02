@@ -6461,3 +6461,9 @@ main {
     width: 100%;
   }
 }
+
+/* JUAL + SEWA two-mode switch */
+.mode-switch{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding:12px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.035)}
+.mode-switch .mode-current{font-weight:800;margin-right:auto}
+.mode-switch .btn.active{box-shadow:0 0 0 2px rgba(81,226,154,.28);border-color:rgba(81,226,154,.65)}
+.hidden{display:none!important}

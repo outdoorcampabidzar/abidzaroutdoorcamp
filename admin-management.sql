@@ -1,5 +1,5 @@
 -- AbidzarOutdoorcamp - Pengelolaan akun administrator
--- Jalankan setelah backup.txt.
+-- Jalankan setelah sql/BACKUP-SELURUH-DATABASE.sql.
 
 -- Kompatibilitas untuk database versi lama.
 alter table public.profiles

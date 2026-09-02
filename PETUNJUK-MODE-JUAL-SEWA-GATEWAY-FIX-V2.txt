@@ -1,0 +1,26 @@
+PERBAIKAN V2 - MODE JUAL / SEWA
+
+- Sewa mengambil item_price_tiers sesuai durasi/varian, atau items.price.
+- Jual mengambil items.sale_price.
+- Saat mode dipindah, harga, subtotal, label, tombol, catatan, dan gateway ikut berubah.
+- Detail item, cart, dan payment.html menampilkan mode + metode pembayaran.
+- create_order menghitung ulang harga dari database berdasarkan fulfillment_type.
+- Checkout menolak campuran Jual + Sewa.
+- BTZPay memilih API key berdasarkan mode:
+  Jual -> BTZPAY_API_KEY_SALE
+  Sewa -> BTZPAY_API_KEY_RENTAL
+  fallback -> BTZPAY_API_KEY
+
+KENAPA SCREENSHOT SEBELUMNYA MASIH Rp1.000?
+Screenshot menunjukkan Harga Sewa Rp1.000 dan Harga Jual Rp1.000. Itu berarti
+items.price dan items.sale_price di database memang sama. Program tidak boleh
+mengarang harga jual baru.
+
+Untuk membuktikan perpindahan mode pada item "test", jalankan TEST-MODE-JUAL-SEWA.sql.
+Setelah SQL dijalankan:
+  Sewa = Rp1.000 / hari
+  Jual = Rp5.000 / unit
+  Gateway Sewa = QRIS Orkut
+  Gateway Jual = QRIS Dana
+
+Sesudah SQL, lakukan reload/refresh halaman item.

@@ -64,7 +64,10 @@ begin
     'whatsapp_number',regexp_replace(coalesce(p_settings->>'whatsapp_number',''),'[^0-9]','','g'),
     'admin_1_whatsapp',regexp_replace(coalesce(p_settings->>'admin_1_whatsapp',''),'[^0-9]','','g'),
     'admin_2_whatsapp',regexp_replace(coalesce(p_settings->>'admin_2_whatsapp',''),'[^0-9]','','g'),
-    'admin_3_whatsapp',regexp_replace(coalesce(p_settings->>'admin_3_whatsapp',''),'[^0-9]','','g')
+    'admin_3_whatsapp',regexp_replace(coalesce(p_settings->>'admin_3_whatsapp',''),'[^0-9]','','g'),
+    'payment_method_rental',case when coalesce(p_settings->>'payment_method_rental','') in ('qrisorkut','qrisdana','qrisgopay','qrisshopeepay') then p_settings->>'payment_method_rental' else 'qrisorkut' end,
+    'payment_method_sale',case when coalesce(p_settings->>'payment_method_sale','') in ('qrisorkut','qrisdana','qrisgopay','qrisshopeepay') then p_settings->>'payment_method_sale' else 'qrisdana' end,
+    'payment_method',case when coalesce(p_settings->>'payment_method','') in ('qrisorkut','qrisdana','qrisgopay','qrisshopeepay') then p_settings->>'payment_method' else coalesce(p_settings->>'payment_method_rental','qrisorkut') end
   );
   insert into public.site_settings(id,settings,updated_at,updated_by)
   values('main',v_settings,now(),auth.uid())

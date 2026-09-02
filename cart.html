@@ -29,6 +29,7 @@
           <div class="nav-primary">
             <a class="nav-link" href="index.html">Beranda</a>
             <a class="nav-link" href="rental.html">Sewa Item</a>
+            <a class="nav-link" href="sale.html">Jual Item</a>
             <a class="nav-link" href="trips.html">Open Trip</a>
           </div>
 
@@ -370,7 +371,7 @@
             <label class="field"
               ><span>Catatan pesanan</span
               ><textarea class="input" name="customer_notes"></textarea></label
-            ><label
+            ><div id="paymentModeInfo" class="notice" style="margin-top:12px"></div><label
               ><input type="checkbox" required /> Data yang saya isi benar dan
               boleh digunakan untuk memproses pesanan.</label
             ><button id="checkout" class="btn">Buat Pesanan</button>
@@ -402,6 +403,21 @@
         discount = 0,
         user = null,
         siteSettings = null;
+
+      // Migrasi keranjang lama ke format JUAL/SEWA V3. Produk lama dianggap
+      // rental karena versi sebelumnya memang hanya menyediakan sewa.
+      cart.forEach((entry) => {
+        if (!entry.fulfillment_type)
+          entry.fulfillment_type = entry.type === "trip" ? "trip" : "rental";
+        if (entry.sale_price == null) entry.sale_price = Number(entry.fulfillment_type === "sale" ? entry.price : 0);
+        if (entry.rental_price == null) entry.rental_price = Number(entry.fulfillment_type === "rental" ? entry.price : 0);
+        if (entry.type === "product") {
+          const modePrice = entry.fulfillment_type === "sale" ? entry.sale_price : entry.rental_price;
+          if (Number.isFinite(Number(modePrice)) && Number(modePrice) > 0) entry.price = Number(modePrice);
+          entry.cart_key = `${entry.item_id}:${entry.variant_id || "default"}:${entry.fulfillment_type}`;
+        }
+      });
+
       // Migrasi keranjang lama: pilih otomatis varian pertama yang masih tersedia.
       cart.forEach((entry) => {
         if (entry.type !== "product" || entry.variant_id || !(entry.variants || []).length) return;
@@ -414,7 +430,7 @@
         entry.quantity = Math.min(Number(entry.quantity || 1), Math.max(1, entry.max_quantity));
       });
       saveCart(cart);
-      const hasRental = () => cart.some((x) => x.type === "product");
+      const hasRental = () => cart.some((x) => x.type === "product" && x.fulfillment_type === "rental");
       const parseDate = (value) =>
         value ? new Date(`${value}T00:00:00`) : null;
       const dateInputValue = (date) => {
@@ -439,6 +455,7 @@
       };
       const rentalUnitPrice = (item, days = rentalDays()) => {
         if (item.type !== "product") return Number(item.price);
+        if (item.fulfillment_type === "sale") return Number(item.sale_price ?? item.price);
         const tiers = item.price_tiers || [];
         const tier =
           tiers.find(
@@ -482,7 +499,7 @@
         document.getElementById("list").innerHTML = cart
           .map(
             (x) =>
-              `<article class="card cart-item"><img src="${esc(x.image_url)}"><div><span class="badge">${x.type === "trip" ? "Open Trip" : "Sewa Item"}</span><h3>${esc(x.title)}</h3>${x.variant_name ? `<p><b>Ukuran/Kapasitas:</b> ${esc(x.variant_name)}</p>` : ""}<p class="muted">${x.type === "product" ? "Harga per hari" : "Harga per peserta"}: ${rupiah(x.price)}</p>${x.requires_guarantee ? "<small>🔐 Jaminan wajib</small>" : ""}${Number(x.deposit || 0) ? `<small> · Deposit ${rupiah(x.deposit)} / unit</small>` : ""}</div><div class="cart-item-calculation"><label class="field"><span>Jumlah ${x.type === "trip" ? "peserta" : "unit"}</span><input class="input" data-q="${esc(x.cart_key || `${x.item_id}:default`)}" type="number" min="1" max="${x.max_quantity}" value="${x.quantity}"></label><div class="cart-line-formula">${x.type === "product" && (x.price_tiers || []).some((tier) => Number(tier.duration_days) === days) ? `Paket ${days} hari ${rupiah(rentalUnitPrice(x, days))}` : `${rupiah(x.price)} × ${x.quantity}${x.type === "product" ? ` × ${days} hari` : ""}`}</div><div class="cart-line-total"><span>Subtotal item</span><b>${rupiah(rentalUnitPrice(x, days) * x.quantity)}</b></div><button class="btn danger small" data-r="${esc(x.cart_key || `${x.item_id}:default`)}">Hapus</button></div></article>`,
+              `<article class="card cart-item"><img src="${esc(x.image_url)}"><div><span class="badge">${x.type === "trip" ? "Open Trip" : x.fulfillment_type === "sale" ? "Jual / Beli" : "Sewa Item"}</span><h3>${esc(x.title)}</h3>${x.variant_name ? `<p><b>Ukuran/Kapasitas:</b> ${esc(x.variant_name)}</p>` : ""}<p class="muted">${x.type === "trip" ? "Harga per peserta" : x.fulfillment_type === "sale" ? "Harga jual per unit" : "Harga sewa per hari"}: ${rupiah(x.price)}</p>${x.requires_guarantee && x.fulfillment_type === "rental" ? "<small>🔐 Jaminan wajib</small>" : ""}${Number(x.deposit || 0) && x.fulfillment_type === "rental" ? `<small> · Deposit ${rupiah(x.deposit)} / unit</small>` : ""}</div><div class="cart-item-calculation"><label class="field"><span>Jumlah ${x.type === "trip" ? "peserta" : "unit"}</span><input class="input" data-q="${esc(x.cart_key || `${x.item_id}:default`)}" type="number" min="1" max="${x.max_quantity}" value="${x.quantity}"></label><div class="cart-line-formula">${x.type === "product" && x.fulfillment_type === "rental" && (x.price_tiers || []).some((tier) => Number(tier.duration_days) === days) ? `Paket ${days} hari ${rupiah(rentalUnitPrice(x, days))}` : `${rupiah(x.price)} × ${x.quantity}${x.type === "product" && x.fulfillment_type === "rental" ? ` × ${days} hari` : ""}`}</div><div class="cart-line-total"><span>Subtotal item</span><b>${rupiah(rentalUnitPrice(x, days) * x.quantity)}</b></div><button class="btn danger small" data-r="${esc(x.cart_key || `${x.item_id}:default`)}">Hapus</button></div></article>`,
           )
           .join("");
         document.querySelectorAll("[data-q]").forEach(
@@ -512,6 +529,20 @@
         document.getElementById("subtotal").textContent = rupiah(subtotal());
         document.getElementById("discount").textContent = rupiah(discount);
         document.getElementById("total").textContent = rupiah(total());
+        const productModes = new Set(cart.filter((x) => x.type === "product").map((x) => x.fulfillment_type));
+        const paymentMode = productModes.has("sale") && !productModes.has("rental") ? "sale" : "rental";
+        const paymentMethod = paymentMode === "sale"
+          ? (siteSettings?.payment_method_sale || siteSettings?.payment_method || "qrisdana")
+          : (siteSettings?.payment_method_rental || siteSettings?.payment_method || "qrisorkut");
+        const paymentMethodLabels = { qrisorkut: "QRIS Orkut", qrisdana: "QRIS Dana", qrisgopay: "QRIS GoPay", qrisshopeepay: "QRIS ShopeePay" };
+        const gatewayInfo = document.getElementById("paymentModeInfo");
+        if (gatewayInfo) {
+          const mixed = productModes.has("sale") && productModes.has("rental");
+          gatewayInfo.innerHTML = mixed
+            ? "⚠️ Keranjang tidak boleh mencampur <b>Jual</b> dan <b>Sewa</b>, karena harga dan gateway pembayaran berbeda. Pisahkan menjadi dua pesanan."
+            : `💳 Mode <b>${paymentMode === "sale" ? "Jual" : "Sewa"}</b> menggunakan <b>${paymentMethodLabels[paymentMethod] || paymentMethod}</b>.`;
+          gatewayInfo.classList.toggle("error", mixed);
+        }
         const required = cart.some((x) => x.requires_guarantee);
         document.getElementById("guaranteeInfo").textContent = required
           ? "Salah satu item memerlukan jaminan. Isi jenis dan rinciannya."
@@ -698,7 +729,7 @@
         if (failed?.error) {
           return message(
             box,
-            "Pemeriksaan jadwal belum aktif. Jalankan rental-calendar.sql.",
+            "Pemeriksaan ketersediaan rental gagal. Silakan coba lagi beberapa saat lagi.",
             "error",
           );
         }
@@ -775,6 +806,10 @@
             );
           }
         }
+        const productModesForCheckout = new Set(cart.filter((x) => x.type === "product").map((x) => x.fulfillment_type));
+        if (productModesForCheckout.has("sale") && productModesForCheckout.has("rental")) {
+          return message(document.getElementById("msg"), "Pisahkan pesanan Jual dan Sewa. Keduanya memakai harga serta gateway pembayaran yang berbeda.", "error");
+        }
         const customer = {
           full_name: v.full_name,
           phone: v.phone,
@@ -792,6 +827,7 @@
           item_id: x.item_id,
           quantity: x.quantity,
           variant_id: x.variant_id || null,
+          fulfillment_type: x.fulfillment_type || (x.type === "trip" ? "trip" : "rental"),
           trip_date:
             x.type === "trip" ? x.requested_trip_date || null : null,
         }));
@@ -823,15 +859,16 @@
           `Nomor ${data.order_number}, total ${rupiah(data.total)}.`;
         const itemLines = ordered
           .map((x, index) => {
-            const lineTotal =
-              Number(x.price) *
-              Number(x.quantity) *
-              (x.type === "product" ? Number(data.rental_days || 1) : 1);
+            const lineUnitPrice =
+              x.type === "product"
+                ? rentalUnitPrice(x, Number(data.rental_days || 1))
+                : Number(x.price);
+            const lineTotal = lineUnitPrice * Number(x.quantity);
             const detail = [
               `${index + 1}. *${x.title}*`,
               `   Jumlah : ${x.quantity} ${x.type === "trip" ? "peserta" : "unit"}`,
-              `   Harga  : ${rupiah(x.price)}`,
-              ...(x.type === "product"
+              `   Harga  : ${rupiah(lineUnitPrice)}`,
+              ...(x.fulfillment_type === "rental"
                 ? [`   Durasi : ${data.rental_days} hari`]
                 : []),
               `   Total  : ${rupiah(lineTotal)}`,

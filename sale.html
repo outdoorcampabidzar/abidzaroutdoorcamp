@@ -7,8 +7,8 @@
       content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
     <meta name="theme-color" content="#050d17" />
-    <title>Sewa Item — AbidzarOutdoorcamp</title>
-    <meta name="description" content="Sewa Item AbidzarOutdoorcamp" />
+    <title>Jual Item — AbidzarOutdoorcamp</title>
+    <meta name="description" content="Jual Item AbidzarOutdoorcamp" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -29,8 +29,8 @@
         <div class="nav-menu" data-nav-menu>
           <div class="nav-primary">
             <a class="nav-link" href="index.html">Beranda</a>
-            <a class="nav-link active" href="rental.html">Sewa Item</a>
-            <a class="nav-link" href="sale.html">Jual Item</a>
+            <a class="nav-link" href="rental.html">Sewa Item</a>
+            <a class="nav-link active" href="sale.html">Jual Item</a>
             <a class="nav-link" href="trips.html">Open Trip</a>
           </div>
 
@@ -188,15 +188,15 @@
       <section class="catalog-page-hero">
         <div class="container">
           <div class="kicker">KATALOG PERLENGKAPAN</div>
-          <h1>Sewa perlengkapan outdoor.</h1>
+          <h1>Jual perlengkapan outdoor.</h1>
           <p class="muted">
             Pilih perlengkapan, tentukan jumlah unit, lalu masukkan ke
-            keranjang. Item sewa dapat digabungkan dengan open trip.
+            keranjang. Item jual dapat digabungkan dengan open trip.
           </p>
 
           <div class="catalog-switcher">
-            <a class="btn" href="rental.html"> 🎒 Sewa Item </a>
-            <a class="btn secondary" href="sale.html"> 🛒 Jual Item </a>
+            <a class="btn" href="sale.html"> 🛒 Jual Item </a>
+            <a class="btn secondary" href="rental.html"> 🎒 Sewa Item </a>
             <a class="btn secondary" href="trips.html"> 🏔️ Open Trip </a>
           </div>
         </div>
@@ -205,7 +205,7 @@
       <section class="container section">
         <div class="row catalog-section-heading">
           <div>
-            <h2>Sewa Item</h2>
+            <h2>Jual Item</h2>
             <p class="muted">
               Pilih jumlah, lihat subtotal item, lalu tambahkan ke keranjang.
             </p>
@@ -218,7 +218,7 @@
 
         <section
           class="catalog-filter-panel"
-          aria-label="Filter katalog item sewa"
+          aria-label="Filter katalog item jual"
         >
           <label class="field catalog-search-field">
             <span>Cari perlengkapan</span>
@@ -271,7 +271,7 @@
 
       mountCatalog({
         type: "product",
-        mode: "rental",
+        mode: "sale",
         gridId: "catalogGrid",
         messageId: "catalogMsg",
       });

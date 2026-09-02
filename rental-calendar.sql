@@ -1,5 +1,5 @@
 -- AbidzarOutdoorcamp - Sistem Penyewaan Berdasarkan Tanggal
--- Jalankan SETELAH backup.txt dan site-settings.sql.
+-- Jalankan SETELAH sql/BACKUP-SELURUH-DATABASE.sql dan site-settings.sql.
 
 alter table public.orders add column if not exists rental_start date;
 alter table public.orders add column if not exists rental_end date;

@@ -16,15 +16,16 @@ function availableQuantity(item) {
   );
 }
 
-function catalogLabel(item) {
-  return item.type === "trip" ? "Open Trip" : "Sewa Item";
+function catalogLabel(item, mode = "rental") {
+  if (item.type === "trip") return "Open Trip";
+  return mode === "sale" ? "Jual Item" : "Sewa Item";
 }
 
 function unitLabel(item) {
   return item.type === "trip" ? "peserta" : "unit";
 }
 
-function renderCard(item) {
+function renderCard(item, mode = "rental") {
   const tripDetail = Array.isArray(item.trip_details)
     ? item.trip_details[0] || {}
     : item.trip_details || {};
@@ -40,7 +41,7 @@ function renderCard(item) {
 
       <div class="body">
         <div class="row">
-          <span class="badge">${esc(item.item_categories?.name || catalogLabel(item))}</span>
+          <span class="badge">${esc(item.item_categories?.name || catalogLabel(item, mode))}</span>
           <span class="${available > 0 ? "stock-available" : "stock-empty"}">
             ${available > 0 ? availability : "Tidak tersedia"}
           </span>
@@ -86,12 +87,12 @@ function renderCard(item) {
         }
 
         <div class="item-unit-price">
-          <span>${item.type === "trip" ? "Harga per peserta" : "Harga sewa per unit / hari"}</span>
-          <b>${rupiah(item.price)}</b>
+          <span>${item.type === "trip" ? "Harga per peserta" : mode === "sale" ? "Harga jual per unit" : "Harga sewa per unit / hari"}</span>
+          <b>${rupiah(item.type === "trip" || mode !== "sale" ? item.price : item.sale_price)}</b>
         </div>
 
         <div class="actions item-order-actions catalog-detail-action">
-          <a class="btn" href="item.html?slug=${encodeURIComponent(item.slug)}">
+          <a class="btn" href="item.html?slug=${encodeURIComponent(item.slug)}&mode=${encodeURIComponent(mode)}">
             Detail
           </a>
         </div>
@@ -101,7 +102,7 @@ function renderCard(item) {
 
 function bindCatalogEvents() {}
 
-export async function mountCatalog({ type, gridId, messageId, limit = null }) {
+export async function mountCatalog({ type, gridId, messageId, limit = null, mode = type === "trip" ? "trip" : "rental" }) {
   const grid = document.getElementById(gridId);
   const messageElement = document.getElementById(messageId);
 
@@ -126,26 +127,31 @@ export async function mountCatalog({ type, gridId, messageId, limit = null }) {
     return;
   }
 
-  const items = data || [];
+  let items = data || [];
+  if (type === "product") {
+    items = items.filter((item) =>
+      mode === "sale" ? Boolean(item.sale_enabled) : item.rental_enabled !== false,
+    );
+  }
 
   if (!items.length) {
     grid.innerHTML = `
       <div class="notice">
-        Belum ada ${type === "trip" ? "open trip" : "item sewa"} yang aktif.
+        Belum ada ${type === "trip" ? "open trip" : mode === "sale" ? "item jual" : "item sewa"} yang aktif.
       </div>`;
     return;
   }
 
   if (type === "product" && document.getElementById("catalogSearch")) {
-    mountRentalFilters(items, grid);
+    mountRentalFilters(items, grid, mode);
     return;
   }
 
-  grid.innerHTML = items.map(renderCard).join("");
+  grid.innerHTML = items.map((item) => renderCard(item, mode)).join("");
   bindCatalogEvents(items, grid);
 }
 
-function mountRentalFilters(items, grid) {
+function mountRentalFilters(items, grid, mode = "rental") {
   const search = document.getElementById("catalogSearch");
   const category = document.getElementById("catalogCategory");
   const sort = document.getElementById("catalogSort");
@@ -195,8 +201,8 @@ function mountRentalFilters(items, grid) {
     });
 
     filtered = [...filtered].sort((a, b) => {
-      if (sort.value === "price-low") return Number(a.price) - Number(b.price);
-      if (sort.value === "price-high") return Number(b.price) - Number(a.price);
+      if (sort.value === "price-low") return Number(mode === "sale" ? a.sale_price : a.price) - Number(mode === "sale" ? b.sale_price : b.price);
+      if (sort.value === "price-high") return Number(mode === "sale" ? b.sale_price : b.price) - Number(mode === "sale" ? a.sale_price : a.price);
       if (sort.value === "name") return a.title.localeCompare(b.title, "id");
       if (sort.value === "stock")
         return availableQuantity(b) - availableQuantity(a);

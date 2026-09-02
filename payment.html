@@ -82,6 +82,14 @@
       function render(order) {
         clearInterval(timer);
         clearInterval(poller);
+        const productModes = new Set((order.order_items || [])
+          .filter((line) => line.item_type === "product")
+          .map((line) => String(line.fulfillment_type || "rental").toLowerCase()));
+        const paymentMode = productModes.has("sale") ? "sale" : "rental";
+        const paymentLabels = { qrisorkut: "QRIS Orkut", qrisdana: "QRIS Dana", qrisgopay: "QRIS GoPay", qrisshopeepay: "QRIS ShopeePay" };
+        const configuredMethod = paymentMode === "sale"
+          ? (settings?.payment_method_sale || settings?.payment_method || "qrisdana")
+          : (settings?.payment_method_rental || settings?.payment_method || "qrisorkut");
         const status = payment.status;
         const active = status === "pending";
         card.innerHTML = `
@@ -91,6 +99,7 @@
           <span class="payment-status payment-status-${esc(status)}">${labels[status] || esc(status)}</span>
         </div>
         <div class="payment-amount"><span>Total pembayaran</span><strong>${rupiah(payment.total_amount)}</strong></div>
+        <div class="notice">Mode <b>${paymentMode === "sale" ? "Jual" : "Sewa"}</b> · Gateway <b>${esc(paymentLabels[configuredMethod] || configuredMethod)}</b></div>
         ${active ? `<div class="payment-countdown"><span>Selesaikan pembayaran dalam</span><strong id="countdown">--:--</strong></div>` : ""}
         <div class="data-grid payment-data">
           <div class="data"><b>ID Transaksi</b><br>${esc(payment.gateway_transaction_id)}</div>

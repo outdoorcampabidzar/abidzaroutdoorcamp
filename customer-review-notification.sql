@@ -1,5 +1,5 @@
 -- AbidzarOutdoorcamp - Pelanggan, moderasi ulasan, dan notifikasi
--- Jalankan setelah backup.txt, rental-calendar.sql, dan order-management.sql.
+-- Jalankan setelah sql/BACKUP-SELURUH-DATABASE.sql, rental-calendar.sql, dan order-management.sql.
 
 alter table public.profiles add column if not exists is_verified boolean not null default false;
 alter table public.profiles add column if not exists internal_notes text;

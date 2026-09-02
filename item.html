@@ -29,6 +29,7 @@
           <div class="nav-primary">
             <a class="nav-link" href="index.html">Beranda</a>
             <a class="nav-link" href="rental.html">Sewa Item</a>
+            <a class="nav-link" href="sale.html">Jual Item</a>
             <a class="nav-link" href="trips.html">Open Trip</a>
           </div>
 
@@ -184,11 +185,83 @@
 
     <main id="root" class="container detail">Memuat...</main>
     <script type="module">
-      import { supabase, rupiah, esc, addCart, message } from "./app.js";
+      import { supabase, rupiah, esc, addCart, message, loadSiteSettings } from "./app.js";
 
-      const slug = new URLSearchParams(location.search).get("slug");
+      const params = new URLSearchParams(location.search);
+      const slug = params.get("slug");
+      let mode = params.get("mode") || "rental";
       const root = document.getElementById("root");
       let item = null;
+      let siteSettings = null;
+
+      function modeLabel() {
+        if (item?.type === "trip" || mode === "trip") return "Open Trip";
+        return mode === "sale" ? "Jual" : "Sewa";
+      }
+
+      function effectiveMode() {
+        return item?.type === "trip" ? "trip" : (mode === "sale" ? "sale" : "rental");
+      }
+
+      function refreshModeUI() {
+        if (!item || item.type === "trip") return;
+        const current = effectiveMode();
+        const price = unitPrice();
+        const quantity = currentQuantity();
+        const priceLabel = document.getElementById("detailPriceLabel");
+        const priceEl = document.getElementById("unitPrice");
+        const subtotalEl = document.getElementById("itemSubtotal");
+        const addButton = document.getElementById("add");
+        const orderButton = document.getElementById("order");
+        const note = document.getElementById("detailOrderNote");
+        const tiersSection = document.getElementById("rentalPriceTiers");
+        const rentalBtn = document.getElementById("modeRentalBtn");
+        const saleBtn = document.getElementById("modeSaleBtn");
+        const modeBadge = document.getElementById("modeBadge");
+        const gatewayInfo = document.getElementById("modeGatewayInfo");
+        const paymentMethod = current === "sale"
+          ? (siteSettings?.payment_method_sale || siteSettings?.payment_method || "qrisdana")
+          : (siteSettings?.payment_method_rental || siteSettings?.payment_method || "qrisorkut");
+        const paymentLabels = { qrisorkut: "QRIS Orkut", qrisdana: "QRIS Dana", qrisgopay: "QRIS GoPay", qrisshopeepay: "QRIS ShopeePay" };
+
+        if (priceLabel) priceLabel.textContent = current === "sale" ? "Harga jual per unit" : "Harga sewa per unit / hari";
+        if (priceEl) priceEl.textContent = rupiah(price);
+        if (subtotalEl) subtotalEl.textContent = rupiah(price * quantity);
+        if (addButton) addButton.textContent = `+ Tambah ${current === "sale" ? "Jual" : "Sewa"} ke Keranjang`;
+        if (orderButton) orderButton.textContent = current === "sale" ? "Beli Sekarang" : "Pesan Sewa";
+        if (note) note.innerHTML = current === "sale"
+          ? "Pilihan jual akan ditambahkan ke keranjang. <b>Stok fisik berkurang saat pembayaran berhasil.</b>"
+          : "Pilihan sewa akan ditambahkan ke keranjang. <b>Stok fisik tidak berkurang; ketersediaan mengikuti tanggal rental.</b>";
+        if (tiersSection) tiersSection.classList.toggle("hidden", current !== "rental");
+        if (modeBadge) modeBadge.textContent = current === "sale" ? "🛒 Mode Jual" : "🎒 Mode Sewa";
+        if (gatewayInfo) gatewayInfo.innerHTML = `💳 Gateway <b>${current === "sale" ? "Jual" : "Sewa"}</b>: <b>${esc(paymentLabels[paymentMethod] || paymentMethod)}</b>`;
+        if (rentalBtn) {
+          rentalBtn.classList.toggle("active", current === "rental");
+          rentalBtn.setAttribute("aria-pressed", String(current === "rental"));
+        }
+        if (saleBtn) {
+          saleBtn.classList.toggle("active", current === "sale");
+          saleBtn.setAttribute("aria-pressed", String(current === "sale"));
+        }
+        updateVariantInterface();
+        const next = new URL(location.href);
+        next.searchParams.set("mode", current);
+        history.replaceState(null, "", next);
+      }
+
+      function setMode(nextMode) {
+        if (!item || item.type !== "product") return;
+        if (nextMode === "sale" && !item.sale_enabled) {
+          message(document.getElementById("msg"), "Mode jual untuk item ini sedang dinonaktifkan.", "error");
+          return;
+        }
+        if (nextMode === "rental" && item.rental_enabled === false) {
+          message(document.getElementById("msg"), "Mode sewa untuk item ini sedang dinonaktifkan.", "error");
+          return;
+        }
+        mode = nextMode;
+        refreshModeUI();
+      }
 
       function availableQuantity() {
         const variant = selectedVariant();
@@ -212,6 +285,8 @@
       }
 
       function unitPrice() {
+        if (item?.type === "trip") return Number(item.price || 0);
+        if (mode === "sale") return Number(item?.sale_price || 0);
         const variantId = selectedVariant()?.id || null;
         const tier = (item?.item_price_tiers || []).find(
           (entry) => Number(entry.duration_days) === 1 &&
@@ -305,12 +380,22 @@
         }
 
         item = data;
+        siteSettings = await loadSiteSettings(true);
+        if (item.type === "trip") mode = "trip";
+        if (item.type === "product" && mode === "sale" && !item.sale_enabled) {
+          root.innerHTML = '<div class="notice error">Penjualan item ini sedang dinonaktifkan.</div>';
+          return;
+        }
+        if (item.type === "product" && mode !== "sale" && item.rental_enabled === false) {
+          root.innerHTML = '<div class="notice error">Penyewaan item ini sedang dinonaktifkan.</div>';
+          return;
+        }
         const tripDetail = Array.isArray(item.trip_details)
           ? item.trip_details[0] || {}
           : item.trip_details || {};
         const available = availableQuantity();
         const unitName = item.type === "trip" ? "peserta" : "unit";
-        const priceUnit = item.type === "trip" ? "peserta" : "unit / hari";
+        const priceUnit = item.type === "trip" ? "peserta" : mode === "sale" ? "unit" : "unit / hari";
 
         const gallery = (item.item_images || []).sort(
           (a, b) => a.sort_order - b.sort_order,
@@ -362,13 +447,14 @@
 
           ${(item.item_variants || []).length ? `<section class="detail-options"><label class="field"><span>Ukuran / Kapasitas *</span><select id="variantSelect" class="input">${item.item_variants.filter((variant) => variant.is_active !== false).map((variant) => `<option value="${variant.id}" ${Number(variant.stock) < 1 ? "disabled" : ""}>${esc(variant.name)}${variant.capacity ? ` · ${esc(variant.capacity)}` : ""} — ${Number(variant.stock)} unit tersedia</option>`).join("")}</select></label></section>` : ""}
 
-          ${(item.item_price_tiers || []).length ? `<section class="detail-options"><h3>Harga Paket</h3><div id="variantPriceTiers" class="price-tier-list"></div></section>` : ""}
+          ${(item.item_price_tiers || []).length ? `<section id="rentalPriceTiers" class="detail-options ${mode === "sale" ? "hidden" : ""}"><h3>Harga Paket Sewa</h3><div id="variantPriceTiers" class="price-tier-list"></div></section>` : ""}
 
           <div class="detail-order-panel">
             <div class="detail-price-row">
               <div>
-                <span class="muted">Harga per ${priceUnit}</span>
-                <div id="unitPrice" class="price">${rupiah(item.price)}</div>
+                <span id="detailPriceLabel" class="muted">${mode === "sale" ? "Harga jual per unit" : `Harga sewa per unit / hari`}</span>
+                <div id="unitPrice" class="price">${rupiah(unitPrice())}</div>
+                ${item.type === "product" ? `<div id="modeGatewayInfo" class="notice" style="margin-top:12px"></div>` : ""}
               </div>
 
               <label class="field detail-quantity-field">
@@ -392,18 +478,19 @@
 
             <div class="actions detail-order-actions">
               <button id="add" class="btn secondary" ${available < 1 ? "disabled" : ""}>
-                + Tambah ke Keranjang
+                + Tambah ${modeLabel()} ke Keranjang
               </button>
 
               <button id="order" class="btn" ${available < 1 ? "disabled" : ""}>
-                Pesan Item
+                ${mode === "sale" ? "Beli Sekarang" : mode === "trip" ? "Daftar Sekarang" : "Pesan Sewa"}
               </button>
             </div>
 
-            <p class="muted detail-order-note">
-              Pesan Item akan menambahkan pilihan ini ke keranjang yang sudah ada,
-              lalu membuka halaman checkout.
+            <p id="detailOrderNote" class="muted detail-order-note">
+              Pilihan ${modeLabel().toLowerCase()} akan ditambahkan ke keranjang yang sudah ada, lalu membuka halaman checkout.
             </p>
+
+            ${item.type === "product" ? `<div class="mode-switch" role="group" aria-label="Pilih mode transaksi"><span id="modeBadge" class="mode-current">${mode === "sale" ? "🛒 Mode Jual" : "🎒 Mode Sewa"}</span><button id="modeRentalBtn" type="button" class="btn secondary small ${mode === "rental" ? "active" : ""}" aria-pressed="${mode === "rental"}">🎒 Sewa</button>${item.sale_enabled ? `<button id="modeSaleBtn" type="button" class="btn secondary small ${mode === "sale" ? "active" : ""}" aria-pressed="${mode === "sale"}">🛒 Jual</button>` : ""}</div>` : ""}
           </div>
 
           <div id="msg" class="notice hidden" style="margin-top:14px"></div>
@@ -430,10 +517,12 @@
           updateVariantInterface,
         );
         updateVariantInterface();
+        document.getElementById("modeRentalBtn")?.addEventListener("click", () => setMode("rental"));
+        document.getElementById("modeSaleBtn")?.addEventListener("click", () => setMode("sale"));
 
         document.getElementById("add")?.addEventListener("click", () => {
           const quantity = currentQuantity();
-          addCart(item, quantity, false, selectedVariant());
+          addCart(item, quantity, false, selectedVariant(), mode, unitPrice());
           message(
             document.getElementById("msg"),
             `${quantity} ${unitName} ditambahkan ke keranjang.`,
@@ -445,7 +534,7 @@
           const quantity = currentQuantity();
 
           // Tetap menambah ke keranjang lama, bukan menggantinya.
-          addCart(item, quantity, false, selectedVariant());
+          addCart(item, quantity, false, selectedVariant(), mode, unitPrice());
           location.href = "cart.html";
         });
       }

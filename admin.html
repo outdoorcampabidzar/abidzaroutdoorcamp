@@ -29,6 +29,7 @@
           <div class="nav-primary">
             <a class="nav-link" href="index.html">Beranda</a>
             <a class="nav-link" href="rental.html">Sewa Item</a>
+            <a class="nav-link" href="sale.html">Jual Item</a>
             <a class="nav-link" href="trips.html">Open Trip</a>
           </div>
 
@@ -1041,8 +1042,8 @@
             </label>
             <div class="two admin-settings-grid">
               <label class="field">
-                <span>Metode pembayaran</span>
-                <select class="input" name="payment_method">
+                <span>Metode pembayaran — Mode Sewa</span>
+                <select class="input" name="payment_method_rental">
                   ${[
                     ["qrisorkut", "QRIS Orkut"],
                     ["qrisdana", "QRIS Dana"],
@@ -1051,7 +1052,23 @@
                   ]
                     .map(
                       ([value, label]) =>
-                        `<option value="${value}" ${siteSettings.payment_method === value ? "selected" : ""}>${label}</option>`,
+                        `<option value="${value}" ${siteSettings.payment_method_rental === value ? "selected" : ""}>${label}</option>`,
+                    )
+                    .join("")}
+                </select>
+              </label>
+              <label class="field">
+                <span>Metode pembayaran — Mode Jual</span>
+                <select class="input" name="payment_method_sale">
+                  ${[
+                    ["qrisorkut", "QRIS Orkut"],
+                    ["qrisdana", "QRIS Dana"],
+                    ["qrisgopay", "QRIS GoPay"],
+                    ["qrisshopeepay", "QRIS ShopeePay"],
+                  ]
+                    .map(
+                      ([value, label]) =>
+                        `<option value="${value}" ${siteSettings.payment_method_sale === value ? "selected" : ""}>${label}</option>`,
                     )
                     .join("")}
                 </select>
@@ -1059,7 +1076,7 @@
               ${settingInput("payment_timeout_minutes", "Batas pembayaran (menit)", { type: "number", min: 5, max: 60, hint: "BTZPay menerima maksimal 60 menit." })}
             </div>
             <div class="notice warning">
-              API key tidak disimpan di website. Simpan sebagai secret Edge Function bernama <b>BTZPAY_API_KEY</b>.
+              Gateway dapat dipisahkan per mode. Untuk benar-benar memakai gateway/API key berbeda, gunakan secret Edge Function <b>BTZPAY_API_KEY_RENTAL</b> untuk Sewa dan <b>BTZPAY_API_KEY_SALE</b> untuk Jual. Jika tidak diisi, keduanya memakai <b>BTZPAY_API_KEY</b>.
             </div>
           </section>
 
@@ -1321,6 +1338,9 @@
           price: 0,
           stock: 0,
           deposit: 0,
+          sale_price: 0,
+          sale_enabled: false,
+          rental_enabled: true,
           is_featured: false,
           sort_order: 0,
           requires_guarantee: true,
@@ -1475,6 +1495,18 @@
                 </label>
 
                 <label class="field">
+                  <span>Harga jual per unit</span>
+                  <input
+                    class="input"
+                    name="sale_price"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value="${Number(item.sale_price || 0)}"
+                  >
+                </label>
+
+                <label class="field">
                   <span>Jumlah stok *</span>
                   <input
                     class="input"
@@ -1489,6 +1521,24 @@
               </div>
 
               <div class="admin-check-grid">
+                <label class="admin-check">
+                  <input
+                    name="rental_enabled"
+                    type="checkbox"
+                    ${item.rental_enabled !== false ? "checked" : ""}
+                  >
+                  <span>Aktifkan sewa</span>
+                </label>
+
+                <label class="admin-check">
+                  <input
+                    name="sale_enabled"
+                    type="checkbox"
+                    ${item.sale_enabled ? "checked" : ""}
+                  >
+                  <span>Aktifkan jual</span>
+                </label>
+
                 <label class="admin-check">
                   <input
                     name="requires_guarantee"
@@ -1530,7 +1580,7 @@
               </label>
 
               <button id="saveRentalButton" class="btn" type="submit">
-                ${editingItem ? "Simpan Perubahan" : "Tambah Sewa Item"}
+                ${editingItem ? "Simpan Perubahan" : "Tambah Item"}
               </button>
             </form>
           </section>
@@ -1626,8 +1676,9 @@
             <p class="muted admin-clamp">${esc(item.description || "")}</p>
 
             <div class="admin-rental-summary">
-              <strong>${rupiah(item.price)}</strong>
+              <strong>Sewa ${rupiah(item.price)}</strong>
               <span>${Number(item.stock || 0)} stok</span>
+              ${item.sale_enabled ? `<span>Jual ${rupiah(item.sale_price || 0)}</span>` : ""}
             </div>
 
             <div class="inventory-status-pills">
@@ -2337,7 +2388,10 @@
           description: String(values.description || "").trim(),
           image_url: String(values.image_url || "").trim(),
           price: Number(values.price || 0),
+          sale_price: Number(values.sale_price || 0),
           stock: Number(values.stock || 0),
+          sale_enabled: formData.has("sale_enabled"),
+          rental_enabled: formData.has("rental_enabled"),
           category_id: categoryId,
           deposit: Number(values.deposit || 0),
           is_featured: formData.has("is_featured"),
@@ -2381,7 +2435,7 @@
         button.disabled = false;
         button.textContent = editingItem
           ? "Simpan Perubahan"
-          : "Tambah Sewa Item";
+          : "Tambah Item";
 
         if (error) {
           showAdminMessage(
@@ -3235,7 +3289,7 @@
               .map(
                 (line) => `
               <div class="order-line">
-                <span>${esc(line.title_snapshot)}${line.variant_name_snapshot ? ` · ${esc(line.variant_name_snapshot)}` : ""} × ${line.quantity}${line.item_type === "product" ? ` · Kembali ${Number(line.returned_quantity || 0)}/${line.quantity}` : ""}${line.item_type === "trip" && line.trip_date_snapshot ? ` · Tanggal peserta: ${new Date(line.trip_date_snapshot + "T00:00:00").toLocaleDateString("id-ID", { dateStyle: "long" })}` : ""}</span>
+                <span>${esc(line.title_snapshot)}${line.variant_name_snapshot ? ` · ${esc(line.variant_name_snapshot)}` : ""} × ${line.quantity}${line.item_type === "product" ? ` · ${line.fulfillment_type === "sale" ? "JUAL" : "SEWA"}${line.fulfillment_type === "rental" ? ` · Kembali ${Number(line.returned_quantity || 0)}/${line.quantity}` : ""}` : ""}${line.item_type === "trip" && line.trip_date_snapshot ? ` · Tanggal peserta: ${new Date(line.trip_date_snapshot + "T00:00:00").toLocaleDateString("id-ID", { dateStyle: "long" })}` : ""}</span>
                 <b>${rupiah(line.line_total)}</b>
               </div>
             `,
@@ -4032,10 +4086,20 @@
             activeTab = firstAllowedAdminTab();
           renderShell();
         } catch (error) {
+          const rawMessage = String(error?.message || "Admin panel gagal dimuat.");
+          const needsSaleRentalMigration =
+            /rental_enabled|sale_enabled|sale_price/i.test(rawMessage) &&
+            /schema cache|column/i.test(rawMessage);
+
           root.innerHTML = `
           <section class="container section">
             <div class="notice error">
-              ${esc(error.message || "Admin panel gagal dimuat.")}
+              ${needsSaleRentalMigration
+                ? `<b>Database belum menjalankan migrasi JUAL + SEWA V3.</b><br><br>
+                   Kolom <code>rental_enabled</code>, <code>sale_enabled</code>, atau <code>sale_price</code> belum tersedia pada tabel <code>items</code>.<br><br>
+                   Jalankan file <b>JUAL-SEWA-INVENTORY-FINAL.sql</b> melalui Supabase SQL Editor, lalu refresh halaman Admin. File tersebut juga melakukan reload schema cache Supabase.<br><br>
+                   <small>Error asli: ${esc(rawMessage)}</small>`
+                : esc(rawMessage)}
             </div>
           </section>`;
         }

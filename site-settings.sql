@@ -37,6 +37,8 @@ values ('main', jsonb_build_object(
   'rental_min_days', 1, 'rental_max_days', 30,
   'payment_enabled', false,
   'payment_method', 'qrisorkut',
+  'payment_method_rental', 'qrisorkut',
+  'payment_method_sale', 'qrisdana',
   'payment_timeout_minutes', 15,
   'late_fee_text', '', 'guarantee_policy', '',
   'cancellation_policy', '', 'refund_policy', '',

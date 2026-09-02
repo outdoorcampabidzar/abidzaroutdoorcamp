@@ -1,5 +1,5 @@
 -- AbidzarOutdoorcamp - Integrasi Pembayaran BTZPay
--- Jalankan setelah backup.txt, site-settings.sql, dan rental-calendar.sql.
+-- Jalankan setelah sql/BACKUP-SELURUH-DATABASE.sql, site-settings.sql, dan rental-calendar.sql.
 
 alter table public.orders add column if not exists payment_status text not null default 'unpaid';
 alter table public.orders add column if not exists paid_at timestamptz;

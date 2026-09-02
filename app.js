@@ -33,6 +33,8 @@ export const DEFAULT_SITE_SETTINGS = Object.freeze({
   rental_max_days: 30,
   payment_enabled: false,
   payment_method: "qrisorkut",
+  payment_method_rental: "qrisorkut",
+  payment_method_sale: "qrisdana",
   payment_timeout_minutes: 15,
   late_fee_text: "",
   guarantee_policy: "",
@@ -204,20 +206,37 @@ export function saveCart(cart) {
   updateCartBadge();
 }
 
-export function addCart(item, qty = 1, replace = false, selectedVariant = null) {
+export function addCart(
+  item,
+  qty = 1,
+  replace = false,
+  selectedVariant = null,
+  fulfillmentType = null,
+  priceOverride = null,
+) {
   const variant = selectedVariant?.id ? selectedVariant : null;
+  const mode = fulfillmentType || (item.type === "trip" ? "trip" : "rental");
+  const unitPrice =
+    priceOverride !== null && Number.isFinite(Number(priceOverride))
+      ? Number(priceOverride)
+      : mode === "sale"
+        ? Number(item.sale_price || 0)
+        : Number(item.price || 0);
   const max = Math.max(
     1,
     Number(item.type === "trip" ? item.quota : variant ? variant.stock : item.stock) || 0,
   );
-  const cartKey = `${item.id}:${variant?.id || "default"}`;
+  const cartKey = `${item.id}:${variant?.id || "default"}:${mode}`;
   const entry = {
     cart_key: cartKey,
     item_id: item.id,
     title: item.title,
-    price: Number(item.price),
+    price: unitPrice,
+    sale_price: Number(item.sale_price || 0),
+    rental_price: mode === "rental" ? unitPrice : Number(item.price || 0),
     image_url: item.image_url,
     type: item.type,
+    fulfillment_type: mode,
     trip_date: item.trip_date,
     location: item.location,
     quantity: Math.min(max, Math.max(1, Number(qty))),
@@ -229,6 +248,8 @@ export function addCart(item, qty = 1, replace = false, selectedVariant = null) 
     requires_guarantee: Boolean(item.requires_guarantee),
     guarantee_note: item.guarantee_note || "",
     deposit: Number(item.deposit || 0),
+    sale_enabled: Boolean(item.sale_enabled),
+    rental_enabled: item.rental_enabled !== false,
     variants: item.item_variants || [],
     price_tiers: item.item_price_tiers || [],
   };
