@@ -33,10 +33,10 @@ AKTIFKAN DARI ADMIN
 
 PEMBATALAN OTOMATIS
 Buat Supabase Cron yang memanggil setiap menit:
-  POST https://PROJECT_REF.supabase.co/functions/v1/btzpay
+  GET https://PROJECT_REF.supabase.co/functions/v1/btzpay/check-expiry
   Header: x-cron-secret: NILAI_BTZPAY_CRON_SECRET
   Header: Content-Type: application/json
-  Body: {"action":"expire"}
+  (tanpa body)
 
 Tanpa cron, halaman pembayaran tetap mengecek kedaluwarsa selama sedang dibuka
 dan callback BTZPay tetap diproses. Cron memastikan pesanan kedaluwarsa juga

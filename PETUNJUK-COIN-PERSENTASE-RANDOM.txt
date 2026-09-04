@@ -1,0 +1,29 @@
+SISTEM COIN DENGAN PERSENTASE RANDOM
+
+Default:
+- 1 coin = Rp1.000
+- Reward transaksi Sewa/Jual = persentase acak integer 10% sampai 100% dari nilai transaksi eligible setelah diskon.
+- Open Trip tidak menghasilkan coin.
+- Hasil random dihitung di PostgreSQL, bukan di browser.
+
+CARA INSTALL
+1. Backup database Supabase.
+2. Upload seluruh file website dari ZIP ini, menggantikan versi sebelumnya.
+3. Buka Supabase Dashboard > SQL Editor.
+4. Jalankan SQL fitur utama yang sebelumnya sudah digunakan jika database baru.
+5. Jalankan coin-shop.sql dari ZIP ini. File ini membuat/memperbarui kolom persentase dan fungsi coin.
+6. Jalankan access-security.sql.
+7. Jalankan SECURITY-HARDENING-COIN.sql PALING TERAKHIR.
+8. Refresh schema (SQL sudah mengirim NOTIFY pgrst).
+9. Login sebagai Super Admin > Admin > Coin Shop.
+10. Atur Persentase Minimum dan Maksimum. Default 10 dan 100.
+11. Tes order Sewa/Jual yang berhasil. Coin akan masuk satu kali per order.
+
+CONTOH
+Rp100.000 dengan random 37% => reward base Rp37.000 => 37 coin (karena dibulatkan ke bawah ke coin utuh).
+Rp500.000 dengan random 80% => Rp400.000 => 400 coin.
+
+CATATAN
+- Jika menjalankan coin-shop.sql pada database yang sudah berisi order berhasil yang belum punya reward coin, bagian backfill dapat memberikan coin dengan persentase random saat SQL dijalankan.
+- Order yang sudah pernah diberi coin tidak akan mendapat coin kedua kali karena unique index.
+- Jangan masukkan service role key atau secret payment ke frontend.

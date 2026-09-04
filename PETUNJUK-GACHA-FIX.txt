@@ -1,0 +1,29 @@
+PERBAIKAN COIN SHOP GACHA
+
+Masalah versi sebelumnya:
+- Modal gacha dapat terbuka tetapi teks/papan tampak putih.
+- Gacha memakai dua request database sehingga pilihan papan dan voucher dapat tidak sinkron.
+
+Versi ini:
+- Teks modal dibuat kontras dan terbaca di mode gelap.
+- Hanya 1 RPC: redeem_shop_reward.
+- Server memilih voucher, membuat voucher customer, memotong coin, lalu mengirim daftar isi papan + posisi pemenang.
+- Animasi papan berhenti tepat pada voucher yang diberikan.
+- Jika voucher belum tersedia, pesan error menjelaskan bahwa voucher aktif harus dibuat di Admin > Voucher.
+
+WAJIB:
+1. Buka Supabase SQL Editor.
+2. Jalankan file coin-shop.sql versi terbaru dari ZIP ini sampai selesai tanpa error.
+3. Pastikan ada minimal 1 voucher aktif di Admin > Voucher.
+   - is_active = aktif
+   - tanggal sekarang berada di antara mulai dan berakhir
+   - quota > used_count
+4. Pastikan hadiah Coin Shop aktif dan harga coin sesuai.
+5. Hard refresh browser / hapus cache preview lalu buka shop.html.
+
+CONTOH:
+Voucher HEMAT10, diskon 10%, quota 100, aktif.
+Customer punya 10 coin.
+Customer klik Tukar -> server memilih voucher -> coin dipotong -> papan berputar -> kode AOC-XXXXXXXXXX muncul.
+
+Jika setelah SQL dijalankan masih gagal, pesan merah di halaman Coin Shop sekarang akan menampilkan error database yang sebenarnya.

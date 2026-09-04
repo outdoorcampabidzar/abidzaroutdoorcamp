@@ -1,0 +1,4 @@
+-- KODE VOUCHER BARU MENGGUNAKAN PREFIX AOC-
+-- Jalankan coin-shop.sql / PATCH-GACHA-QUOTA.sql versi terbaru setelah patch ini.
+-- Patch ini tidak mengubah voucher lama yang sudah tersimpan.
+-- Contoh kode baru: AOC-1A2B3C4D5E

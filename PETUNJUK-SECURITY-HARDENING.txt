@@ -1,0 +1,32 @@
+ABIDZAROUTDOORCAMP - SECURITY HARDENING
+
+Tujuan:
+- Customer tidak dapat memanggil fungsi internal pemberian coin secara langsung.
+- Coin Shop hanya dapat dikelola oleh permission coinshop.manage / Super Admin.
+- Customer tetap hanya melihat saldo dan riwayat coin miliknya sendiri.
+- Gacha tetap dapat dipakai customer melalui redeem_shop_reward().
+
+URUTAN INSTALL SQL (PENTING):
+1. Backup database Supabase terlebih dahulu.
+2. Jalankan SQL fitur utama seperti sebelumnya:
+   - JUAL-SEWA-INVENTORY-FINAL.sql
+   - voucher-management.sql
+   - coin-shop.sql
+   - SQL fitur lain yang memang digunakan project.
+3. Jalankan access-security.sql PALING AKHIR untuk security/RLS utama.
+4. SETELAH access-security.sql selesai, jalankan:
+   SECURITY-HARDENING-COIN.sql
+
+Jangan menjalankan SECURITY-HARDENING-COIN.sql sebelum access-security.sql.
+
+SETELAH INSTALL:
+1. Logout lalu login kembali sebagai customer.
+2. Pastikan customer hanya melihat saldo/riwayat miliknya.
+3. Coba Coin Shop dan Gacha.
+4. Login sebagai Super Admin dan pastikan Admin > Coin Shop masih dapat dikelola.
+5. Jangan pernah memasukkan SUPABASE_SERVICE_ROLE_KEY atau secret payment gateway ke file HTML/JS.
+
+CATATAN:
+- SUPABASE_ANON_KEY boleh berada di frontend.
+- award_order_coins adalah fungsi internal; sekarang hanya service_role yang boleh mengeksekusinya secara langsung.
+- Trigger database tetap dapat menjalankan fungsi tersebut karena function memakai SECURITY DEFINER.

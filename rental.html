@@ -10,6 +10,7 @@
     <title>Sewa Item — AbidzarOutdoorcamp</title>
     <meta name="description" content="Sewa Item AbidzarOutdoorcamp" />
     <link rel="stylesheet" href="styles.css" />
+      <link rel="stylesheet" href="simple-cart-styles.css">
   </head>
   <body>
     <nav class="nav">
@@ -255,6 +256,8 @@
           </label>
         </section>
 
+        <div id="catalogCategoryQuick" class="catalog-category-quick" aria-label="Pilih kategori cepat"></div>
+
         <div class="catalog-result-row">
           <p id="catalogResultCount" class="muted" aria-live="polite"></p>
           <button id="catalogReset" class="btn secondary small" type="button">
@@ -300,5 +303,8 @@
         <small>WhatsApp</small>
       </span>
     </a>
+    <script type="module">
+            document.addEventListener('DOMContentLoaded', initSimpleCart);
+    </script>
   </body>
 </html>

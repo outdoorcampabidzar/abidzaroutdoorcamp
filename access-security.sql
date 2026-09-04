@@ -15,7 +15,8 @@ insert into public.role_permissions(role,permission) values
 ('super_admin','*'),('order_admin','orders.view'),('order_admin','orders.manage'),('order_admin','customers.view'),('order_admin','customers.manage'),('order_admin','notifications.manage'),('order_admin','reviews.manage'),('order_admin','trip_participants.manage'),
 ('catalog_admin','catalog.manage'),('catalog_admin','settings.manage'),('catalog_admin','reviews.manage'),
 ('finance_admin','orders.view'),('finance_admin','finance.manage'),('finance_admin','vouchers.manage'),('finance_admin','reports.view'),
-('warehouse_staff','orders.view'),('warehouse_staff','warehouse.manage'),('warehouse_staff','trip_participants.manage')
+('warehouse_staff','orders.view'),
+('super_admin','coinshop.manage'),('warehouse_staff','warehouse.manage'),('warehouse_staff','trip_participants.manage')
 on conflict do nothing;
 
 create or replace function public.has_permission(p_permission text) returns boolean language sql stable security definer set search_path=public as $$

@@ -17,6 +17,7 @@
       <section id="paymentCard" class="card payment-card">
         <div class="notice">Memuat pembayaran...</div>
       </section>
+      <section id="printInvoice" class="print-invoice" aria-hidden="true"></section>
     </main>
     <script type="module">
       import { supabase, rupiah, esc, loadSiteSettings } from "./app.js";
@@ -109,11 +110,13 @@
         <div id="paymentMessage" class="notice hidden"></div>
         ${adminOptions().length ? `<div class="payment-admin-invoice"><label class="field"><span>Kirim invoice kepada</span><select id="invoiceAdmin" class="input">${adminOptions().map((admin) => `<option value="${esc(admin.number)}">${esc(admin.name)}</option>`).join("")}</select></label><button id="sendAdminInvoice" class="btn secondary" type="button">Kirim Invoice ke Admin</button></div>` : ""}
         <div class="actions payment-actions">
+          <button id="printInvoiceBtn" class="btn invoice-print-btn" type="button">Cetak Invoice</button>
           ${active && payment.payment_url ? `<a class="btn" href="${esc(payment.payment_url)}" target="_blank" rel="noopener">Buka Halaman Pembayaran</a>` : ""}
           ${active ? '<button id="checkPayment" class="btn secondary" type="button">Cek Pembayaran</button><button id="cancelPayment" class="btn danger" type="button">Batalkan</button>' : ""}
           ${["expired", "cancelled", "failed"].includes(status) ? '<button id="recreatePayment" class="btn" type="button">Buat Pembayaran Baru</button>' : ""}
           <a class="btn secondary" href="orders.html">Kembali ke Pesanan</a>
         </div>`;
+        renderPrintInvoice(order, payment, paymentMode, paymentLabels[configuredMethod] || configuredMethod);
         document
           .getElementById("checkPayment")
           ?.addEventListener("click", check);
@@ -126,6 +129,9 @@
         document
           .getElementById("sendAdminInvoice")
           ?.addEventListener("click", sendInvoiceToAdmin);
+        document
+          .getElementById("printInvoiceBtn")
+          ?.addEventListener("click", printInvoice);
         if (active) {
           updateCountdown();
           timer = setInterval(() => {
@@ -169,6 +175,75 @@
         ].filter(Boolean).join("\n");
         window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
       }
+
+      function renderPrintInvoice(order, payment, paymentMode, gatewayLabel) {
+        const invoice = document.getElementById("printInvoice");
+        if (!invoice) return;
+        const items = (order.order_items || []).map((line) => {
+          const variant = line.variant_name_snapshot ? ` <small>${esc(line.variant_name_snapshot)}</small>` : "";
+          const type = line.item_type === "trip" ? "Open Trip" : (line.fulfillment_type === "sale" ? "Jual" : "Sewa");
+          return `<tr>
+            <td>${esc(line.title_snapshot || "Item")}${variant}<br><small>${esc(type)}</small></td>
+            <td class="qty">${Number(line.quantity || 0)}</td>
+            <td class="money">${rupiah(line.unit_price || 0)}</td>
+            <td class="money">${rupiah(line.line_total || 0)}</td>
+          </tr>`;
+        }).join("");
+        const rental = order.rental_start
+          ? `<div><b>Periode sewa</b><br>${esc(order.rental_start)} — ${esc(order.rental_end || order.rental_start)}</div>`
+          : "";
+        invoice.innerHTML = `
+          <div class="invoice-sheet">
+            <header class="invoice-header">
+              <div>
+                <div class="invoice-brand">Abidzar<span>Outdoorcamp</span></div>
+                <div class="invoice-subtitle">Outdoor Rental & Open Trip</div>
+              </div>
+              <div class="invoice-title">INVOICE<br><small>${esc(order.order_number || "-")}</small></div>
+            </header>
+            <div class="invoice-rule"></div>
+            <div class="invoice-meta">
+              <div><b>Data Pelanggan</b><br>${esc(order.customer_name || "-")}<br>${esc(order.phone || "-")}
+              ${order.email ? `<br>${esc(order.email)}` : ""}</div>
+              <div><b>Tanggal</b><br>${new Date(payment.created_at || order.created_at).toLocaleString("id-ID")}<br><b>Status</b><br>${esc(labels[payment.status] || payment.status || "-")}</div>
+              <div><b>Pembayaran</b><br>${esc(gatewayLabel || payment.payment_method || "-")}<br><b>ID Transaksi</b><br>${esc(payment.gateway_transaction_id || "-")}</div>
+            </div>
+            ${rental ? `<div class="invoice-period">${rental}</div>` : ""}
+            <table class="invoice-table">
+              <thead><tr><th>Item</th><th class="qty">Qty</th><th class="money">Harga</th><th class="money">Jumlah</th></tr></thead>
+              <tbody>${items || `<tr><td colspan="4">Tidak ada item.</td></tr>`}</tbody>
+            </table>
+            <div class="invoice-total">
+              <div><span>Subtotal</span><b>${rupiah(order.subtotal || 0)}</b></div>
+              <div><span>Diskon</span><b>− ${rupiah(order.discount || 0)}</b></div>
+              <div class="grand"><span>Total</span><strong>${rupiah(payment.total_amount || order.total || 0)}</strong></div>
+            </div>
+            <footer class="invoice-footer">
+              <b>Terima kasih telah memilih AbidzarOutdoorcamp.</b>
+              <span>Simpan invoice ini sebagai bukti pemesanan dan pembayaran.</span>
+            </footer>
+          </div>`;
+      }
+
+      function printInvoice() {
+        const invoice = document.getElementById("printInvoice");
+        if (!invoice || !invoice.querySelector(".invoice-sheet")) {
+          showMessage("Invoice belum siap. Silakan tunggu sebentar lalu coba lagi.", "error");
+          return;
+        }
+
+        // Pastikan browser mencetak invoice, bukan halaman pembayaran.
+        document.body.classList.add("printing-invoice");
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            window.print();
+          }, 50);
+        });
+      }
+
+      window.addEventListener("afterprint", () => {
+        document.body.classList.remove("printing-invoice");
+      });
 
       function updateCountdown() {
         const el = document.getElementById("countdown");

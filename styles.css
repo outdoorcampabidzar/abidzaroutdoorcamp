@@ -5361,6 +5361,63 @@ main {
   }
 }
 
+
+/* =========================================================
+   PRINT INVOICE — A4 / thermal-printer friendly
+   ========================================================= */
+.print-invoice {
+  display: none;
+}
+.invoice-sheet {
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 34px;
+  background: #fff;
+  color: #111;
+  font-family: Arial, sans-serif;
+}
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+.invoice-brand { font-size: 24px; font-weight: 900; }
+.invoice-brand span { color: #16a34a; }
+.invoice-subtitle { margin-top: 5px; color: #555; font-size: 12px; }
+.invoice-title { text-align: right; font-size: 25px; font-weight: 900; letter-spacing: 1px; }
+.invoice-title small { font-size: 11px; letter-spacing: 0; color: #555; }
+.invoice-rule { border-top: 2px solid #111; margin: 18px 0; }
+.invoice-meta { display: grid; grid-template-columns: 1.4fr 1fr 1.2fr; gap: 18px; font-size: 12px; line-height: 1.65; margin-bottom: 18px; }
+.invoice-meta b, .invoice-period b { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+.invoice-period { padding: 10px 12px; background: #f3f4f6; border: 1px solid #ddd; margin-bottom: 18px; font-size: 12px; }
+.invoice-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.invoice-table th { background: #f3f4f6; text-align: left; font-size: 11px; text-transform: uppercase; }
+.invoice-table th, .invoice-table td { padding: 9px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+.invoice-table small { color: #666; }
+.invoice-table .qty { width: 55px; text-align: center; }
+.invoice-table .money { width: 125px; text-align: right; white-space: nowrap; }
+.invoice-total { width: 330px; margin: 18px 0 0 auto; font-size: 12px; }
+.invoice-total > div { display: flex; justify-content: space-between; padding: 5px 0; gap: 20px; }
+.invoice-total .grand { border-top: 2px solid #111; margin-top: 5px; padding-top: 10px; font-size: 15px; }
+.invoice-total .grand strong { font-size: 20px; }
+.invoice-footer { border-top: 1px solid #ddd; margin-top: 28px; padding-top: 14px; display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #555; }
+.invoice-footer b { color: #111; }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  html, body { background: #fff !important; }
+  body > * { display: none !important; }
+  .print-invoice { display: block !important; }
+  .invoice-sheet { max-width: none; padding: 0; margin: 0; }
+  * { box-shadow: none !important; text-shadow: none !important; }
+}
+
+@media (max-width: 640px) {
+  .invoice-sheet { padding: 24px 18px; }
+}
+
 /* Cetak invoice/riwayat lebih bersih */
 @media print {
   .nav,
@@ -6467,3 +6524,475 @@ main {
 .mode-switch .mode-current{font-weight:800;margin-right:auto}
 .mode-switch .btn.active{box-shadow:0 0 0 2px rgba(81,226,154,.28);border-color:rgba(81,226,154,.65)}
 .hidden{display:none!important}
+
+/* CATALOG QUICK ORDER COMPACT - MOBILE FRIENDLY */
+.catalog-category-quick {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  margin: 8px 0 4px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.catalog-category-quick::-webkit-scrollbar { height: 4px; }
+.catalog-category-chip {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255,255,255,.035);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.catalog-category-chip.active {
+  border-color: rgba(74,222,128,.55);
+  background: rgba(74,222,128,.12);
+  color: var(--brand);
+}
+.catalog-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 0 12px;
+}
+.catalog-result-row p { margin: 0; font-size: 13px; }
+.catalog-quick-order {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.catalog-quick-qty {
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 42px;
+}
+.catalog-quick-qty button {
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgba(255,255,255,.035);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 900;
+}
+.catalog-quick-qty .catalog-qty {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 0;
+  text-align: center;
+}
+.catalog-add-btn { min-height: 42px; }
+.catalog-added-note {
+  min-height: 0;
+  margin-top: 5px;
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 800;
+}
+.catalog-added-note:not(.show) { display: none; }
+
+@media (max-width: 650px) {
+  /* Dua kartu berdampingan agar pelanggan bisa menambah banyak item tanpa scroll panjang. */
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .catalog-category-quick {
+    margin-top: 4px;
+    padding-bottom: 8px;
+  }
+  .catalog-category-chip {
+    min-height: 34px;
+    padding: 7px 11px;
+    font-size: 11px;
+  }
+  .catalog-result-row {
+    margin-bottom: 9px;
+  }
+  .catalog-result-row .btn {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+  .catalog-filter-panel {
+    gap: 8px;
+    margin: 10px 0 6px;
+    padding: 10px;
+    border-radius: 13px;
+  }
+  .catalog-filter-panel .field span,
+  .catalog-available-check span {
+    font-size: 11px;
+  }
+  .catalog-filter-panel .input {
+    min-height: 38px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .item-card,
+  .catalog-quick-card {
+    border-radius: 14px;
+  }
+  .item-card > img,
+  .item-card img {
+    height: 135px;
+    max-height: 135px;
+    aspect-ratio: 4/3;
+  }
+  .item-card .body,
+  .order-item-card .body {
+    padding: 10px;
+  }
+  .order-item-card .row {
+    gap: 5px;
+    align-items: flex-start;
+  }
+  .order-item-card .badge,
+  .stock-available,
+  .stock-empty {
+    padding: 4px 6px;
+    font-size: 9px;
+  }
+  .item-card h3 {
+    margin: 8px 0 5px;
+    font-size: 15px;
+    line-height: 1.2;
+  }
+  .item-description {
+    min-height: 28px;
+    margin: 0 0 6px;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .catalog-meta {
+    font-size: 9px;
+    line-height: 1.3;
+  }
+  .catalog-featured-badge {
+    font-size: 9px;
+  }
+  .catalog-variant-picker {
+    margin-top: 6px;
+  }
+  .catalog-variant-picker > span {
+    font-size: 9px;
+    margin-bottom: 4px;
+  }
+  .catalog-variant-picker .input {
+    min-height: 36px;
+    height: 36px;
+    padding: 7px 8px;
+    font-size: 10px;
+  }
+  .item-unit-price {
+    gap: 6px;
+    padding: 7px 0;
+  }
+  .item-unit-price span {
+    font-size: 9px;
+    line-height: 1.25;
+  }
+  .item-unit-price b {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .catalog-quick-order {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-top: 7px;
+  }
+  .catalog-quick-qty {
+    min-height: 34px;
+    grid-template-columns: 30px 1fr 30px;
+  }
+  .catalog-quick-qty .catalog-qty {
+    height: 32px;
+    font-size: 12px;
+  }
+  .catalog-quick-qty button {
+    font-size: 16px;
+  }
+  .catalog-add-btn {
+    width: 100%;
+    min-height: 36px;
+    padding: 7px 8px;
+    font-size: 12px;
+  }
+  .catalog-added-note {
+    font-size: 9px;
+  }
+  .catalog-detail-action .btn {
+    width: 100%;
+    min-height: 36px;
+    padding: 7px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 390px) {
+  .grid { gap: 8px; }
+  .item-card > img,
+  .item-card img {
+    height: 115px;
+    max-height: 115px;
+  }
+  .item-card .body,
+  .order-item-card .body { padding: 8px; }
+  .item-card h3 { font-size: 14px; }
+  .item-unit-price b { font-size: 13px; }
+}
+
+/* =========================================================
+   MINIMAL UI V3 — compact homepage + catalog
+   Fokus: lebih banyak informasi terlihat, lebih sedikit scroll.
+   ========================================================= */
+:root{
+  --minimal-radius:14px;
+  --minimal-gap:12px;
+}
+
+body{
+  background: var(--bg);
+}
+
+/* NAV lebih tipis */
+.nav-shell{
+  min-height:58px;
+  gap:16px;
+}
+.nav-shell .brand{font-size:17px}
+.nav-link,.nav-cart{min-height:36px;padding:7px 9px;font-size:13px}
+.nav-account .nav-login,.nav-account .nav-logout{min-height:36px;padding:7px 11px}
+
+/* HOME: hilangkan kesan landing page yang terlalu besar */
+.catalog-home-hero{
+  width:min(1080px,calc(100% - 28px));
+  padding:38px 0 24px;
+  grid-template-columns:minmax(0,1.12fr) minmax(330px,.88fr);
+  gap:24px;
+  align-items:start;
+}
+.catalog-home-hero .hero-eyebrow{
+  padding:7px 11px;
+  font-size:11px;
+}
+.catalog-home-hero h1{
+  font-size:clamp(38px,5vw,58px);
+  line-height:1.02;
+  margin:12px 0 14px;
+  letter-spacing:-.035em;
+}
+.catalog-home-hero .muted{
+  max-width:650px;
+  font-size:15px;
+  line-height:1.55;
+}
+.catalog-home-hero .hero-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:18px;
+}
+.catalog-home-hero .hero-actions .btn:first-child{grid-column:1/-1}
+.catalog-home-hero .hero-actions .btn{
+  min-height:42px;
+  padding:10px 14px;
+}
+.hero-proof{
+  margin-top:22px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+  gap:0;
+}
+.hero-proof>div{padding:0 14px}
+.hero-proof strong{font-size:19px}
+.hero-proof span{font-size:10px}
+
+/* Kartu pilihan beranda: ringkas, bukan kartu raksasa */
+.category-choice-grid{
+  grid-template-columns:1fr;
+  gap:8px;
+}
+.category-choice-card{
+  min-height:0;
+  height:auto;
+  padding:15px;
+  display:grid;
+  grid-template-columns:42px 1fr auto;
+  grid-template-rows:auto auto;
+  column-gap:12px;
+  align-items:center;
+  border-radius:var(--minimal-radius);
+}
+.category-choice-card:hover{transform:none}
+.category-choice-icon{
+  grid-row:1/3;
+  margin:0;
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  background:rgba(255,255,255,.055);
+  font-size:23px;
+}
+.category-choice-card .badge{
+  padding:4px 7px;
+  font-size:9px;
+  justify-self:start;
+}
+.category-choice-card h2{
+  grid-column:2;
+  margin:5px 0 0;
+  font-size:19px;
+  line-height:1.15;
+}
+.category-choice-card p{
+  grid-column:2;
+  margin:3px 0 0;
+  font-size:11px;
+  line-height:1.35;
+}
+.category-choice-action{
+  grid-column:3;
+  grid-row:1/3;
+  margin:0;
+  font-size:11px;
+  white-space:nowrap;
+}
+
+/* Preview sections */
+.section{padding:30px 0}
+.section h2{font-size:25px}
+.catalog-section-heading{margin-bottom:14px}
+.catalog-section-heading .muted{font-size:13px;line-height:1.45}
+.catalog-section-heading .btn{min-height:36px;padding:8px 11px;font-size:12px}
+
+/* Halaman katalog: hero lebih pendek */
+.catalog-page-hero{padding:34px 0 22px}
+.catalog-page-hero h1{font-size:clamp(30px,6vw,48px);margin:8px 0 10px}
+.catalog-page-hero p{font-size:14px;line-height:1.5;margin:0;max-width:650px}
+.catalog-switcher{gap:7px;margin-top:15px}
+.catalog-switcher .btn{min-height:36px;padding:8px 11px;font-size:12px}
+
+/* Filter: satu baris visual, tidak seperti form besar */
+.catalog-filter-panel{
+  gap:8px;
+  margin:14px 0 8px;
+  padding:10px;
+  border-radius:13px;
+}
+.catalog-filter-panel .field span{font-size:11px}
+.catalog-filter-panel .input{min-height:38px;padding:8px 10px;font-size:12px}
+.catalog-available-check{min-height:38px;padding:0 10px;font-size:11px}
+.catalog-category-quick{padding:2px 1px 7px;margin:3px 0}
+.catalog-category-chip{min-height:33px;padding:6px 11px;font-size:11px}
+
+/* Produk: tetap 2 kolom mobile, tetapi kartu jauh lebih pendek */
+.item-card,.catalog-quick-card{border-radius:13px}
+.item-card>img,.item-card img{height:128px;max-height:128px}
+.item-card .body{padding:9px}
+.item-card h3{font-size:14px;margin:6px 0 4px}
+.item-description{font-size:10px;line-height:1.3;margin:0 0 5px;min-height:0}
+.catalog-meta{font-size:9px;line-height:1.25;margin:3px 0}
+.catalog-variant-picker{margin-top:5px}
+.catalog-variant-picker>span{font-size:9px;margin-bottom:3px}
+.catalog-variant-picker .input{height:34px;min-height:34px;padding:6px 7px;font-size:10px}
+.item-unit-price{padding:6px 0;gap:4px}
+.item-unit-price span{font-size:8px;line-height:1.2}
+.item-unit-price b{font-size:13px}
+.catalog-quick-order{grid-template-columns:1fr 1.05fr;gap:6px;margin-top:6px}
+.catalog-quick-qty{min-height:34px;grid-template-columns:27px 1fr 27px}
+.catalog-quick-qty .catalog-qty{height:32px;font-size:11px}
+.catalog-quick-qty button{font-size:15px}
+.catalog-add-btn{min-height:34px;padding:6px 7px;font-size:11px}
+.catalog-added-note{font-size:8px;margin-top:3px}
+
+/* Keranjang cepat: kecil dan tidak menutup layar */
+.catalog-quick-cart{
+  max-width:560px;
+  width:calc(100% - 20px);
+  padding:8px 10px;
+  border-radius:13px;
+}
+.catalog-quick-cart-info{gap:8px}
+.catalog-quick-cart-info strong{font-size:12px}
+.catalog-quick-cart-info small{font-size:9px}
+.catalog-quick-cart .btn{min-height:34px;padding:7px 10px;font-size:10px}
+
+/* Rating/review: kurangi whitespace di beranda */
+.website-rating-section{padding-top:30px!important}
+.website-rating-layout{gap:18px}
+.website-rating-intro h2{font-size:26px}
+.website-rating-card{padding:16px}
+.website-reviews-section{padding-top:22px!important}
+
+@media(max-width:900px){
+  .catalog-home-hero{
+    grid-template-columns:1fr;
+    gap:14px;
+    padding-top:28px;
+  }
+  .category-choice-grid{grid-template-columns:1fr 1fr}
+  .category-choice-card{grid-template-columns:38px 1fr}
+  .category-choice-icon{width:38px;height:38px;font-size:20px}
+  .category-choice-card .badge{grid-column:2}
+  .category-choice-card h2{grid-column:2}
+  .category-choice-card p{display:none}
+  .category-choice-action{grid-column:2;grid-row:auto;margin-top:7px}
+}
+
+@media(max-width:650px){
+  .container{width:calc(100% - 22px)}
+  .catalog-home-hero{width:calc(100% - 22px);padding:24px 0 16px}
+  .catalog-home-hero h1{font-size:38px;line-height:1.03;margin:10px 0 11px}
+  .catalog-home-hero .muted{font-size:13px;line-height:1.5}
+  .catalog-home-hero .hero-actions{margin-top:14px}
+  .catalog-home-hero .hero-actions .btn{min-height:39px;font-size:12px}
+  .hero-proof{margin-top:16px;padding-top:11px}
+  .hero-proof>div{padding:0 8px}
+  .hero-proof strong{font-size:17px}
+  .hero-proof span{font-size:9px}
+  .category-choice-grid{grid-template-columns:1fr;gap:7px}
+  .category-choice-card{padding:12px;grid-template-columns:36px 1fr auto;grid-template-rows:auto auto}
+  .category-choice-icon{grid-row:1/3;width:36px;height:36px;font-size:18px}
+  .category-choice-card .badge{grid-column:2}
+  .category-choice-card h2{grid-column:2;font-size:16px;margin-top:3px}
+  .category-choice-card p{display:none}
+  .category-choice-action{grid-column:3;grid-row:1/3;margin:0;font-size:10px}
+  .section{padding:24px 0}
+  .section h2{font-size:22px}
+  .catalog-page-hero{padding:25px 0 18px}
+  .catalog-page-hero h1{font-size:29px}
+  .catalog-switcher .btn{flex:1}
+  .catalog-filter-panel{grid-template-columns:1fr 1fr;padding:8px}
+  .catalog-search-field{grid-column:1/-1}
+  .catalog-available-check{grid-column:1/-1}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .item-card>img,.item-card img{height:112px;max-height:112px}
+  .item-card .body{padding:8px}
+  .catalog-quick-order{grid-template-columns:1fr;gap:5px}
+}
+
+@media(max-width:390px){
+  .catalog-home-hero h1{font-size:34px}
+  .catalog-home-hero .hero-actions{grid-template-columns:1fr}
+  .catalog-home-hero .hero-actions .btn:first-child{grid-column:auto}
+  .hero-proof span{font-size:8px}
+  .item-card>img,.item-card img{height:100px;max-height:100px}
+  .item-card h3{font-size:13px}
+  .item-unit-price b{font-size:12px}
+}

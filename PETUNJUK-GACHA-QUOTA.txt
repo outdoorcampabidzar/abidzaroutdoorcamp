@@ -1,0 +1,23 @@
+PERBAIKAN BATAS VOUCHER GACHA
+
+Masalah versi sebelumnya:
+- Gacha memilih voucher aktif berdasarkan used_count < quota.
+- Tetapi setelah voucher sumber dipilih, used_count voucher sumber tidak bertambah.
+- Akibatnya voucher sumber dengan quota 1, 10, 100, dst dapat menghasilkan voucher Gacha terus-menerus.
+
+Versi ini sudah diperbaiki:
+- Setiap Gacha berhasil mengonsumsi 1 kuota voucher sumber.
+- Contoh quota 10 = maksimal 10 voucher Gacha dapat dibuat dari voucher tersebut.
+- Saat used_count mencapai quota, voucher tidak lagi muncul sebagai hadiah Gacha.
+- Penguncian FOR UPDATE mencegah dua transaksi bersamaan melewati batas quota.
+
+CARA INSTALL
+1. Backup database Supabase.
+2. Upload file website dari ZIP ini dan replace versi lama.
+3. Jika database sudah terpasang, cukup jalankan PATCH-GACHA-QUOTA.sql SATU KALI.
+4. Jika instalasi dari awal, jalankan coin-shop.sql versi ZIP ini setelah voucher-management.sql.
+5. Jangan menjalankan PATCH berulang-ulang kecuali memang ingin mengganti fungsi tersebut dengan versi yang sama.
+6. Di Admin > Voucher, atur Kuota penggunaan.
+
+CATATAN
+Kuota sumber sekarang dihitung sebagai kuota penerbitan hadiah Gacha. Jika voucher sumber juga dipakai langsung di checkout, penggunaan langsung juga dapat mengurangi used_count yang sama. Jika Anda ingin kuota Gacha dipisahkan dari kuota pemakaian voucher biasa, gunakan kolom khusus gacha_claim_limit pada versi lanjutan.

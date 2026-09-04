@@ -3,7 +3,9 @@
 
 alter table public.vouchers
   add column if not exists applies_to text not null default 'all',
-  add column if not exists once_per_customer boolean not null default false;
+  add column if not exists once_per_customer boolean not null default false,
+  add column if not exists owner_user_id uuid references auth.users(id) on delete cascade,
+  add column if not exists source_voucher_id uuid references public.vouchers(id) on delete set null;
 
 alter table public.vouchers drop constraint if exists vouchers_applies_to_check;
 alter table public.vouchers add constraint vouchers_applies_to_check
@@ -18,7 +20,7 @@ create table if not exists public.voucher_items (
 
 create table if not exists public.voucher_usages (
   id uuid primary key default gen_random_uuid(),
-  voucher_id uuid not null references public.vouchers(id) on delete restrict,
+  voucher_id uuid references public.vouchers(id) on delete set null,
   order_id uuid not null references public.orders(id) on delete restrict,
   user_id uuid not null references auth.users(id) on delete restrict,
   voucher_code text not null,
@@ -96,6 +98,7 @@ begin
 
   select * into v from public.vouchers
   where code = v_code and is_active = true
+    and (owner_user_id is null or owner_user_id = auth.uid())
     and now() between starts_at and expires_at
     and used_count < quota;
   if not found then raise exception 'Voucher tidak valid, belum aktif, berakhir, atau kuota habis'; end if;
@@ -132,7 +135,6 @@ declare v_id uuid;
 begin
   if new.voucher_code is null then return new; end if;
   select id into v_id from public.vouchers where code = new.voucher_code;
-  if v_id is null then return new; end if;
 
   if new.status in ('confirmed', 'paid', 'completed')
      and old.status not in ('confirmed', 'paid', 'completed') then

@@ -429,6 +429,10 @@ begin
       update public.vouchers set used_count = used_count + 1
       where code = v_order.voucher_code and used_count < quota;
       if not found then raise exception 'Kuota voucher habis'; end if;
+      -- Hapus voucher otomatis saat kuota habis.
+      delete from public.vouchers
+      where code = v_order.voucher_code
+        and coalesce(used_count,0) >= quota;
     end if;
   elsif v_old_reserved and not v_new_reserved then
     for v_line in select * from public.order_items where order_id = p_order_id loop

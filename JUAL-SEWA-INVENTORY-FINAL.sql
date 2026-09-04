@@ -627,6 +627,7 @@ begin
   if v_voucher_code is not null then
     select * into v_voucher from public.vouchers
     where code=v_voucher_code and is_active=true
+      and (owner_user_id is null or owner_user_id=v_user_id)
       and now() between starts_at and expires_at and used_count<quota;
     if not found then raise exception 'Voucher tidak valid atau kuota habis'; end if;
     if not public.voucher_scope_matches(v_voucher,p_items) then

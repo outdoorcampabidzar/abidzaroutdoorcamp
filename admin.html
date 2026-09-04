@@ -219,6 +219,7 @@
       let currentAdminUserId = null;
       let editingItem = null;
       let editingVoucher = null;
+      let editingShopReward = null;
       let vouchers = [];
       let voucherUsages = [];
       let orderSearch = "";
@@ -241,6 +242,7 @@
         if (can("catalog.manage")) return "rental";
         if (can("orders.view")) return "orders";
         if (can("vouchers.manage")) return "vouchers";
+        if (can("coinshop.manage")) return "shop";
         if (can("settings.manage")) return "settings";
         if (can("finance.manage")) return "payment_logs";
         if (can("customers.view")) return "customers";
@@ -413,6 +415,14 @@
             </button>
 
             <button
+              class="admin-tab ${activeTab === "shop" ? "active" : ""} ${can("coinshop.manage") ? "" : "hidden"}"
+              data-admin-tab="shop"
+              type="button"
+            >
+              🪙 Coin Shop
+            </button>
+
+            <button
               class="admin-tab ${activeTab === "settings" ? "active" : ""} ${can("settings.manage") ? "" : "hidden"}"
               data-admin-tab="settings"
               type="button"
@@ -479,6 +489,7 @@
             activeTab = button.dataset.adminTab;
             editingItem = null;
             editingVoucher = null;
+            editingShopReward = null;
             renderShell();
             renderActiveTab();
           });
@@ -492,6 +503,7 @@
         else if (activeTab === "trips") renderTripTab();
         else if (activeTab === "orders") renderOrdersTab();
         else if (activeTab === "vouchers") renderVoucherTab();
+        else if (activeTab === "shop") renderShopTab();
         else if (activeTab === "settings") renderSettingsTab();
         else if (activeTab === "schedule") renderRentalScheduleTab();
         else if (activeTab === "payment_logs") renderPaymentLogsTab();
@@ -590,6 +602,12 @@
                 <label class="field"><span>Minimum transaksi</span><input class="input" name="min_purchase" type="number" min="0" step="1000" value="${Number(voucher.min_purchase || 0)}"></label>
                 <label class="field"><span>Maksimum potongan</span><input class="input" name="max_discount" type="number" min="0" step="1000" value="${voucher.max_discount ?? ""}" placeholder="Kosong = tanpa batas"></label>
                 <label class="field"><span>Kuota penggunaan</span><input class="input" name="quota" type="number" min="0" step="1" value="${Number(voucher.quota || 0)}"></label>
+                <label class="field"><span>Rarity Gacha</span>
+                  <select class="input" name="gacha_rarity">
+                    ${[["common","Common"],["uncommon","Uncommon"],["rare","Rare"],["epic","Epic"],["legendary","Legendary"]].map(([value,label]) => `<option value="${value}" ${(voucher.gacha_rarity || "common") === value ? "selected" : ""}>${label}</option>`).join("")}
+                  </select>
+                </label>
+                <label class="field"><span>Probabilitas Gacha (%)</span><input class="input" name="gacha_probability" type="number" min="0" max="100" step="0.01" value="${Number(voucher.gacha_probability ?? ({common:60,uncommon:25,rare:10,epic:4,legendary:1}[voucher.gacha_rarity || "common"] || 60))}"><small class="muted">Bobot per voucher. Contoh: Common 60, Legendary 1.</small></label>
                 <label class="field"><span>Berlaku untuk</span>
                   <select id="voucherAppliesTo" class="input" name="applies_to">
                     ${[
@@ -629,7 +647,7 @@
                     (entry) => `
                 <article class="card voucher-admin-card">
                   <div class="voucher-admin-head"><div><span class="${entry.is_active ? "admin-active" : "admin-inactive"}">${entry.is_active ? "Aktif" : "Nonaktif"}</span><h3>${esc(entry.code)}</h3></div><strong>${entry.discount_type === "percent" ? `${Number(entry.discount_value)}%` : rupiah(entry.discount_value)}</strong></div>
-                  <p class="muted">${esc(voucherScopeLabel(entry.applies_to))} · Minimal ${rupiah(entry.min_purchase)} · Terpakai ${Number(entry.used_count)}/${Number(entry.quota)}</p>
+                  <p class="muted">${esc(voucherScopeLabel(entry.applies_to))} · ${esc(entry.gacha_rarity || "common")} · Bobot ${Number(entry.gacha_probability ?? 1)}% · Minimal ${rupiah(entry.min_purchase)} · Terpakai ${Number(entry.used_count)}/${Number(entry.quota)}</p>
                   <small>${new Date(entry.starts_at).toLocaleString("id-ID")} – ${new Date(entry.expires_at).toLocaleString("id-ID")}</small>
                   <div class="actions"><button class="btn secondary small" data-edit-voucher="${entry.id}" type="button">Edit</button><button class="btn secondary small" data-toggle-voucher="${entry.id}" type="button">${entry.is_active ? "Nonaktifkan" : "Aktifkan"}</button><button class="btn danger small" data-delete-voucher="${entry.id}" type="button">Hapus</button></div>
                 </article>`,
@@ -702,12 +720,16 @@
           max_discount:
             values.max_discount === "" ? null : Number(values.max_discount),
           quota: Number(values.quota || 0),
+          gacha_rarity: values.gacha_rarity || "common",
+          gacha_probability: Number(values.gacha_probability ?? 1),
           starts_at: new Date(values.starts_at).toISOString(),
           expires_at: new Date(values.expires_at).toISOString(),
           applies_to: values.applies_to,
           once_per_customer: form.elements.once_per_customer.checked,
           is_active: form.elements.is_active.checked,
         };
+        if (!Number.isFinite(payload.gacha_probability) || payload.gacha_probability < 0 || payload.gacha_probability > 100)
+          return showAdminMessage("Probabilitas Gacha harus 0–100%.", "error");
         if (payload.discount_type === "percent" && payload.discount_value > 100)
           return showAdminMessage(
             "Potongan persentase maksimal 100%.",
@@ -776,6 +798,131 @@
         if (error) return showAdminMessage(error.message, "error");
         await renderVoucherTab();
         showAdminMessage("Voucher berhasil dihapus.", "success");
+      }
+
+
+      async function renderShopTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = '<div class="notice">Memuat Coin Shop...</div>';
+        const [{ data: rewards, error: rewardError }, { data: setting }] = await Promise.all([
+          supabase.from("shop_rewards").select("*").order("created_at", { ascending: false }),
+          supabase.from("coin_settings").select("*").eq("id", true).maybeSingle(),
+        ]);
+        if (rewardError) {
+          content.innerHTML = `<div class="notice error">${esc(rewardError.message)}<br><small>Jalankan coin-shop.sql melalui Supabase SQL Editor.</small></div>`;
+          return;
+        }
+        const reward = editingShopReward || {
+          title: "", description: "", image_url: "", coin_cost: 10,
+          reward_type: "voucher_random", is_active: true, stock: 0
+        };
+        content.innerHTML = `
+          <div class="admin-voucher-layout">
+            <section class="card admin-editor-card">
+              <div class="admin-editor-heading">
+                <div><span class="badge">Coin Shop</span><h3>${editingShopReward ? "Edit Hadiah" : "Tambah Hadiah"}</h3></div>
+                ${editingShopReward ? '<button id="cancelShopEdit" class="btn secondary small" type="button">Batal</button>' : ""}
+              </div>
+              <p class="muted">Hadiah berupa <b>Voucher Gacha</b>. Setiap voucher memiliki <b>rarity + bobot probabilitas</b> sendiri. Contoh awal: Common 60%, Uncommon 25%, Rare 10%, Epic 4%, Legendary 1%. Nilai ini dapat diubah pada menu Voucher.</p>
+              <form id="shopRewardForm" class="form">
+                <label class="field"><span>Nama hadiah *</span><input class="input" name="title" required maxlength="100" value="${esc(reward.title)}" placeholder="Voucher Random Hemat"></label>
+                <label class="field"><span>Deskripsi</span><textarea class="input" name="description" rows="3" placeholder="Tukar coin untuk mendapatkan voucher acak">${esc(reward.description || "")}</textarea></label>
+                <div class="two">
+                  <label class="field"><span>Harga coin *</span><input class="input" name="coin_cost" type="number" min="1" step="1" required value="${Number(reward.coin_cost || 1)}"></label>
+                  <label class="field"><span>Stok hadiah</span><input class="input" name="stock" type="number" min="0" step="1" value="${Number(reward.stock || 0)}"><small class="muted">0 = tidak terbatas</small></label>
+                </div>
+                <label class="field"><span>Jenis reward</span><select class="input" name="reward_type" disabled><option value="voucher_random">Voucher Random</option></select></label>
+                <label class="check"><input type="checkbox" name="is_active" ${reward.is_active ? "checked" : ""}> Tampilkan hadiah di shop</label>
+                <button class="btn" type="submit">${editingShopReward ? "Simpan Perubahan" : "Tambah ke Shop"}</button>
+              </form>
+            </section>
+            <section class="card">
+              <div class="admin-list-heading"><div><span class="badge">Reward</span><h3>Menu Coin Shop</h3><p class="muted">${(rewards || []).length} hadiah · 0 stok berarti unlimited.</p></div></div>
+              <div class="admin-voucher-list">
+                ${(rewards || []).map(r => `
+                  <article class="admin-voucher-card">
+                    <div>
+                      <strong>${esc(r.title)}</strong>
+                      <p class="muted">${esc(r.description || "Voucher Random")} · <b>${Number(r.coin_cost)} coin</b></p>
+                      <small>${r.is_active ? "Aktif" : "Nonaktif"} · ${Number(r.stock) === 0 ? "Unlimited" : `Stok ${Number(r.stock)}`}</small>
+                    </div>
+                    <div class="admin-actions">
+                      <button class="btn secondary small" data-shop-edit="${r.id}" type="button">Edit</button>
+                      <button class="btn secondary small" data-shop-toggle="${r.id}" type="button">${r.is_active ? "Nonaktifkan" : "Aktifkan"}</button>
+                      <button class="btn danger small" data-shop-delete="${r.id}" type="button">Hapus</button>
+                    </div>
+                  </article>`).join("") || '<div class="notice">Belum ada hadiah.</div>'}
+              </div>
+            </section>
+          </div>
+          <section class="card" style="margin-top:16px">
+            <div class="admin-list-heading"><div><span class="badge">Coin</span><h3>Perhitungan Coin Otomatis</h3>
+              <p class="muted">Nilai 1 coin = <b>Rp1.000</b>. Untuk setiap transaksi <b>SEWA atau JUAL</b> yang berhasil, sistem memilih <b>persentase reward secara acak</b> dari batas yang Anda tentukan. Open Trip tidak menghasilkan coin.</p>
+              <div class="two" style="margin-top:12px">
+                <label class="field"><span>Persentase minimum (%)</span><input id="coinMinPercent" class="input" type="number" min="0" max="100" step="1" value="${Number(setting?.coin_min_percent ?? 10)}"></label>
+                <label class="field"><span>Persentase maksimum (%)</span><input id="coinMaxPercent" class="input" type="number" min="0" max="100" step="1" value="${Number(setting?.coin_max_percent ?? 100)}"></label>
+              </div>
+              <p class="muted">Contoh default <b>10%–100%</b>: transaksi Rp100.000 dapat menghasilkan reward acak Rp10.000–Rp100.000, yaitu sekitar <b>10–100 coin</b>. Hasil random dibuat di database.</p></div></div>
+            <div class="notice">🪙 <b>1 coin = Rp1.000</b> · Reward acak: <b>${Number(setting?.coin_min_percent ?? 10)}%–${Number(setting?.coin_max_percent ?? 100)}%</b></div>
+            <div style="margin-top:12px"><button id="saveCoinSettings" class="btn" type="button">Simpan Pengaturan Coin</button></div>
+          </section>`;
+
+        document.getElementById("saveCoinSettings")?.addEventListener("click", async () => {
+          const min = Number(document.getElementById("coinMinPercent")?.value);
+          const max = Number(document.getElementById("coinMaxPercent")?.value);
+          if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < min || max > 100) {
+            return showAdminMessage("Persentase harus 0–100 dan maksimum tidak boleh lebih kecil dari minimum.", "error");
+          }
+          const { error } = await supabase.from("coin_settings").upsert({ id: true, coin_value_rupiah: 1000, coin_min_percent: min, coin_max_percent: max, updated_at: new Date().toISOString() });
+          if (error) return showAdminMessage(error.message, "error");
+          showAdminMessage(`Pengaturan reward coin disimpan: ${min}%–${max}%.`, "success");
+          await renderShopTab();
+        });
+
+        document.getElementById("shopRewardForm").addEventListener("submit", async e => {
+          e.preventDefault();
+          const v = Object.fromEntries(new FormData(e.target));
+          const payload = {
+            title: String(v.title || "").trim(),
+            description: String(v.description || "").trim() || null,
+            image_url: null,
+            coin_cost: Math.max(1, Number(v.coin_cost) || 1),
+            reward_type: "voucher_random",
+            stock: Math.max(0, Number(v.stock) || 0),
+            is_active: e.target.is_active.checked,
+            updated_at: new Date().toISOString()
+          };
+          if (!payload.title) return showAdminMessage("Nama hadiah wajib diisi.", "error");
+          const result = editingShopReward
+            ? await supabase.from("shop_rewards").update(payload).eq("id", editingShopReward.id)
+            : await supabase.from("shop_rewards").insert(payload);
+          if (result.error) return showAdminMessage(result.error.message, "error");
+          editingShopReward = null;
+          await renderShopTab();
+          showAdminMessage("Hadiah Coin Shop berhasil disimpan.", "success");
+        });
+
+        document.getElementById("cancelShopEdit")?.addEventListener("click", async () => {
+          editingShopReward = null; await renderShopTab();
+        });
+        document.querySelectorAll("[data-shop-edit]").forEach(btn => btn.addEventListener("click", async () => {
+          editingShopReward = (rewards || []).find(r => r.id === btn.dataset.shopEdit) || null;
+          await renderShopTab();
+        }));
+        document.querySelectorAll("[data-shop-toggle]").forEach(btn => btn.addEventListener("click", async () => {
+          const r = (rewards || []).find(x => x.id === btn.dataset.shopToggle);
+          if (!r) return;
+          const { error } = await supabase.from("shop_rewards").update({ is_active: !r.is_active, updated_at: new Date().toISOString() }).eq("id", r.id);
+          if (error) return showAdminMessage(error.message, "error");
+          await renderShopTab();
+        }));
+        document.querySelectorAll("[data-shop-delete]").forEach(btn => btn.addEventListener("click", async () => {
+          if (!confirm("Hapus hadiah Coin Shop ini?")) return;
+          const { error } = await supabase.from("shop_rewards").delete().eq("id", btn.dataset.shopDelete);
+          if (error) return showAdminMessage(error.message, "error");
+          await renderShopTab();
+          showAdminMessage("Hadiah dihapus.", "success");
+        }));
       }
 
       async function renderPaymentLogsTab() {
@@ -4081,7 +4228,8 @@
           await loadAllData();
           if (
             (activeTab === "rental" && !can("catalog.manage")) ||
-            (activeTab === "orders" && !can("orders.view"))
+            (activeTab === "orders" && !can("orders.view")) ||
+            (activeTab === "shop" && !can("coinshop.manage"))
           )
             activeTab = firstAllowedAdminTab();
           renderShell();

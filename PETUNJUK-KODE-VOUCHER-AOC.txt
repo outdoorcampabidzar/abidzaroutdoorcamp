@@ -1,0 +1,12 @@
+PERUBAHAN KODE VOUCHER: SHOP -> AOC
+
+Kode voucher yang BARU dibuat oleh sistem sekarang menggunakan format:
+AOC-XXXXXXXXXX
+
+Contoh:
+AOC-1A2B3C4D5E
+
+Penting:
+- Voucher lama yang sudah tersimpan dengan awalan SHOP- tidak otomatis berubah.
+- Voucher baru akan menggunakan awalan AOC-.
+- Jalankan coin-shop.sql versi ZIP ini atau PATCH-GACHA-QUOTA.sql versi ZIP ini di Supabase agar fungsi server menggunakan prefix AOC-.

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Coin Shop — AbidzarOutdoorcamp</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .coin-hero{display:flex;justify-content:space-between;gap:16px;align-items:center;margin:24px 0}
+    .coin-balance{font-size:2rem;font-weight:800}
+    .shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+    .shop-card{display:flex;flex-direction:column;gap:12px}
+    .shop-card .shop-bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto}
+    .coin-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;background:rgba(255,193,7,.14);font-weight:700}
+    .voucher-result{margin-top:18px}
+    .voucher-code{font-size:1.5rem;font-weight:900;letter-spacing:2px;word-break:break-all}
+    .history{display:grid;gap:10px}
+    .history-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px;border:1px solid var(--border,#ddd);border-radius:12px}
+
+    .gacha-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,8,23,.78);backdrop-filter:blur(8px)}
+    .gacha-modal.hidden{display:none}
+    .gacha-box{width:min(560px,100%);background:#0e1d31;border:1px solid rgba(255,255,255,.16);color:#f7fbff;border-radius:24px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.45);text-align:center;position:relative}
+    .gacha-pointer{position:absolute;top:104px;left:50%;z-index:3;transform:translateX(-50%);font-size:34px;line-height:1;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
+    .gacha-wheel-wrap{width:min(390px,82vw);aspect-ratio:1;margin:18px auto 20px;position:relative;display:grid;place-items:center}
+    .gacha-wheel{width:100%;height:100%;border-radius:50%;border:10px solid #fff;box-shadow:0 12px 35px rgba(0,0,0,.22),inset 0 0 0 2px rgba(0,0,0,.12);position:relative;overflow:hidden;transition:transform 6s cubic-bezier(.12,.78,.18,1);transform:rotate(0deg)}
+    .gacha-label{position:absolute;left:50%;top:50%;width:86px;margin-left:-43px;margin-top:-9px;text-align:center;font-size:12px;font-weight:900;line-height:1.1;color:#07111f;text-shadow:0 1px 0 rgba(255,255,255,.65);transform-origin:43px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+    .gacha-center{position:absolute;width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#07111f;border:7px solid #22d3ee;font-weight:900;font-size:11px;z-index:2;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+    .gacha-result{padding:16px;border-radius:16px;background:rgba(34,197,94,.10);border:1px solid rgba(34,197,94,.28);margin-top:12px}
+    .gacha-result-code{font-size:1.55rem;font-weight:950;letter-spacing:2px;margin:6px 0}
+    .gacha-spin-status{min-height:24px;font-weight:700}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="container nav-inner">
+  <a class="brand" href="index.html">Abidzar<span>Outdoorcamp</span></a>
+  <div style="display:flex;gap:8px">
+    <a class="btn secondary small" href="orders.html">Pesanan Saya</a>
+    <a class="btn secondary small" href="profile.html">Profil</a>
+  </div>
+</div></nav>
+<main class="container section">
+  <section class="card coin-hero">
+    <div><span class="badge">COIN SHOP</span><h1>Tukar Coin</h1><p class="muted">1 coin = Rp1.000. Setiap order Sewa/Jual yang berhasil mendapatkan persentase reward acak sesuai pengaturan admin. Tukarkan coin untuk memutar gacha voucher random.</p></div>
+    <div style="text-align:right"><small class="muted">Saldo Coin</small><div id="coinBalance" class="coin-balance">— 🪙</div></div>
+  </section>
+  <div id="message" class="notice hidden"></div>
+  <section>
+    <div class="admin-list-heading"><div><h2>Hadiah tersedia</h2><p class="muted">Voucher yang didapat bersifat pribadi untuk akun Anda.</p></div></div>
+    <div id="shopGrid" class="shop-grid"><div class="notice">Memuat shop...</div></div>
+  </section>
+  <section style="margin-top:28px">
+    <div class="admin-list-heading"><div><h2>Riwayat penukaran</h2></div></div>
+    <div id="history" class="history"></div>
+  </section>
+</main>
+<div id="gachaModal" class="gacha-modal hidden" aria-hidden="true">
+  <div class="gacha-box">
+    <button id="gachaClose" class="btn secondary small" type="button" style="position:absolute;right:16px;top:16px" disabled>Tutup</button>
+    <span class="badge">🎰 GACHA VOUCHER</span>
+    <h2 id="gachaTitle" style="margin:10px 0 4px">Putar & Menangkan Voucher</h2>
+    <p class="muted" style="margin-top:0">Papan akan berhenti di voucher yang berhasil Anda dapatkan.</p>
+    <div class="gacha-wheel-wrap">
+      <div class="gacha-pointer">▼</div>
+      <div id="gachaWheel" class="gacha-wheel"></div>
+      <div class="gacha-center">SPIN<br>🪙</div>
+    </div>
+    <div id="gachaStatus" class="gacha-spin-status">Menyiapkan putaran...</div>
+    <div id="gachaResult" class="gacha-result hidden"></div>
+  </div>
+</div>
+
+<script type="module">
+import { supabase, esc, message } from "./app.js";
+const balanceEl=document.getElementById("coinBalance"), grid=document.getElementById("shopGrid"), historyEl=document.getElementById("history"), msg=document.getElementById("message");
+let user=null, balance=0;
+function show(text,type=""){message(msg,text,type);}
+async function load(){
+  const {data:{user:u}}=await supabase.auth.getUser();
+  if(!u){location.href="login.html?next=shop.html";return;}
+  user=u;
+  const [{data:coin},{data:rewards,error:re},{data:history,error:he}]=await Promise.all([
+    supabase.from("customer_coins").select("balance").eq("user_id",user.id).maybeSingle(),
+    supabase.from("shop_rewards").select("*").eq("is_active",true).order("created_at",{ascending:false}),
+    supabase.from("shop_redemptions").select("*,shop_rewards(title)").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30)
+  ]);
+  if(re){grid.innerHTML=`<div class="notice error">${esc(re.message)}<br><small>Jalankan coin-shop.sql di Supabase.</small></div>`;return;}
+  if(he) show(he.message,"error");
+  balance=Number(coin?.balance||0); renderBalance();
+  renderRewards(rewards||[]); renderHistory(history||[]);
+}
+function renderBalance(){balanceEl.textContent=`${balance.toLocaleString("id-ID")} 🪙`;}
+function renderRewards(rewards){
+  grid.innerHTML=rewards.length?rewards.map(r=>`
+    <article class="card shop-card">
+      <div><span class="badge">🎟️ Voucher Random</span><h3>${esc(r.title)}</h3><p class="muted">${esc(r.description||"Dapatkan voucher acak dari voucher aktif.")}</p></div>
+      <div class="shop-bottom"><span class="coin-pill">🪙 ${Number(r.coin_cost).toLocaleString("id-ID")}</span>
+      <button class="btn" data-redeem="${r.id}" ${balance<Number(r.coin_cost)?"disabled":""}>Tukar</button></div>
+    </article>`).join(""):'<div class="notice">Belum ada hadiah yang aktif.</div>';
+  grid.querySelectorAll("[data-redeem]").forEach(b=>b.onclick=()=>redeem(b.dataset.redeem,b));
+}
+function renderHistory(rows){
+  historyEl.innerHTML=rows.length?rows.map(r=>`
+    <div class="history-row"><div><b>${esc(r.shop_rewards?.title||"Coin Shop")}</b><br><small>${new Date(r.created_at).toLocaleString("id-ID")}</small></div>
+    <div style="text-align:right"><b>${esc(r.voucher_code||"-")}</b><br><small>-${Number(r.coin_cost)} coin</small></div></div>`).join(""):'<div class="notice">Belum ada penukaran.</div>';
+}
+async function redeem(id,button){
+  if(!confirm("Mulai gacha dengan menukar coin untuk hadiah ini?")) return;
+  button.disabled=true; button.textContent="Memutar...";
+  const modal=document.getElementById("gachaModal"), wheel=document.getElementById("gachaWheel"), status=document.getElementById("gachaStatus"), result=document.getElementById("gachaResult"), close=document.getElementById("gachaClose");
+  modal.classList.remove("hidden"); modal.setAttribute("aria-hidden","false"); result.classList.add("hidden"); close.disabled=true;
+  status.textContent="🎯 Menyiapkan papan gacha...";
+  try{
+    // Satu RPC untuk memilih voucher + memotong coin + membuat voucher customer.
+    // Ini mencegah pilihan voucher berubah di antara dua request.
+    const {data,error}=await supabase.rpc("redeem_shop_reward",{p_reward_id:id});
+    if(error) throw error;
+    if(!data || !data.voucher_code) throw new Error("Server tidak mengembalikan voucher. Pastikan coin-shop.sql terbaru sudah dijalankan.");
+
+    const options=Array.isArray(data.gacha_options)?data.gacha_options:[];
+    const segments=options.length?options:Array.from({length:8},(_,i)=>({id:`dummy-${i}`,label:"VOUCHER"}));
+    const n=segments.length, seg=360/n;
+    wheel.innerHTML=segments.map((o,i)=>{
+      const angle=i*seg+seg/2;
+      return `<div class="gacha-label" style="transform:rotate(${angle}deg) translateY(-${Math.min(145,Math.round(Math.min(wheel.clientWidth,wheel.clientHeight)*.34))}px) rotate(-${angle}deg)">${esc(o.label||"VOUCHER")}</div>`;
+    }).join("");
+    const colors=["#f59e0b","#22c55e","#38bdf8","#fb7185","#a78bfa","#2dd4bf","#fb923c","#f472b6","#84cc16","#22d3ee","#c084fc","#facc15"];
+    wheel.style.background=`conic-gradient(${segments.map((_,i)=>`${colors[i%colors.length]} ${i*seg}deg ${(i+1)*seg}deg`).join(",")})`;
+    let target=Number.isInteger(Number(data.gacha_index))?Number(data.gacha_index):-1;
+    if(target<0 || target>=n) target=Math.max(0,segments.findIndex(o=>o.id===data.source_voucher_id));
+    if(target<0) target=0;
+    const targetCenter=target*seg+seg/2;
+    const rotation=360*7+(360-targetCenter);
+    wheel.style.transition="none"; wheel.style.transform="rotate(0deg)"; void wheel.offsetWidth;
+    status.textContent="🎰 Roda sedang berputar...";
+    requestAnimationFrame(()=>{wheel.style.transition="transform 6s cubic-bezier(.12,.78,.18,1)";wheel.style.transform=`rotate(${rotation}deg)`;});
+    await new Promise(r=>setTimeout(r,6200));
+
+    balance=Number(data.remaining_coins); renderBalance();
+    status.textContent="🎉 SELAMAT! Voucher berhasil didapatkan.";
+    result.innerHTML=`<b>Voucher Anda</b><div class="gacha-result-code">${esc(data.voucher_code)}</div><div class="muted">Diskon: ${esc(String(data.discount_value))}${data.discount_type==="percent"?"%":" Rp"} · Berlaku sampai ${new Date(data.expires_at).toLocaleString("id-ID")}</div><button id="copyVoucher" class="btn small" type="button" style="margin-top:10px">Salin Kode</button>`;
+    result.classList.remove("hidden");
+    document.getElementById("copyVoucher")?.addEventListener("click",async()=>{
+      try{await navigator.clipboard.writeText(data.voucher_code);status.textContent="✅ Kode voucher disalin.";}catch(_){status.textContent="Kode: "+data.voucher_code;}
+    });
+    close.disabled=false;
+    await load();
+  }catch(error){
+    console.error("Coin Shop Gacha:",error);
+    status.textContent="❌ Gacha gagal.";
+    show(error?.message||"Gacha gagal. Pastikan database Coin Shop sudah diperbarui.","error");
+    close.disabled=false;
+  }finally{button.disabled=false;button.textContent="Tukar";}
+}
+
+const gachaClose=document.getElementById("gachaClose");
+gachaClose.onclick=()=>{document.getElementById("gachaModal").classList.add("hidden");document.getElementById("gachaModal").setAttribute("aria-hidden","true");};
+
+load();
+</script>
+</body>
+</html>

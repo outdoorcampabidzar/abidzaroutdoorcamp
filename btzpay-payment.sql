@@ -120,6 +120,11 @@ begin
       update public.vouchers set used_count = used_count + 1
       where code = v_order.voucher_code and used_count < quota;
       if not found then raise exception 'Kuota voucher habis'; end if;
+      -- Voucher yang sudah mencapai kuota langsung dihapus. Riwayat tetap
+      -- tersimpan di voucher_usages/shop_redemptions melalui voucher_code.
+      delete from public.vouchers
+      where code = v_order.voucher_code
+        and coalesce(used_count,0) >= quota;
     end if;
   elsif v_was_paid and v_status in ('refunded','cancelled','expired','failed') then
     for v_line in select * from public.order_items where order_id = v_order.id loop

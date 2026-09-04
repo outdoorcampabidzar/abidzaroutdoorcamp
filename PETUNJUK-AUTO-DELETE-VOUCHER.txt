@@ -1,0 +1,21 @@
+AUTO DELETE VOUCHER SETELAH TERPAKAI
+
+Masalah:
+Voucher 1/1 sebelumnya masih tampil di Admin setelah dipakai.
+
+Perilaku baru:
+- 1/1 -> dipakai -> langsung DELETE.
+- 1/2 -> pemakaian pertama -> tetap ada sebagai 1/2.
+- 2/2 -> pemakaian kedua -> langsung DELETE.
+- Voucher hasil Gacha AOC-... -> setelah dipakai dan mencapai quota -> DELETE.
+- Riwayat pemakaian tetap ada dan kode voucher tetap terlihat di riwayat.
+
+INSTALL DATABASE:
+1. Backup database Supabase.
+2. Buka Supabase -> SQL Editor.
+3. Jalankan PATCH-GACHA-AUTO-DELETE-USED.sql satu kali.
+4. Untuk sistem checkout/payment, gunakan btzpay-payment.sql dan rental-calendar.sql dari paket ini agar penghapusan otomatis diterapkan setelah used_count mencapai quota.
+5. Jika coin-shop lama masih terpasang, jalankan coin-shop.sql versi paket ini agar Gacha source 1/1 juga otomatis terhapus.
+6. Refresh Admin -> Voucher.
+
+Voucher lama yang sudah 1/1 akan dibersihkan oleh langkah patch nomor 3.
