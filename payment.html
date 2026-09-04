@@ -227,20 +227,63 @@
 
       function printInvoice() {
         const invoice = document.getElementById("printInvoice");
-        if (!invoice || !invoice.querySelector(".invoice-sheet")) {
+        const sheet = invoice?.querySelector(".invoice-sheet");
+        if (!sheet) {
           showMessage("Invoice belum siap. Silakan tunggu sebentar lalu coba lagi.", "error");
           return;
         }
 
-        // Pastikan browser mencetak invoice, bukan halaman pembayaran.
-        document.body.classList.add("printing-invoice");
-        // Pastikan style sudah diterapkan sebelum browser membuat preview print.
-        invoice.setAttribute("aria-hidden", "false");
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            window.print();
-          });
-        });
+        // Android/Chrome print preview lebih stabil jika invoice dicetak dari
+        // dokumen khusus, bukan dari halaman pembayaran yang penuh CSS/layout.
+        const printWindow = window.open("", "_blank", "noopener,noreferrer");
+        if (!printWindow) {
+          showMessage("Popup diblokir browser. Izinkan popup lalu tekan Cetak Invoice lagi.", "error");
+          return;
+        }
+
+        const printCss = `
+          @page { size: 80mm auto; margin: 3mm; }
+          * { box-sizing: border-box; }
+          html, body { margin: 0; padding: 0; background: #fff; color: #111; }
+          body { font-family: Arial, sans-serif; font-size: 10px; }
+          .invoice-sheet { width: 74mm; margin: 0 auto; padding: 0; background: #fff; color: #111; }
+          .invoice-header { display:flex; justify-content:space-between; align-items:flex-start; gap:6px; }
+          .invoice-brand { font-size:15px; font-weight:900; }
+          .invoice-brand span { color:#16a34a; }
+          .invoice-subtitle { margin-top:3px; color:#555; font-size:8px; }
+          .invoice-title { text-align:right; font-size:15px; font-weight:900; letter-spacing:1px; }
+          .invoice-title small { font-size:8px; letter-spacing:0; color:#555; }
+          .invoice-rule { border-top:2px solid #111; margin:8px 0; }
+          .invoice-meta { display:grid; grid-template-columns:1fr; gap:7px; font-size:9px; line-height:1.5; margin-bottom:9px; }
+          .invoice-meta b, .invoice-period b { font-size:9px; }
+          .invoice-period { padding:6px 7px; background:#f3f4f6; border:1px solid #ddd; margin-bottom:9px; font-size:9px; }
+          .invoice-table { width:100%; border-collapse:collapse; font-size:9px; }
+          .invoice-table th { background:#f3f4f6; text-align:left; font-size:8px; text-transform:uppercase; }
+          .invoice-table th, .invoice-table td { padding:5px 3px; border-bottom:1px solid #ddd; vertical-align:top; }
+          .invoice-table small { color:#666; }
+          .invoice-table .qty { width:30px; text-align:center; }
+          .invoice-table .money { width:auto; text-align:right; white-space:nowrap; }
+          .invoice-total { width:100%; margin-top:9px; font-size:9px; }
+          .invoice-total > div { display:flex; justify-content:space-between; padding:4px 0; gap:10px; }
+          .invoice-total .grand { border-top:2px solid #111; margin-top:4px; padding-top:8px; font-size:12px; }
+          .invoice-total .grand strong { font-size:15px; }
+          .invoice-footer { border-top:1px solid #ddd; margin-top:12px; padding-top:7px; display:flex; flex-direction:column; gap:3px; font-size:8px; color:#555; }
+          .invoice-footer b { color:#111; }
+          @media print { body { width:74mm; } .no-print { display:none !important; } }
+        `;
+
+        printWindow.document.open();
+        printWindow.document.write(`<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${esc(currentOrder?.order_number || "")}</title><style>${printCss}</style></head><body>${sheet.outerHTML}</body></html>`);
+        printWindow.document.close();
+
+        const doPrint = () => {
+          printWindow.focus();
+          setTimeout(() => {
+            printWindow.print();
+          }, 250);
+        };
+        if (printWindow.document.readyState === "complete") doPrint();
+        else printWindow.addEventListener("load", doPrint, { once: true });
       }
 
       window.addEventListener("afterprint", () => {
