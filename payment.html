@@ -234,10 +234,12 @@
 
         // Pastikan browser mencetak invoice, bukan halaman pembayaran.
         document.body.classList.add("printing-invoice");
+        // Pastikan style sudah diterapkan sebelum browser membuat preview print.
+        invoice.setAttribute("aria-hidden", "false");
         requestAnimationFrame(() => {
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             window.print();
-          }, 50);
+          });
         });
       }
 

@@ -5406,12 +5406,92 @@ main {
 .invoice-footer b { color: #111; }
 
 @media print {
-  @page { size: A4; margin: 12mm; }
-  html, body { background: #fff !important; }
-  body > * { display: none !important; }
-  .print-invoice { display: block !important; }
-  .invoice-sheet { max-width: none; padding: 0; margin: 0; }
+  /* Jangan sembunyikan <main>, karena invoice berada di dalamnya. */
+  @page { size: auto; margin: 4mm; }
+
+  html, body {
+    background: #fff !important;
+    color: #111 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Sembunyikan halaman pembayaran, tetapi tetap tampilkan wadah invoice. */
+  body.printing-invoice > .nav,
+  body.printing-invoice > nav,
+  body.printing-invoice .payment-card {
+    display: none !important;
+  }
+
+  body.printing-invoice .payment-page {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.printing-invoice #printInvoice,
+  body.printing-invoice .print-invoice {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .invoice-sheet {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #111 !important;
+    box-sizing: border-box;
+  }
+
+  .invoice-header { display: flex !important; }
+  .invoice-meta { display: grid !important; }
+  .invoice-table { display: table !important; }
+  .invoice-table thead { display: table-header-group !important; }
+  .invoice-table tbody { display: table-row-group !important; }
+  .invoice-table tr { display: table-row !important; }
+  .invoice-table th, .invoice-table td { display: table-cell !important; }
+
   * { box-shadow: none !important; text-shadow: none !important; }
+}
+
+/* Thermal 80mm: tetap terbaca saat printer kasir dipilih. */
+@media print and (max-width: 90mm) {
+  @page { size: 80mm auto; margin: 3mm; }
+  .invoice-sheet {
+    width: 74mm !important;
+    font-size: 10px;
+  }
+  .invoice-header {
+    gap: 6px;
+  }
+  .invoice-brand { font-size: 15px; }
+  .invoice-subtitle { font-size: 8px; }
+  .invoice-title { font-size: 15px; }
+  .invoice-title small { font-size: 8px; }
+  .invoice-rule { margin: 8px 0; }
+  .invoice-meta {
+    grid-template-columns: 1fr !important;
+    gap: 7px;
+    font-size: 9px;
+    margin-bottom: 9px;
+  }
+  .invoice-period { margin-bottom: 9px; padding: 6px 7px; font-size: 9px; }
+  .invoice-table { font-size: 9px; }
+  .invoice-table th, .invoice-table td { padding: 5px 3px; }
+  .invoice-table .money { width: auto; }
+  .invoice-total { width: 100%; margin-top: 9px; font-size: 9px; }
+  .invoice-total .grand { font-size: 12px; }
+  .invoice-total .grand strong { font-size: 15px; }
+  .invoice-footer { margin-top: 12px; padding-top: 7px; font-size: 8px; }
 }
 
 @media (max-width: 640px) {
