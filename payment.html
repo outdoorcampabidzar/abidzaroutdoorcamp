@@ -228,62 +228,46 @@
       function printInvoice() {
         const invoice = document.getElementById("printInvoice");
         const sheet = invoice?.querySelector(".invoice-sheet");
-        if (!sheet) {
+        if (!sheet || !sheet.textContent.trim()) {
           showMessage("Invoice belum siap. Silakan tunggu sebentar lalu coba lagi.", "error");
           return;
         }
 
-        // Android/Chrome print preview lebih stabil jika invoice dicetak dari
-        // dokumen khusus, bukan dari halaman pembayaran yang penuh CSS/layout.
-        const printWindow = window.open("", "_blank", "noopener,noreferrer");
-        if (!printWindow) {
-          showMessage("Popup diblokir browser. Izinkan popup lalu tekan Cetak Invoice lagi.", "error");
-          return;
-        }
+        // Cetak dari dokumen yang sedang aktif. Ini lebih stabil di Android
+        // dibanding window.open() + document.write(), yang pada beberapa
+        // perangkat menghasilkan Print Preview putih/kosong.
+        const body = document.body;
+        const previousTitle = document.title;
+        const previousScrollY = window.scrollY;
+        const orderNumber = currentOrder?.order_number || "invoice";
 
-        const printCss = `
-          @page { size: 80mm auto; margin: 3mm; }
-          * { box-sizing: border-box; }
-          html, body { margin: 0; padding: 0; background: #fff; color: #111; }
-          body { font-family: Arial, sans-serif; font-size: 10px; }
-          .invoice-sheet { width: 74mm; margin: 0 auto; padding: 0; background: #fff; color: #111; }
-          .invoice-header { display:flex; justify-content:space-between; align-items:flex-start; gap:6px; }
-          .invoice-brand { font-size:15px; font-weight:900; }
-          .invoice-brand span { color:#16a34a; }
-          .invoice-subtitle { margin-top:3px; color:#555; font-size:8px; }
-          .invoice-title { text-align:right; font-size:15px; font-weight:900; letter-spacing:1px; }
-          .invoice-title small { font-size:8px; letter-spacing:0; color:#555; }
-          .invoice-rule { border-top:2px solid #111; margin:8px 0; }
-          .invoice-meta { display:grid; grid-template-columns:1fr; gap:7px; font-size:9px; line-height:1.5; margin-bottom:9px; }
-          .invoice-meta b, .invoice-period b { font-size:9px; }
-          .invoice-period { padding:6px 7px; background:#f3f4f6; border:1px solid #ddd; margin-bottom:9px; font-size:9px; }
-          .invoice-table { width:100%; border-collapse:collapse; font-size:9px; }
-          .invoice-table th { background:#f3f4f6; text-align:left; font-size:8px; text-transform:uppercase; }
-          .invoice-table th, .invoice-table td { padding:5px 3px; border-bottom:1px solid #ddd; vertical-align:top; }
-          .invoice-table small { color:#666; }
-          .invoice-table .qty { width:30px; text-align:center; }
-          .invoice-table .money { width:auto; text-align:right; white-space:nowrap; }
-          .invoice-total { width:100%; margin-top:9px; font-size:9px; }
-          .invoice-total > div { display:flex; justify-content:space-between; padding:4px 0; gap:10px; }
-          .invoice-total .grand { border-top:2px solid #111; margin-top:4px; padding-top:8px; font-size:12px; }
-          .invoice-total .grand strong { font-size:15px; }
-          .invoice-footer { border-top:1px solid #ddd; margin-top:12px; padding-top:7px; display:flex; flex-direction:column; gap:3px; font-size:8px; color:#555; }
-          .invoice-footer b { color:#111; }
-          @media print { body { width:74mm; } .no-print { display:none !important; } }
-        `;
+        body.classList.add("printing-invoice");
+        document.title = `Invoice ${orderNumber}`;
 
-        printWindow.document.open();
-        printWindow.document.write(`<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${esc(currentOrder?.order_number || "")}</title><style>${printCss}</style></head><body>${sheet.outerHTML}</body></html>`);
-        printWindow.document.close();
+        // Paksa browser menghitung ulang layout sebelum snapshot print dibuat.
+        void sheet.offsetHeight;
 
-        const doPrint = () => {
-          printWindow.focus();
-          setTimeout(() => {
-            printWindow.print();
-          }, 250);
+        const restore = () => {
+          body.classList.remove("printing-invoice");
+          document.title = previousTitle;
+          window.scrollTo(0, previousScrollY);
         };
-        if (printWindow.document.readyState === "complete") doPrint();
-        else printWindow.addEventListener("load", doPrint, { once: true });
+
+        // afterprint dipanggil Chrome/Android setelah dialog print ditutup.
+        window.addEventListener("afterprint", restore, { once: true });
+
+        // Beri satu frame agar display invoice yang sebelumnya hidden benar-
+        // benar masuk ke layout sebelum window.print().
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            try {
+              window.print();
+            } catch (error) {
+              restore();
+              showMessage("Gagal membuka cetak invoice. Silakan coba lagi.", "error");
+            }
+          });
+        });
       }
 
       window.addEventListener("afterprint", () => {

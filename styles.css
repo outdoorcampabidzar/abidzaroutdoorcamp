@@ -5406,6 +5406,10 @@ main {
 .invoice-footer b { color: #111; }
 
 @media print {
+  /* Android/Chrome: print hanya invoice yang sedang aktif. */
+  body.printing-invoice { background:#fff !important; }
+  body.printing-invoice .print-invoice { position:static !important; }
+
   /* Jangan sembunyikan <main>, karena invoice berada di dalamnya. */
   @page { size: auto; margin: 4mm; }
 
