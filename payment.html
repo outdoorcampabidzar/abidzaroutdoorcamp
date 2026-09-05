@@ -195,13 +195,19 @@
         invoice.innerHTML = `
           <div class="invoice-sheet">
             <header class="invoice-header">
-              <div>
-                <div class="invoice-brand">Abidzar<span>Outdoorcamp</span></div>
-                <div class="invoice-subtitle">Outdoor Rental & Open Trip</div>
+              <img class="invoice-logo" src="assets/abidzar-logo-bw.png" alt="Logo Abidzar Outdoorcamp" />
+              <div class="invoice-business">
+                <h1>ABIDZAR OUTDOORCAMP</h1>
+                <div class="subtitle">Outdoor Rental & Open Trip</div>
+                <p class="contact">Jl. Danau Maninjau Barat III No.B2 e30, Sawojajar, Kec. Kedungkandang, Kota Malang, Jawa Timur 65139</p>
+                <p class="contact">Telp / WhatsApp: +62 822-4604-9672</p>
               </div>
-              <div class="invoice-title">INVOICE<br><small>${esc(order.order_number || "-")}</small></div>
             </header>
             <div class="invoice-rule"></div>
+            <div class="invoice-titlebar">
+              <div class="invoice-title">INVOICE</div>
+              <div class="invoice-number">NO. PESANAN<br>${esc(order.order_number || "-")}</div>
+            </div>
             <div class="invoice-meta">
               <div><b>Data Pelanggan</b><br>${esc(order.customer_name || "-")}<br>${esc(order.phone || "-")}
               ${order.email ? `<br>${esc(order.email)}` : ""}</div>
