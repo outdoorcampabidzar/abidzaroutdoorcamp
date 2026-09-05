@@ -1,0 +1,18 @@
+PERUBAHAN INVOICE - ABIDZAR OUTDOORCAMP
+
+Konsep cetak invoice langsung DIHAPUS.
+Sekarang tombol pada halaman pembayaran adalah:
+"Unduh Invoice PDF"
+
+Cara kerja:
+1. Buka halaman pembayaran pesanan.
+2. Tekan "Unduh Invoice PDF".
+3. Sistem membuat file PDF invoice langsung di browser.
+4. File otomatis tersimpan dengan nama Invoice-[nomor-pesanan].pdf.
+
+PDF menggunakan ukuran lebar 80mm dengan tinggi dinamis berdasarkan jumlah item, sehingga tidak ada dialog printer dan tidak ada halaman kosong dari Chrome Android.
+
+Catatan:
+- Generator PDF menggunakan jsPDF dari CDN cdnjs.
+- Saat mengunduh PDF, perangkat membutuhkan koneksi internet agar library jsPDF dapat dimuat.
+- Logo Abidzar Outdoorcamp hitam-putih tetap diambil dari assets/abidzar-logo-bw.png.

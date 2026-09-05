@@ -17,8 +17,8 @@
       <section id="paymentCard" class="card payment-card">
         <div class="notice">Memuat pembayaran...</div>
       </section>
-      <section id="printInvoice" class="print-invoice" aria-hidden="true"></section>
     </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module">
       import { supabase, rupiah, esc, loadSiteSettings } from "./app.js";
       const card = document.getElementById("paymentCard");
@@ -110,13 +110,12 @@
         <div id="paymentMessage" class="notice hidden"></div>
         ${adminOptions().length ? `<div class="payment-admin-invoice"><label class="field"><span>Kirim invoice kepada</span><select id="invoiceAdmin" class="input">${adminOptions().map((admin) => `<option value="${esc(admin.number)}">${esc(admin.name)}</option>`).join("")}</select></label><button id="sendAdminInvoice" class="btn secondary" type="button">Kirim Invoice ke Admin</button></div>` : ""}
         <div class="actions payment-actions">
-          <button id="printInvoiceBtn" class="btn invoice-print-btn" type="button">Cetak Invoice</button>
+          <button id="downloadInvoiceBtn" class="btn invoice-print-btn" type="button">Unduh Invoice PDF</button>
           ${active && payment.payment_url ? `<a class="btn" href="${esc(payment.payment_url)}" target="_blank" rel="noopener">Buka Halaman Pembayaran</a>` : ""}
           ${active ? '<button id="checkPayment" class="btn secondary" type="button">Cek Pembayaran</button><button id="cancelPayment" class="btn danger" type="button">Batalkan</button>' : ""}
           ${["expired", "cancelled", "failed"].includes(status) ? '<button id="recreatePayment" class="btn" type="button">Buat Pembayaran Baru</button>' : ""}
           <a class="btn secondary" href="orders.html">Kembali ke Pesanan</a>
         </div>`;
-        renderPrintInvoice(order, payment, paymentMode, paymentLabels[configuredMethod] || configuredMethod);
         document
           .getElementById("checkPayment")
           ?.addEventListener("click", check);
@@ -130,8 +129,8 @@
           .getElementById("sendAdminInvoice")
           ?.addEventListener("click", sendInvoiceToAdmin);
         document
-          .getElementById("printInvoiceBtn")
-          ?.addEventListener("click", printInvoice);
+          .getElementById("downloadInvoiceBtn")
+          ?.addEventListener("click", downloadInvoicePDF);
         if (active) {
           updateCountdown();
           timer = setInterval(() => {
@@ -176,119 +175,202 @@
         window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
       }
 
-      function renderPrintInvoice(order, payment, paymentMode, gatewayLabel) {
-        const invoice = document.getElementById("printInvoice");
-        if (!invoice) return;
-        const items = (order.order_items || []).map((line) => {
-          const variant = line.variant_name_snapshot ? ` <small>${esc(line.variant_name_snapshot)}</small>` : "";
-          const type = line.item_type === "trip" ? "Open Trip" : (line.fulfillment_type === "sale" ? "Jual" : "Sewa");
-          return `<tr>
-            <td>${esc(line.title_snapshot || "Item")}${variant}<br><small>${esc(type)}</small></td>
-            <td class="qty">${Number(line.quantity || 0)}</td>
-            <td class="money">${rupiah(line.unit_price || 0)}</td>
-            <td class="money">${rupiah(line.line_total || 0)}</td>
-          </tr>`;
-        }).join("");
-        const rental = order.rental_start
-          ? `<div><b>Periode sewa</b><br>${esc(order.rental_start)} — ${esc(order.rental_end || order.rental_start)}</div>`
-          : "";
-        invoice.innerHTML = `
-          <div class="invoice-sheet">
-            <header class="invoice-header">
-              <img class="invoice-logo" src="assets/abidzar-logo-bw.png" alt="Logo Abidzar Outdoorcamp" />
-            <div class="invoice-business">
-                <h1>ABIDZAR OUTDOORCAMP</h1>
-                <div class="subtitle">Outdoor Rental & Open Trip</div>
-                <p class="contact">Jl. Danau Maninjau Barat III No.B2 e30, Sawojajar, Kec. Kedungkandang, Kota Malang, Jawa Timur 65139</p>
-                <p class="contact">Telp / WhatsApp: +62 822-4604-9672</p>
-              </div>
-            </header>
-            <div class="invoice-rule"></div>
-            <div class="invoice-titlebar">
-              <div class="invoice-title">INVOICE</div>
-              <div class="invoice-number">NO. PESANAN<br>${esc(order.order_number || "-")}</div>
-            </div>
-            <div class="invoice-meta">
-              <div><b>Data Pelanggan</b><br>${esc(order.customer_name || "-")}<br>${esc(order.phone || "-")}
-              ${order.email ? `<br>${esc(order.email)}` : ""}</div>
-              <div><b>Tanggal</b><br>${new Date(payment.created_at || order.created_at).toLocaleString("id-ID")}<br><b>Status</b><br>${esc(labels[payment.status] || payment.status || "-")}</div>
-              <div><b>Pembayaran</b><br>${esc(gatewayLabel || payment.payment_method || "-")}<br><b>ID Transaksi</b><br>${esc(payment.gateway_transaction_id || "-")}</div>
-            </div>
-            ${rental ? `<div class="invoice-period">${rental}</div>` : ""}
-            <table class="invoice-table">
-              <thead><tr><th>Item</th><th class="qty">Qty</th><th class="money">Harga</th><th class="money">Jumlah</th></tr></thead>
-              <tbody>${items || `<tr><td colspan="4">Tidak ada item.</td></tr>`}</tbody>
-            </table>
-            <div class="invoice-total">
-              <div><span>Subtotal</span><b>${rupiah(order.subtotal || 0)}</b></div>
-              <div><span>Diskon</span><b>− ${rupiah(order.discount || 0)}</b></div>
-              <div class="grand"><span>Total</span><strong>${rupiah(payment.total_amount || order.total || 0)}</strong></div>
-            </div>
-            <footer class="invoice-footer">
-              <b>Terima kasih telah memilih AbidzarOutdoorcamp.</b>
-              <span>Simpan invoice ini sebagai bukti pemesanan dan pembayaran.</span>
-            </footer>
-          </div>`;
-      }
-
-      function printInvoice() {
-        const invoice = document.getElementById("printInvoice");
-        const sheet = invoice?.querySelector(".invoice-sheet");
-        if (!invoice || !sheet || !sheet.textContent.trim()) {
+      async function downloadInvoicePDF() {
+        if (!currentOrder || !payment) {
           showMessage("Invoice belum siap. Silakan tunggu sebentar lalu coba lagi.", "error");
           return;
         }
+        const button = document.getElementById("downloadInvoiceBtn");
+        const oldText = button?.textContent;
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Membuat PDF...";
+        }
 
-        const body = document.body;
-        const html = document.documentElement;
-        const originalParent = invoice.parentNode;
-        const originalNextSibling = invoice.nextSibling;
-        const previousTitle = document.title;
-        const previousScrollY = window.scrollY;
-        const orderNumber = currentOrder?.order_number || "invoice";
+        try {
+          const JsPDF = window.jspdf?.jsPDF;
+          if (!JsPDF) throw new Error("Mesin PDF belum tersedia. Pastikan koneksi internet aktif lalu coba lagi.");
 
-        // Pindahkan invoice menjadi child langsung <body> agar Chrome Android
-        // tidak ikut menghitung layout <main class="container payment-page">.
-        body.appendChild(invoice);
-        html.classList.add("printing-invoice");
-        body.classList.add("printing-invoice");
-        invoice.setAttribute("aria-hidden", "false");
-        document.title = `Invoice ${orderNumber}`;
+          const order = currentOrder;
+          const gateway = payment.payment_method || "-";
+          const created = new Date(payment.created_at || order.created_at).toLocaleString("id-ID");
+          const status = labels[payment.status] || payment.status || "-";
+          const items = order.order_items || [];
 
-        void invoice.offsetHeight;
-        void sheet.offsetHeight;
+          // Ukuran 80mm dengan tinggi dinamis agar seluruh invoice tetap menjadi satu halaman PDF.
+          const baseHeight = 72;
+          const itemHeights = items.reduce((sum, line) => {
+            const title = String(line.title_snapshot || "Item");
+            const variant = line.variant_name_snapshot ? ` (${line.variant_name_snapshot})` : "";
+            const lines = Math.max(1, Math.ceil((title + variant).length / 34));
+            return sum + Math.max(6, lines * 3.4 + 2.2);
+          }, 0);
+          const height = Math.max(105, Math.min(250, baseHeight + itemHeights));
+          const doc = new JsPDF({ unit: "mm", format: [80, height], orientation: "portrait", compress: true });
+          const pageW = 80;
+          const left = 4;
+          const right = 76;
+          let y = 4;
 
-        let restored = false;
-        const restore = () => {
-          if (restored) return;
-          restored = true;
-          if (originalParent) {
-            originalParent.insertBefore(invoice, originalNextSibling);
+          doc.setTextColor(0, 0, 0);
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.25);
+          doc.setFont("helvetica", "normal");
+
+          // Logo hitam-putih dari assets situs.
+          try {
+            const logoData = await imageToDataURL("assets/abidzar-logo-bw.png");
+            doc.addImage(logoData, "PNG", left, y, 15, 15, undefined, "FAST");
+          } catch (_) {
+            // PDF tetap dibuat walau logo gagal dimuat.
           }
-          html.classList.remove("printing-invoice");
-          body.classList.remove("printing-invoice");
-          invoice.setAttribute("aria-hidden", "true");
-          document.title = previousTitle;
-          window.scrollTo(0, previousScrollY);
-        };
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text("ABIDZAR OUTDOORCAMP", 21, y + 4.5);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(5.2);
+          doc.text("OUTDOOR RENTAL & OPEN TRIP", 21, y + 8);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(4.5);
+          const address = doc.splitTextToSize("Jl. Danau Maninjau Barat III No.B2 e30, Sawojajar, Kec. Kedungkandang, Kota Malang, Jawa Timur 65139", 54);
+          doc.text(address, 21, y + 10.8, { lineHeightFactor: 1.1 });
+          doc.text("Telp / WhatsApp: +62 822-4604-9672", 21, y + 10.8 + address.length * 2.1);
+          y += Math.max(17, 11 + address.length * 2.1);
+          doc.line(left, y, right, y);
+          y += 4;
 
-        window.addEventListener("afterprint", restore, { once: true });
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(12);
+          doc.text("INVOICE", left, y);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(4.5);
+          doc.text("NO. PESANAN", right, y - 2, { align: "right" });
+          doc.text(String(order.order_number || "-"), right, y + 0.5, { align: "right" });
+          y += 4;
 
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            try {
-              window.print();
-            } catch (error) {
-              restore();
-              showMessage("Gagal membuka cetak invoice. Silakan coba lagi.", "error");
-            }
-          });
-        });
+          const boxW = (right - left - 2) / 2;
+          const metaH = 15;
+          doc.rect(left, y, boxW, metaH);
+          doc.rect(left + boxW + 2, y, boxW, metaH);
+          doc.setFontSize(5.3);
+          doc.setFont("helvetica", "bold");
+          doc.text("Data Pelanggan", left + 1.5, y + 3);
+          doc.text("Tanggal", left + boxW + 3.5, y + 3);
+          doc.setFont("helvetica", "normal");
+          doc.text(doc.splitTextToSize(`${order.customer_name || "-"}\n${order.phone || "-"}`, boxW - 3), left + 1.5, y + 5.5, { lineHeightFactor: 1.15 });
+          doc.text(doc.splitTextToSize(`${created}\nStatus: ${status}`, boxW - 3), left + boxW + 3.5, y + 5.5, { lineHeightFactor: 1.15 });
+          y += metaH + 1.5;
+
+          const payH = 12;
+          doc.rect(left, y, right-left, payH);
+          doc.setFont("helvetica", "bold");
+          doc.text("Pembayaran", left + 1.5, y + 3);
+          doc.setFont("helvetica", "normal");
+          doc.text(String(gateway).replace(/^.*?Pembayaran/, "").trim() || String(payment.payment_method || "-"), left + 1.5, y + 5.7);
+          doc.setFont("helvetica", "bold");
+          doc.text("ID Transaksi", left + 1.5, y + 8.3);
+          doc.setFont("helvetica", "normal");
+          doc.text(doc.splitTextToSize(String(payment.gateway_transaction_id || "-"), right-left-25), left + 1.5, y + 10.4, { lineHeightFactor: 1.0 });
+          y += payH + 1.5;
+
+          if (order.rental_start) {
+            doc.rect(left, y, right-left, 8);
+            doc.setFont("helvetica", "bold");
+            doc.text("Periode sewa", left + 1.5, y + 3);
+            doc.setFont("helvetica", "normal");
+            doc.text(`${order.rental_start} — ${order.rental_end || order.rental_start}`, left + 1.5, y + 5.8);
+            y += 9.5;
+          }
+
+          // Tabel item.
+          const cols = [left, 48, 54, 65, right];
+          const headerH = 6;
+          doc.setFillColor(0, 0, 0);
+          doc.rect(left, y, right-left, headerH, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(5.2);
+          doc.text("Item", left + 1, y + 4);
+          doc.text("Qty", (cols[1]+cols[2])/2, y + 4, { align: "center" });
+          doc.text("Harga", cols[3]-1, y + 4, { align: "right" });
+          doc.text("Jumlah", right-1, y + 4, { align: "right" });
+          doc.setTextColor(0,0,0);
+          y += headerH;
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(4.8);
+          for (const line of items) {
+            const title = `${line.title_snapshot || "Item"}${line.variant_name_snapshot ? ` (${line.variant_name_snapshot})` : ""}`;
+            const titleLines = doc.splitTextToSize(title, 34);
+            const type = line.item_type === "trip" ? "Open Trip" : (line.fulfillment_type === "sale" ? "Jual" : "Sewa");
+            const rowH = Math.max(6, titleLines.length * 2.7 + 3.5);
+            doc.rect(left, y, right-left, rowH);
+            doc.line(cols[1], y, cols[1], y + rowH);
+            doc.line(cols[2], y, cols[2], y + rowH);
+            doc.line(cols[3], y, cols[3], y + rowH);
+            doc.text(titleLines, left + 1, y + 2.8, { lineHeightFactor: 1.0 });
+            doc.setFontSize(4.1);
+            doc.text(type, left + 1, y + rowH - 1.2);
+            doc.setFontSize(4.8);
+            doc.text(String(Number(line.quantity || 0)), (cols[1]+cols[2])/2, y + 3.2, { align: "center" });
+            doc.text(rupiah(line.unit_price || 0), cols[3]-1, y + 3.2, { align: "right" });
+            doc.text(rupiah(line.line_total || 0), right-1, y + 3.2, { align: "right" });
+            y += rowH;
+          }
+          if (!items.length) {
+            doc.rect(left, y, right-left, 7);
+            doc.text("Tidak ada item.", left + 1, y + 4.2);
+            y += 7;
+          }
+
+          const totalH = 16;
+          doc.rect(left, y, right-left, totalH);
+          doc.line(left, y + 5.2, right, y + 5.2);
+          doc.line(left, y + 10.4, right, y + 10.4);
+          doc.setFontSize(5.1);
+          doc.text("Subtotal", left + 1.5, y + 3.5);
+          doc.text(rupiah(order.subtotal || 0), right - 1.5, y + 3.5, { align: "right" });
+          doc.text("Diskon", left + 1.5, y + 8.7);
+          doc.text(`− ${rupiah(order.discount || 0)}`, right - 1.5, y + 8.7, { align: "right" });
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(7);
+          doc.text("Total", left + 1.5, y + 14);
+          doc.text(rupiah(payment.total_amount || order.total || 0), right - 1.5, y + 14, { align: "right" });
+          y += totalH + 3;
+
+          doc.line(left, y, right, y);
+          y += 3.5;
+          doc.setFontSize(5.2);
+          doc.text("Terima kasih telah memilih AbidzarOutdoorcamp.", pageW/2, y, { align: "center" });
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(4.5);
+          doc.text("Simpan invoice ini sebagai bukti pemesanan dan pembayaran.", pageW/2, y + 2.8, { align: "center" });
+
+          const filename = `Invoice-${String(order.order_number || "AbidzarOutdoorcamp").replace(/[^a-zA-Z0-9_-]/g, "-")}.pdf`;
+          doc.save(filename);
+          showMessage("Invoice PDF berhasil diunduh.", "success");
+        } catch (error) {
+          console.error(error);
+          showMessage(`Gagal membuat PDF: ${error.message || "terjadi kesalahan"}`, "error");
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = oldText || "Unduh Invoice PDF";
+          }
+        }
       }
 
-      window.addEventListener("afterprint", () => {
-        document.body.classList.remove("printing-invoice");
-      });
+      async function imageToDataURL(src) {
+        const response = await fetch(src, { cache: "no-store" });
+        if (!response.ok) throw new Error("Logo tidak dapat dimuat");
+        const blob = await response.blob();
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
 
       function updateCountdown() {
         const el = document.getElementById("countdown");
