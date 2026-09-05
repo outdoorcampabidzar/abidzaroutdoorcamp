@@ -7329,3 +7329,151 @@ body{
 
   body.printing-invoice .invoice-footer b { font-size: 7px !important; }
 }
+
+/* =========================================================
+   INVOICE PRINT — ANDROID CHROME ROBUST ONE-PAGE
+   ========================================================= */
+@media print {
+  @page { size: 80mm auto; margin: 0 !important; }
+
+  html.printing-invoice,
+  html.printing-invoice body {
+    width: 80mm !important;
+    min-width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    overflow: visible !important;
+  }
+
+  /* Jangan gunakan visibility:hidden untuk seluruh body.
+     Chrome Android kadang menghasilkan preview putih karena elemen
+     yang baru ditampilkan tidak ikut dalam print snapshot. */
+  html.printing-invoice body > * {
+    display: none !important;
+  }
+
+  html.printing-invoice body > #printInvoice {
+    display: block !important;
+    visibility: visible !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  html.printing-invoice body > #printInvoice * {
+    visibility: visible !important;
+  }
+
+  html.printing-invoice .invoice-sheet {
+    display: block !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    min-height: 0 !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 2.5mm 3mm 2mm !important;
+    background: #fff !important;
+    color: #000 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 7.1px !important;
+    line-height: 1.15 !important;
+    page-break-after: avoid !important;
+    break-after: avoid-page !important;
+  }
+
+  html.printing-invoice .invoice-header,
+  html.printing-invoice .invoice-titlebar,
+  html.printing-invoice .invoice-meta,
+  html.printing-invoice .invoice-period,
+  html.printing-invoice .invoice-table,
+  html.printing-invoice .invoice-total,
+  html.printing-invoice .invoice-footer {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  html.printing-invoice .invoice-header {
+    display: grid !important;
+    grid-template-columns: 17mm 1fr !important;
+    gap: 2mm !important;
+    align-items: center !important;
+    padding-bottom: 1.5mm !important;
+  }
+  html.printing-invoice .invoice-logo {
+    display: block !important;
+    width: 17mm !important;
+    height: 17mm !important;
+    max-width: 17mm !important;
+    max-height: 17mm !important;
+  }
+  html.printing-invoice .invoice-business h1 {
+    margin: 0 !important;
+    font-size: 11.5px !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+  }
+  html.printing-invoice .invoice-business .subtitle {
+    margin: .7mm 0 1mm !important;
+    font-size: 5.7px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+  }
+  html.printing-invoice .invoice-business .contact {
+    margin: 0 !important;
+    font-size: 5.7px !important;
+    line-height: 1.15 !important;
+    font-weight: 600 !important;
+  }
+  html.printing-invoice .invoice-rule {
+    border-top: 1px solid #000 !important;
+    margin: 1.2mm 0 1.8mm !important;
+  }
+  html.printing-invoice .invoice-titlebar {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    gap: 1mm !important;
+    margin-bottom: 1.5mm !important;
+  }
+  html.printing-invoice .invoice-title { font-size: 15px !important; font-weight: 900 !important; }
+  html.printing-invoice .invoice-number { max-width: 48mm !important; font-size: 5.8px !important; text-align: right !important; overflow-wrap: anywhere !important; }
+  html.printing-invoice .invoice-meta { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 1mm !important; margin-bottom: 1.5mm !important; }
+  html.printing-invoice .invoice-meta > div { border: .7px solid #000 !important; padding: 1.1mm !important; box-sizing: border-box !important; }
+  html.printing-invoice .invoice-period { border: .7px solid #000 !important; padding: 1.1mm !important; margin-bottom: 1.5mm !important; }
+  html.printing-invoice .invoice-table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; margin: 0 0 1.5mm !important; font-size: 7px !important; }
+  html.printing-invoice .invoice-table th,
+  html.printing-invoice .invoice-table td { border: .7px solid #000 !important; padding: 1.1mm .8mm !important; color: #000 !important; background: #fff !important; overflow-wrap: anywhere !important; }
+  html.printing-invoice .invoice-table th { background: #000 !important; color: #fff !important; font-weight: 900 !important; }
+  html.printing-invoice .invoice-table th:first-child { width: 47% !important; text-align: left !important; }
+  html.printing-invoice .invoice-table th:nth-child(2) { width: 10% !important; }
+  html.printing-invoice .invoice-table th:nth-child(3),
+  html.printing-invoice .invoice-table th:nth-child(4) { width: 21.5% !important; }
+  html.printing-invoice .invoice-table .qty { text-align: center !important; }
+  html.printing-invoice .invoice-table .money { text-align: right !important; white-space: nowrap !important; }
+  html.printing-invoice .invoice-total { width: 100% !important; border: .7px solid #000 !important; margin: 0 0 1.5mm !important; }
+  html.printing-invoice .invoice-total > div { display: flex !important; justify-content: space-between !important; gap: 2mm !important; padding: 1.1mm 1.5mm !important; border-bottom: .7px solid #000 !important; }
+  html.printing-invoice .invoice-total > div:last-child { border-bottom: 0 !important; }
+  html.printing-invoice .invoice-total .grand { font-size: 9px !important; font-weight: 900 !important; }
+  html.printing-invoice .invoice-footer { border-top: 1px solid #000 !important; padding-top: 1.8mm !important; text-align: center !important; display: flex !important; flex-direction: column !important; gap: .7mm !important; font-size: 6.2px !important; }
+  html.printing-invoice .invoice-footer b { font-size: 7.5px !important; }
+}
+
+@media print {
+  html.printing-invoice body {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+}
