@@ -197,15 +197,15 @@
           const status = labels[payment.status] || payment.status || "-";
           const items = order.order_items || [];
 
-          // Ukuran 80mm dengan tinggi dinamis agar seluruh invoice tetap menjadi satu halaman PDF.
-          const baseHeight = 72;
+          // PDF thermal 80mm: hitung tinggi dari seluruh blok invoice, bukan hanya jumlah item.
+          // Ini mencegah bagian tabel/total/footer terpotong pada viewer Android.
+          const baseHeight = 112;
           const itemHeights = items.reduce((sum, line) => {
-            const title = String(line.title_snapshot || "Item");
-            const variant = line.variant_name_snapshot ? ` (${line.variant_name_snapshot})` : "";
-            const lines = Math.max(1, Math.ceil((title + variant).length / 34));
-            return sum + Math.max(6, lines * 3.4 + 2.2);
+            const title = `${line.title_snapshot || "Item"}${line.variant_name_snapshot ? ` (${line.variant_name_snapshot})` : ""}`;
+            const lines = Math.max(1, Math.ceil(title.length / 34));
+            return sum + Math.max(6, lines * 2.7 + 3.5);
           }, 0);
-          const height = Math.max(105, Math.min(250, baseHeight + itemHeights));
+          const height = Math.max(140, Math.min(320, baseHeight + itemHeights));
           const doc = new JsPDF({ unit: "mm", format: [80, height], orientation: "portrait", compress: true });
           const pageW = 80;
           const left = 4;
