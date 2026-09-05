@@ -7348,14 +7348,29 @@ body{
     overflow: visible !important;
   }
 
-  /* Jangan gunakan visibility:hidden untuk seluruh body.
-     Chrome Android kadang menghasilkan preview putih karena elemen
-     yang baru ditampilkan tidak ikut dalam print snapshot. */
-  html.printing-invoice body > * {
+  /* Chrome Android: invoice berada di dalam <main>, bukan langsung di <body>.
+     Jangan menyembunyikan parent <main>, karena itu membuat preview putih. */
+  html.printing-invoice body > .nav {
     display: none !important;
   }
 
-  html.printing-invoice body > #printInvoice {
+  html.printing-invoice body > main.payment-page {
+    display: block !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    min-width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  html.printing-invoice #paymentCard {
+    display: none !important;
+  }
+
+  html.printing-invoice #printInvoice {
     display: block !important;
     visibility: visible !important;
     width: 80mm !important;
