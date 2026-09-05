@@ -195,20 +195,7 @@
         invoice.innerHTML = `
           <div class="invoice-sheet">
             <header class="invoice-header">
-              <svg class="invoice-logo" viewBox="0 0 200 200" role="img" aria-label="Logo Abidzar Outdoorcamp" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="100" cy="82" r="66" fill="none" stroke="#000" stroke-width="5"/>
-                <path d="M18 88 Q40 70 60 82 T100 84 T140 82 T182 88" fill="none" stroke="#000" stroke-width="4"/>
-                <path d="M25 140 L67 91 L99 125 L130 88 L180 140 Z" fill="#000"/>
-                <path d="M45 140 L67 108 L92 140 Z M112 140 L130 106 L165 140 Z" fill="#fff"/>
-                <path d="M75 140 L75 112 L96 92 L118 140 Z" fill="#fff" stroke="#000" stroke-width="4"/>
-                <circle cx="101" cy="55" r="13" fill="#000"/>
-                <path d="M84 73 Q101 63 118 73 L125 116 Q101 128 77 116 Z" fill="#000"/>
-                <path d="M84 77 L67 105 M118 77 L133 104 M94 116 L91 140 M108 116 L112 140" stroke="#000" stroke-width="8" stroke-linecap="round" fill="none"/>
-                <path d="M133 102 L143 70" stroke="#000" stroke-width="5" stroke-linecap="round"/>
-                <path d="M20 141 H180 V166 Q180 178 168 178 H32 Q20 178 20 166 Z" fill="#000"/>
-                <text x="100" y="157" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="900" fill="#fff" letter-spacing="1">ABIDZAR</text>
-                <text x="100" y="173" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="900" fill="#fff" letter-spacing="2">OUTDOORCAMP</text>
-              </svg>
+              <img class="invoice-logo" src="assets/abidzar-logo-bw.png" alt="Logo Abidzar Outdoorcamp" />
             <div class="invoice-business">
                 <h1>ABIDZAR OUTDOORCAMP</h1>
                 <div class="subtitle">Outdoor Rental & Open Trip</div>
@@ -247,17 +234,22 @@
       function printInvoice() {
         const invoice = document.getElementById("printInvoice");
         const sheet = invoice?.querySelector(".invoice-sheet");
-        if (!sheet || !sheet.textContent.trim()) {
+        if (!invoice || !sheet || !sheet.textContent.trim()) {
           showMessage("Invoice belum siap. Silakan tunggu sebentar lalu coba lagi.", "error");
           return;
         }
 
         const body = document.body;
         const html = document.documentElement;
+        const originalParent = invoice.parentNode;
+        const originalNextSibling = invoice.nextSibling;
         const previousTitle = document.title;
         const previousScrollY = window.scrollY;
         const orderNumber = currentOrder?.order_number || "invoice";
 
+        // Pindahkan invoice menjadi child langsung <body> agar Chrome Android
+        // tidak ikut menghitung layout <main class="container payment-page">.
+        body.appendChild(invoice);
         html.classList.add("printing-invoice");
         body.classList.add("printing-invoice");
         invoice.setAttribute("aria-hidden", "false");
@@ -270,6 +262,9 @@
         const restore = () => {
           if (restored) return;
           restored = true;
+          if (originalParent) {
+            originalParent.insertBefore(invoice, originalNextSibling);
+          }
           html.classList.remove("printing-invoice");
           body.classList.remove("printing-invoice");
           invoice.setAttribute("aria-hidden", "true");
