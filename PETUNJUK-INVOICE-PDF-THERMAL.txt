@@ -1,0 +1,23 @@
+PERBAIKAN INVOICE PDF THERMAL 80MM
+
+Perubahan:
+- Invoice tidak lagi memakai cetak langsung dari browser.
+- Tombol utama: Unduh Invoice PDF.
+- PDF dibuat khusus ukuran 80mm dengan tinggi otomatis agar seluruh invoice berada dalam 1 lembar.
+- Teks menggunakan font PDF/vector dan ukuran diperbesar supaya lebih tajam saat dicetak thermal.
+- Garis tabel dibuat lebih tebal untuk printer thermal.
+- Logo Abidzar Outdoorcamp menggunakan versi hitam-putih.
+- Alamat: Jl. Danau Maninjau Barat III No.B2 e30, Sawojajar, Kec. Kedungkandang, Kota Malang, Jawa Timur 65139.
+- Telp / WhatsApp: +62 822-4604-9672.
+
+Cara pakai:
+1. Upload seluruh isi ZIP ke hosting seperti biasa.
+2. Buka halaman pembayaran.
+3. Tekan "Unduh Invoice PDF".
+4. Buka PDF yang terunduh.
+5. Pilih printer thermal RPP02N_9486.
+6. Pilih kertas 80mm Roll.
+7. Untuk hasil paling jelas pilih mode Black & White / Kontras terbaik.
+
+Catatan:
+PDF membutuhkan koneksi internet saat pertama kali memuat library jsPDF dari CDN.
