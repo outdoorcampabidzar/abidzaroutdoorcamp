@@ -199,14 +199,14 @@
 
           // PDF thermal 80mm: hitung tinggi dari seluruh blok invoice, bukan hanya jumlah item.
           // Ini mencegah bagian tabel/total/footer terpotong pada viewer Android.
-          const baseHeight = 112;
+          const baseHeight = 116;
           const itemHeights = items.reduce((sum, line) => {
             const title = `${line.title_snapshot || "Item"}${line.variant_name_snapshot ? ` (${line.variant_name_snapshot})` : ""}`;
             const lines = Math.max(1, Math.ceil(title.length / 34));
-            return sum + Math.max(6, lines * 2.7 + 3.5);
+            return sum + Math.max(7, lines * 3.2 + 4.0);
           }, 0);
           const height = Math.max(140, Math.min(320, baseHeight + itemHeights));
-          const doc = new JsPDF({ unit: "mm", format: [80, height], orientation: "portrait", compress: true });
+          const doc = new JsPDF({ unit: "mm", format: [80, height], orientation: "portrait", compress: false, precision: 12 });
           const pageW = 80;
           const left = 4;
           const right = 76;
@@ -220,7 +220,7 @@
           // Logo hitam-putih dari assets situs.
           try {
             const logoData = await imageToDataURL("assets/abidzar-logo-bw.png");
-            doc.addImage(logoData, "PNG", left, y, 15, 15, undefined, "FAST");
+            doc.addImage(logoData, "PNG", left, y, 15, 15, undefined, "NONE");
           } catch (_) {
             // PDF tetap dibuat walau logo gagal dimuat.
           }
@@ -289,7 +289,7 @@
           doc.rect(left, y, right-left, headerH, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(5.2);
+          doc.setFontSize(6.2);
           doc.text("Item", left + 1, y + 4);
           doc.text("Qty", (cols[1]+cols[2])/2, y + 4, { align: "center" });
           doc.text("Harga", cols[3]-1, y + 4, { align: "right" });
@@ -298,18 +298,18 @@
           y += headerH;
 
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(4.8);
+          doc.setFontSize(5.7);
           for (const line of items) {
             const title = `${line.title_snapshot || "Item"}${line.variant_name_snapshot ? ` (${line.variant_name_snapshot})` : ""}`;
             const titleLines = doc.splitTextToSize(title, 34);
             const type = line.item_type === "trip" ? "Open Trip" : (line.fulfillment_type === "sale" ? "Jual" : "Sewa");
-            const rowH = Math.max(6, titleLines.length * 2.7 + 3.5);
+            const rowH = Math.max(6, titleLines.length * 3.2 + 4.0);
             doc.rect(left, y, right-left, rowH);
             doc.line(cols[1], y, cols[1], y + rowH);
             doc.line(cols[2], y, cols[2], y + rowH);
             doc.line(cols[3], y, cols[3], y + rowH);
             doc.text(titleLines, left + 1, y + 2.8, { lineHeightFactor: 1.0 });
-            doc.setFontSize(4.1);
+            doc.setFontSize(4.8);
             doc.text(type, left + 1, y + rowH - 1.2);
             doc.setFontSize(4.8);
             doc.text(String(Number(line.quantity || 0)), (cols[1]+cols[2])/2, y + 3.2, { align: "center" });
@@ -327,7 +327,7 @@
           doc.rect(left, y, right-left, totalH);
           doc.line(left, y + 5.2, right, y + 5.2);
           doc.line(left, y + 10.4, right, y + 10.4);
-          doc.setFontSize(5.1);
+          doc.setFontSize(5.8);
           doc.text("Subtotal", left + 1.5, y + 3.5);
           doc.text(rupiah(order.subtotal || 0), right - 1.5, y + 3.5, { align: "right" });
           doc.text("Diskon", left + 1.5, y + 8.7);
@@ -340,10 +340,10 @@
 
           doc.line(left, y, right, y);
           y += 3.5;
-          doc.setFontSize(5.2);
+          doc.setFontSize(5.8);
           doc.text("Terima kasih telah memilih AbidzarOutdoorcamp.", pageW/2, y, { align: "center" });
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(4.5);
+          doc.setFontSize(5.0);
           doc.text("Simpan invoice ini sebagai bukti pemesanan dan pembayaran.", pageW/2, y + 2.8, { align: "center" });
 
           const filename = `Invoice-${String(order.order_number || "AbidzarOutdoorcamp").replace(/[^a-zA-Z0-9_-]/g, "-")}.pdf`;
