@@ -184,7 +184,7 @@
         const oldText = button?.textContent;
         if (button) {
           button.disabled = true;
-          button.textContent = "Membuat PDF...";
+          button.textContent = "Membuat PDF thermal...";
         }
 
         try {
@@ -197,185 +197,186 @@
           const status = labels[payment.status] || payment.status || "-";
           const gateway = payment.payment_method || "-";
 
-          // PDF dibuat sebagai teks/vector (bukan screenshot/canvas) agar tetap tajam
-          // saat dibuka di HP dan dirasterisasi oleh aplikasi printer thermal 80mm.
-          const pageW = 80;
-          const left = 3.5;
-          const right = 76.5;
-          const contentW = right - left;
-          const rowHeights = items.map(line => {
+          /*
+           * Thermal PDF v2:
+           * - 80mm wide
+           * - single dynamic page
+           * - 203 DPI canvas (native class of common 80mm thermal printers)
+           * - text is rendered large/bold at 2x working resolution, then placed in PDF
+           * - no html2canvas and no screenshot of the webpage
+           * This avoids the tiny/soft webpage capture that caused the previous result.
+           */
+          const DPI = 203;
+          const MM = DPI / 25.4;
+          const W = Math.round(80 * MM); // ~640 px
+          const SCALE = 2;
+          const CW = W * SCALE;
+          const margin = Math.round(3.2 * MM * SCALE);
+          const contentW = CW - margin * 2;
+          const ctxCanvas = document.createElement("canvas");
+          const ctx = ctxCanvas.getContext("2d", { alpha: false });
+          if (!ctx) throw new Error("Canvas tidak tersedia di perangkat ini.");
+
+          const font = (size, weight = 400) => `${weight} ${Math.round(size * SCALE)}px Arial, Helvetica, sans-serif`;
+          const money = (v) => rupiah(v || 0);
+          const wrap = (text, maxWidth, fontSpec) => {
+            ctx.font = fontSpec;
+            const words = String(text || "-").split(/\s+/);
+            const lines = [];
+            let line = "";
+            for (const word of words) {
+              const test = line ? `${line} ${word}` : word;
+              if (ctx.measureText(test).width <= maxWidth || !line) line = test;
+              else { lines.push(line); line = word; }
+            }
+            if (line) lines.push(line);
+            return lines;
+          };
+
+          const itemTitleFont = font(6.5, 700);
+          const itemLines = items.map((line) => {
             const title = `${line.title_snapshot || "Item"}${line.variant_name_snapshot ? ` (${line.variant_name_snapshot})` : ""}`;
-            const lines = Math.max(1, Math.ceil(title.length / 31));
-            return Math.max(8.2, lines * 3.6 + 4.4);
-          });
-          const itemTotalH = rowHeights.reduce((a,b) => a+b, 0);
-          const addressLines = 2;
-          const fixedH = 123;
-          const height = Math.max(150, Math.min(360, fixedH + itemTotalH + (items.length ? 0 : 8)));
-          const doc = new JsPDF({
-            unit: "mm",
-            format: [pageW, height],
-            orientation: "portrait",
-            compress: false,
-            precision: 12,
-            putOnlyUsedFonts: true
+            return wrap(title, contentW * 0.48, itemTitleFont);
           });
 
-          const setBlack = () => {
-            doc.setTextColor(0, 0, 0);
-            doc.setDrawColor(0, 0, 0);
+          // Measure page first so it is always exactly ONE page and nothing is clipped.
+          let pagePx = Math.round(4 * MM * SCALE);
+          const headerH = Math.round(32 * MM * SCALE);
+          const invoiceHeadH = Math.round(13 * MM * SCALE);
+          const metaH = Math.round(18 * MM * SCALE);
+          const paymentH = Math.round(15 * MM * SCALE);
+          const periodH = order.rental_start ? Math.round(9.5 * MM * SCALE) : 0;
+          const tableHeadH = Math.round(7.5 * MM * SCALE);
+          const rowH = (lines) => Math.max(Math.round(11 * MM * SCALE), Math.round((lines.length * 3.8 + 6) * MM * SCALE));
+          const tableRowsH = itemLines.reduce((sum, lines) => sum + rowH(lines), 0) || Math.round(10 * MM * SCALE);
+          const totalH = Math.round(19 * MM * SCALE);
+          const footerH = Math.round(14 * MM * SCALE);
+          pagePx += headerH + invoiceHeadH + metaH + paymentH + periodH + tableHeadH + tableRowsH + totalH + footerH;
+
+          ctxCanvas.width = CW;
+          ctxCanvas.height = pagePx;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, CW, pagePx);
+          ctx.fillStyle = "#000000";
+          ctx.strokeStyle = "#000000";
+          ctx.textBaseline = "alphabetic";
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+
+          const line = (x1, y1, x2, y2, width = 2) => {
+            ctx.lineWidth = width * SCALE;
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
           };
-          const bold = (size) => {
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(size);
+          const rect = (x, y, w, h, width = 1.5) => {
+            ctx.lineWidth = width * SCALE;
+            ctx.strokeRect(x, y, w, h);
           };
-          const normal = (size) => {
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(size);
-          };
-          const box = (x, yy, w, h) => {
-            doc.setLineWidth(0.32);
-            doc.rect(x, yy, w, h);
+          const text = (str, x, y, spec, align = "left") => {
+            ctx.font = spec; ctx.textAlign = align; ctx.fillText(String(str), x, y);
           };
 
-          setBlack();
-          let y = 3.5;
-
-          // Logo hitam-putih asli, tetap vector text untuk semua tulisan.
+          let y = Math.round(4 * MM * SCALE);
+          // Logo is deliberately large enough for thermal output.
           try {
-            const logoData = await imageToDataURL("assets/abidzar-logo-bw.png");
-            doc.addImage(logoData, "PNG", left, y, 16, 16, undefined, "NONE");
+            const logo = new Image();
+            logo.src = await imageToDataURL("assets/abidzar-logo-bw.png");
+            await new Promise((resolve, reject) => { logo.onload = resolve; logo.onerror = reject; });
+            const logoH = Math.round(19 * MM * SCALE);
+            const logoW = Math.round(20 * MM * SCALE);
+            ctx.drawImage(logo, margin, y, logoW, logoH);
           } catch (_) {}
 
-          bold(10.5);
-          doc.text("ABIDZAR OUTDOORCAMP", 21, y + 4.8);
-          bold(5.8);
-          doc.text("OUTDOOR RENTAL & OPEN TRIP", 21, y + 8.1);
-          normal(5.8);
-          const address = doc.splitTextToSize(
-            "Jl. Danau Maninjau Barat III No.B2 e30, Sawojajar, Kec. Kedungkandang, Kota Malang, Jawa Timur 65139",
-            53
-          );
-          doc.text(address, 21, y + 11.0, { lineHeightFactor: 1.12 });
-          const phoneY = y + 11.0 + address.length * 2.35;
-          bold(5.8);
-          doc.text("Telp / WhatsApp: +62 822-4604-9672", 21, phoneY);
-          y = Math.max(y + 19, phoneY + 4.2);
-
-          doc.setLineWidth(0.45);
-          doc.line(left, y, right, y);
-          y += 5.0;
-
-          bold(12.5);
-          doc.text("INVOICE", left, y);
-          bold(5.3);
-          doc.text("NO. PESANAN", right, y - 2.0, { align: "right" });
-          normal(5.6);
-          doc.text(String(order.order_number || "-"), right, y + 0.8, { align: "right" });
-          y += 4.5;
-
-          const half = (contentW - 2.0) / 2;
-          const metaH = 16.5;
-          box(left, y, half, metaH);
-          box(left + half + 2, y, half, metaH);
-          bold(6.0);
-          doc.text("Data Pelanggan", left + 1.5, y + 3.5);
-          doc.text("Tanggal", left + half + 3.5, y + 3.5);
-          normal(5.9);
-          doc.text(doc.splitTextToSize(`${order.customer_name || "-"}\n${order.phone || "-"}`, half - 3.0), left + 1.5, y + 6.2, { lineHeightFactor: 1.2 });
-          doc.text(doc.splitTextToSize(`${created}\nStatus: ${status}`, half - 3.0), left + half + 3.5, y + 6.2, { lineHeightFactor: 1.2 });
-          y += metaH + 1.8;
-
-          const payH = 13.2;
-          box(left, y, contentW, payH);
-          bold(6.0);
-          doc.text("Pembayaran", left + 1.5, y + 3.4);
-          normal(5.9);
-          doc.text(String(gateway), left + 1.5, y + 6.0);
-          bold(6.0);
-          doc.text("ID Transaksi", left + 1.5, y + 8.8);
-          normal(5.4);
-          const tx = doc.splitTextToSize(String(payment.gateway_transaction_id || "-"), contentW - 3.0);
-          doc.text(tx.slice(0,2), left + 1.5, y + 11.0, { lineHeightFactor: 1.0 });
-          y += payH + 1.8;
-
-          if (order.rental_start) {
-            box(left, y, contentW, 8.8);
-            bold(6.0);
-            doc.text("Periode sewa", left + 1.5, y + 3.5);
-            normal(5.9);
-            doc.text(`${order.rental_start} — ${order.rental_end || order.rental_start}`, left + 1.5, y + 6.4);
-            y += 10.3;
-          }
-
-          // Tabel dibuat lebih besar dan tebal agar huruf tidak samar pada thermal.
-          const cols = [left, 47.5, 54.5, 65.0, right];
-          const headerH = 7.2;
-          doc.setFillColor(0,0,0);
-          doc.setLineWidth(0.35);
-          doc.rect(left, y, contentW, headerH, "F");
-          doc.setTextColor(255,255,255);
-          bold(6.4);
-          doc.text("Item", left + 1.2, y + 4.8);
-          doc.text("Qty", (cols[1]+cols[2])/2, y + 4.8, {align:"center"});
-          doc.text("Harga", cols[3]-1.0, y + 4.8, {align:"right"});
-          doc.text("Jumlah", right-1.2, y + 4.8, {align:"right"});
-          setBlack();
+          const hx = margin + Math.round(22 * MM * SCALE);
+          text("ABIDZAR OUTDOORCAMP", hx, y + Math.round(5 * MM * SCALE), font(10, 800));
+          text("OUTDOOR RENTAL & OPEN TRIP", hx, y + Math.round(8.8 * MM * SCALE), font(6.0, 700));
+          const address = "Jl. Danau Maninjau Barat III No.B2 e30, Sawojajar, Kec. Kedungkandang, Kota Malang, Jawa Timur 65139";
+          const addrLines = wrap(address, contentW - Math.round(22 * MM * SCALE), font(5.3, 400)).slice(0, 3);
+          addrLines.forEach((l, i) => text(l, hx, y + Math.round((12 + i * 2.6) * MM * SCALE), font(5.3, 400)));
+          text("Telp / WhatsApp: +62 822-4604-9672", hx, y + Math.round((12 + addrLines.length * 2.6) * MM * SCALE), font(5.4, 700));
           y += headerH;
 
-          for (let i = 0; i < items.length; i++) {
-            const line = items[i];
-            const title = `${line.title_snapshot || "Item"}${line.variant_name_snapshot ? ` (${line.variant_name_snapshot})` : ""}`;
-            const titleLines = doc.splitTextToSize(title, 31);
-            const rowH = rowHeights[i];
-            doc.setLineWidth(0.28);
-            doc.rect(left, y, contentW, rowH);
-            doc.line(cols[1], y, cols[1], y + rowH);
-            doc.line(cols[2], y, cols[2], y + rowH);
-            doc.line(cols[3], y, cols[3], y + rowH);
-            bold(6.0);
-            doc.text(titleLines, left + 1.2, y + 3.1, {lineHeightFactor:1.0});
-            normal(5.2);
-            const type = line.item_type === "trip" ? "Open Trip" : (line.fulfillment_type === "sale" ? "Jual" : "Sewa");
-            doc.text(type, left + 1.2, y + rowH - 1.3);
-            bold(5.7);
-            doc.text(String(Number(line.quantity || 0)), (cols[1]+cols[2])/2, y + 3.8, {align:"center"});
-            doc.text(rupiah(line.unit_price || 0), cols[3]-1.0, y + 3.8, {align:"right"});
-            doc.text(rupiah(line.line_total || 0), right-1.2, y + 3.8, {align:"right"});
-            y += rowH;
+          line(margin, y, CW - margin, y, 2.2); y += Math.round(4.8 * MM * SCALE);
+          text("INVOICE", margin, y + Math.round(7 * MM * SCALE), font(12.5, 800));
+          text("NO. PESANAN", CW - margin, y + Math.round(3.8 * MM * SCALE), font(5.0, 700), "right");
+          text(order.order_number || "-", CW - margin, y + Math.round(7 * MM * SCALE), font(5.5, 700), "right");
+          y += invoiceHeadH;
+
+          const gap = Math.round(2 * MM * SCALE);
+          const half = Math.floor((contentW - gap) / 2);
+          rect(margin, y, half, metaH, 1.5); rect(margin + half + gap, y, half, metaH, 1.5);
+          text("Data Pelanggan", margin + Math.round(1.5 * MM * SCALE), y + Math.round(4 * MM * SCALE), font(6.2, 800));
+          text(order.customer_name || "-", margin + Math.round(1.5 * MM * SCALE), y + Math.round(7.3 * MM * SCALE), font(6.0, 400));
+          text(order.phone || "-", margin + Math.round(1.5 * MM * SCALE), y + Math.round(10.2 * MM * SCALE), font(6.0, 400));
+          const rx = margin + half + gap + Math.round(1.5 * MM * SCALE);
+          text("Tanggal", rx, y + Math.round(4 * MM * SCALE), font(6.2, 800));
+          text(created, rx, y + Math.round(7.3 * MM * SCALE), font(5.8, 400));
+          text(`Status: ${status}`, rx, y + Math.round(10.2 * MM * SCALE), font(5.8, 700));
+          y += metaH + Math.round(2 * MM * SCALE);
+
+          rect(margin, y, contentW, paymentH, 1.5);
+          text("Pembayaran", margin + Math.round(1.5 * MM * SCALE), y + Math.round(4 * MM * SCALE), font(6.2, 800));
+          text(gateway, margin + Math.round(1.5 * MM * SCALE), y + Math.round(7.2 * MM * SCALE), font(6.0, 400));
+          text("ID Transaksi", margin + Math.round(1.5 * MM * SCALE), y + Math.round(10.3 * MM * SCALE), font(6.0, 800));
+          const tx = wrap(payment.gateway_transaction_id || "-", contentW - Math.round(3 * MM * SCALE), font(5.2, 400)).slice(0, 2);
+          tx.forEach((l, i) => text(l, margin + Math.round(1.5 * MM * SCALE), y + Math.round((12.7 + i * 2.4) * MM * SCALE), font(5.2, 400)));
+          y += paymentH + Math.round(2 * MM * SCALE);
+
+          if (order.rental_start) {
+            rect(margin, y, contentW, periodH, 1.5);
+            text("Periode sewa", margin + Math.round(1.5 * MM * SCALE), y + Math.round(3.8 * MM * SCALE), font(6.2, 800));
+            text(`${order.rental_start} — ${order.rental_end || order.rental_start}`, margin + Math.round(1.5 * MM * SCALE), y + Math.round(6.9 * MM * SCALE), font(5.9, 400));
+            y += periodH + Math.round(2 * MM * SCALE);
           }
-          if (!items.length) {
-            doc.rect(left, y, contentW, 8.5);
-            bold(6.0);
-            doc.text("Tidak ada item.", left + 1.2, y + 5.2);
-            y += 8.5;
-          }
 
-          const totalH = 17.5;
-          box(left, y, contentW, totalH);
-          doc.line(left, y + 5.7, right, y + 5.7);
-          doc.line(left, y + 11.4, right, y + 11.4);
-          bold(6.0);
-          doc.text("Subtotal", left + 1.5, y + 3.8);
-          doc.text(rupiah(order.subtotal || 0), right - 1.5, y + 3.8, {align:"right"});
-          doc.text("Diskon", left + 1.5, y + 9.5);
-          doc.text(`− ${rupiah(order.discount || 0)}`, right - 1.5, y + 9.5, {align:"right"});
-          bold(7.8);
-          doc.text("TOTAL", left + 1.5, y + 15.2);
-          doc.text(rupiah(payment.total_amount || order.total || 0), right - 1.5, y + 15.2, {align:"right"});
-          y += totalH + 4;
+          // Table with high-contrast header and thick borders.
+          const c1 = margin;
+          const c2 = margin + Math.round(contentW * 0.64);
+          const c3 = margin + Math.round(contentW * 0.73);
+          const c4 = margin + Math.round(contentW * 0.88);
+          const c5 = CW - margin;
+          ctx.fillStyle = "#000000"; ctx.fillRect(margin, y, contentW, tableHeadH); ctx.fillStyle = "#ffffff";
+          text("Item", c1 + Math.round(1.2 * MM * SCALE), y + Math.round(5 * MM * SCALE), font(6.2, 800));
+          text("Qty", (c2 + c3) / 2, y + Math.round(5 * MM * SCALE), font(6.2, 800), "center");
+          text("Harga", c4 - Math.round(1 * MM * SCALE), y + Math.round(5 * MM * SCALE), font(6.0, 800), "right");
+          text("Jumlah", c5 - Math.round(1.2 * MM * SCALE), y + Math.round(5 * MM * SCALE), font(6.0, 800), "right");
+          ctx.fillStyle = "#000000"; y += tableHeadH;
 
-          doc.setLineWidth(0.4);
-          doc.line(left, y, right, y);
-          y += 4.2;
-          bold(6.0);
-          doc.text("Terima kasih telah memilih AbidzarOutdoorcamp.", pageW/2, y, {align:"center"});
-          normal(5.4);
-          doc.text("Simpan invoice ini sebagai bukti pemesanan dan pembayaran.", pageW/2, y + 3.0, {align:"center"});
+          items.forEach((lineItem, idx) => {
+            const rh = rowH(itemLines[idx]);
+            rect(margin, y, contentW, rh, 1.2);
+            line(c2, y, c2, y + rh, 1.1); line(c3, y, c3, y + rh, 1.1); line(c4, y, c4, y + rh, 1.1);
+            itemLines[idx].forEach((l, j) => text(l, c1 + Math.round(1.2 * MM * SCALE), y + Math.round((3.6 + j * 3.6) * MM * SCALE), itemTitleFont));
+            text(lineItem.item_type === "trip" ? "Open Trip" : (lineItem.fulfillment_type === "sale" ? "Jual" : "Sewa"), c1 + Math.round(1.2 * MM * SCALE), y + rh - Math.round(1.5 * MM * SCALE), font(5.2, 400));
+            text(String(Number(lineItem.quantity || 0)), (c2 + c3) / 2, y + Math.round(4.2 * MM * SCALE), font(5.8, 700), "center");
+            text(money(lineItem.unit_price), c4 - Math.round(1 * MM * SCALE), y + Math.round(4.2 * MM * SCALE), font(5.5, 400), "right");
+            text(money(lineItem.line_total), c5 - Math.round(1.2 * MM * SCALE), y + Math.round(4.2 * MM * SCALE), font(5.7, 700), "right");
+            y += rh;
+          });
+          if (!items.length) { rect(margin, y, contentW, Math.round(10 * MM * SCALE), 1.2); text("Tidak ada item.", margin + Math.round(1.2 * MM * SCALE), y + Math.round(6 * MM * SCALE), font(6, 700)); y += Math.round(10 * MM * SCALE); }
 
-          const filename = `Invoice-${String(order.order_number || "AbidzarOutdoorcamp").replace(/[^a-zA-Z0-9_-]/g, "-")}.pdf`;
+          rect(margin, y, contentW, totalH, 1.5);
+          line(margin, y + Math.round(6 * MM * SCALE), CW - margin, y + Math.round(6 * MM * SCALE), 1.0);
+          line(margin, y + Math.round(12 * MM * SCALE), CW - margin, y + Math.round(12 * MM * SCALE), 1.0);
+          text("Subtotal", margin + Math.round(1.5 * MM * SCALE), y + Math.round(4.1 * MM * SCALE), font(6.1, 700));
+          text(money(order.subtotal), CW - margin - Math.round(1.5 * MM * SCALE), y + Math.round(4.1 * MM * SCALE), font(6.1, 700), "right");
+          text("Diskon", margin + Math.round(1.5 * MM * SCALE), y + Math.round(10 * MM * SCALE), font(6.1, 700));
+          text(`− ${money(order.discount)}`, CW - margin - Math.round(1.5 * MM * SCALE), y + Math.round(10 * MM * SCALE), font(6.1, 700), "right");
+          text("TOTAL", margin + Math.round(1.5 * MM * SCALE), y + Math.round(16.2 * MM * SCALE), font(7.8, 800));
+          text(money(payment.total_amount || order.total), CW - margin - Math.round(1.5 * MM * SCALE), y + Math.round(16.2 * MM * SCALE), font(7.8, 800), "right");
+          y += totalH + Math.round(4 * MM * SCALE);
+
+          line(margin, y, CW - margin, y, 1.5); y += Math.round(4.5 * MM * SCALE);
+          text("Terima kasih telah memilih AbidzarOutdoorcamp.", CW / 2, y, font(5.9, 700), "center");
+          text("Simpan invoice ini sebagai bukti pemesanan dan pembayaran.", CW / 2, y + Math.round(3.2 * MM * SCALE), font(5.2, 400), "center");
+
+          // Convert the high-resolution thermal bitmap into a one-page PDF.
+          const imgData = ctxCanvas.toDataURL("image/png");
+          const pageH = pagePx / SCALE / MM;
+          const doc = new JsPDF({ unit: "mm", format: [80, pageH], orientation: "portrait", compress: true, precision: 12 });
+          doc.addImage(imgData, "PNG", 0, 0, 80, pageH, undefined, "FAST");
+          const filename = `Invoice-${String(order.order_number || "AbidzarOutdoorcamp").replace(/[^a-zA-Z0-9_-]/g, "-")}-THERMAL.pdf`;
           doc.save(filename);
-          showMessage("Invoice PDF berhasil diunduh.", "success");
+          showMessage("Invoice PDF thermal berhasil diunduh. Tidak perlu premium.", "success");
         } catch (error) {
           console.error(error);
           showMessage(`Gagal membuat PDF: ${error.message || "terjadi kesalahan"}`, "error");

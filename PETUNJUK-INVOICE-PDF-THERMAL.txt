@@ -1,23 +1,23 @@
-PERBAIKAN INVOICE PDF THERMAL 80MM
+PERBAIKAN INVOICE PDF THERMAL 80MM — V2 TAJAM
 
 Perubahan:
-- Invoice tidak lagi memakai cetak langsung dari browser.
-- Tombol utama: Unduh Invoice PDF.
-- PDF dibuat khusus ukuran 80mm dengan tinggi otomatis agar seluruh invoice berada dalam 1 lembar.
-- Teks menggunakan font PDF/vector dan ukuran diperbesar supaya lebih tajam saat dicetak thermal.
-- Garis tabel dibuat lebih tebal untuk printer thermal.
-- Logo Abidzar Outdoorcamp menggunakan versi hitam-putih.
-- Alamat: Jl. Danau Maninjau Barat III No.B2 e30, Sawojajar, Kec. Kedungkandang, Kota Malang, Jawa Timur 65139.
-- Telp / WhatsApp: +62 822-4604-9672.
+- Tombol invoice menggunakan "Unduh Invoice PDF", bukan cetak langsung dari browser.
+- PDF dibuat 80mm dengan tinggi otomatis dan SELALU 1 halaman.
+- Invoice dirender pada resolusi kerja 203 DPI (2x) agar cocok untuk printer thermal 80mm.
+- Teks dibuat besar, tebal, hitam-putih, dan kontras tinggi.
+- Tidak menggunakan html2canvas / screenshot halaman website.
+- Logo Abidzar Outdoorcamp memakai logo hitam-putih.
+- Layout memakai lebar kertas penuh 80mm dan margin kecil.
+- PDF tetap gratis; tidak membutuhkan akun premium.
 
 Cara pakai:
-1. Upload seluruh isi ZIP ke hosting seperti biasa.
+1. Upload seluruh isi ZIP ke hosting.
 2. Buka halaman pembayaran.
 3. Tekan "Unduh Invoice PDF".
-4. Buka PDF yang terunduh.
-5. Pilih printer thermal RPP02N_9486.
-6. Pilih kertas 80mm Roll.
-7. Untuk hasil paling jelas pilih mode Black & White / Kontras terbaik.
+4. Buka PDF hasil unduhan.
+5. Pilih printer RPP02N_9486 dan kertas 80mm Roll.
+6. Jika aplikasi printer meminta mode gambar, pilih Black & White atau Ambang 127 (gratis). Hindari dithering jika tulisan terlihat berbintik.
 
 Catatan:
-PDF membutuhkan koneksi internet saat pertama kali memuat library jsPDF dari CDN.
+- Generator memakai jsPDF dari CDN sehingga koneksi internet diperlukan saat halaman pertama kali memuat library PDF.
+- Jika hasil fisik masih buram, penyebabnya biasanya pengaturan aplikasi/printer (kepadatan/dithering/heat), bukan ukuran PDF. PDF versi ini sudah disiapkan untuk thermal 203 DPI.
