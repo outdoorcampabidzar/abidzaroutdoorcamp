@@ -368,7 +368,7 @@
         const { data, error } = await supabase
           .from("items")
           .select(
-            "*,item_categories(id,name,slug),item_images(*),item_variants(*),item_price_tiers(*),trip_details(*)",
+            "*,item_categories(id,name,slug),item_images(*),item_variants(*),item_location_stock(*),item_price_tiers(*),trip_details(*)",
           )
           .eq("slug", slug)
           .eq("is_active", true)
@@ -381,6 +381,13 @@
         }
 
         item = data;
+        const activeLocationId = localStorage.getItem("aoc_location_id") || (item.item_location_stock || [])[0]?.location_id || null;
+        const stockAtLocation = (variantId = null) => Number((item.item_location_stock || []).find(s =>
+          String(s.location_id) === String(activeLocationId) &&
+          ((variantId == null && s.variant_id == null) || String(s.variant_id) === String(variantId))
+        )?.stock || 0);
+        item.stock = stockAtLocation(null);
+        (item.item_variants || []).forEach(v => { v.stock = stockAtLocation(v.id); });
         siteSettings = await loadSiteSettings(true);
         if (item.type === "trip") mode = "trip";
         if (item.type === "product" && mode === "sale" && !item.sale_enabled) {

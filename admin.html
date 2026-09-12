@@ -391,6 +391,14 @@
             </button>
 
             <button
+              class="admin-tab ${activeTab === "locations" ? "active" : ""} ${can("catalog.manage") ? "" : "hidden"}"
+              data-admin-tab="locations"
+              type="button"
+            >
+              📍 Stok Lokasi
+            </button>
+
+            <button
               class="admin-tab ${activeTab === "trips" ? "active" : ""} ${can("catalog.manage") ? "" : "hidden"}"
               data-admin-tab="trips"
               type="button"
@@ -498,8 +506,188 @@
         renderActiveTab();
       }
 
+      async function renderLocationsTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = '<div class="notice">Memuat stok per lokasi...</div>';
+        const [{ data: locations, error: le }, { data: rows, error: se }] = await Promise.all([
+          supabase.from("aoc_locations").select("*").order("sort_order"),
+          supabase.from("item_location_stock").select("*,aoc_locations(id,code,name),items(id,title),item_variants(id,name,capacity)").order("updated_at", { ascending: false })
+        ]);
+        if (le || se) {
+          content.innerHTML = `<div class="notice error">${esc((le || se).message)}</div>`;
+          return;
+        }
+        const products = rentalItems();
+        const stockMap = new Map((rows || []).map(r => [`${r.item_id}|${r.variant_id || ""}|${r.location_id}`, r]));
+        const locationList = locations || [];
+        const field = (item, variant, loc) => {
+          const key = `${item.id}|${variant?.id || ""}|${loc.id}`;
+          const row = stockMap.get(key);
+          return Number(row?.stock || 0);
+        };
+        content.innerHTML = `
+          <section class="card aoc-location-admin-card">
+            <div class="admin-editor-heading aoc-location-admin-head">
+              <div>
+                <span class="badge">Manajemen Lokasi</span>
+                <h3>Toko / Lokasi</h3>
+                <p class="muted">Tambahkan Toko 3, Toko 4, Toko 5, dan seterusnya. Tidak ada batas jumlah lokasi.</p>
+              </div>
+              <button class="btn primary" type="button" id="aocAddLocationBtn">＋ Tambah Toko</button>
+            </div>
+            <div id="aocLocationForm" class="aoc-location-admin-form" hidden>
+              <div class="aoc-location-admin-grid">
+                <label class="field"><span>Nama Toko *</span><input class="input" id="aocLocationName" placeholder="Contoh: Toko 3" maxlength="80"></label>
+                <label class="field"><span>Kode *</span><input class="input" id="aocLocationCode" placeholder="TOKO3" maxlength="30" autocapitalize="characters"></label>
+                <label class="field aoc-location-admin-address"><span>Alamat</span><input class="input" id="aocLocationAddress" placeholder="Alamat toko (opsional)" maxlength="200"></label>
+              </div>
+              <div class="aoc-location-admin-actions">
+                <button class="btn" type="button" id="aocCancelLocationBtn">Batal</button>
+                <button class="btn primary" type="button" id="aocSaveLocationBtn">Simpan Toko</button>
+              </div>
+              <p class="muted" style="margin:8px 0 0;font-size:12px">Kode harus unik. Nama toko dapat di-rename kapan saja; kode tetap agar data stok dan pesanan lama tidak berubah.</p>
+            </div>
+            <div class="aoc-location-admin-list">
+              ${locationList.map((l,i)=>`
+                <div class="aoc-location-admin-row" data-location-admin-row="${esc(l.id)}">
+                  <div class="aoc-location-admin-icon">${String(i+1).padStart(2,"0")}</div>
+                  <div class="aoc-location-admin-copy">
+                    <strong>${esc(l.name)}</strong>
+                    <small>${esc(l.code)}${l.address ? ` · ${esc(l.address)}` : ""}</small>
+                  </div>
+                  <span class="aoc-location-active ${l.is_active ? "on" : "off"}">${l.is_active ? "Aktif" : "Nonaktif"}</span>
+                  <div class="aoc-location-admin-actions-inline">
+                    <button class="btn small" type="button" data-rename-location="${esc(l.id)}">✏️ Rename</button>
+                    <button class="btn small" type="button" data-toggle-location="${esc(l.id)}" data-active="${l.is_active ? "1" : "0"}">${l.is_active ? "Nonaktifkan" : "Aktifkan"}</button>
+                  </div>
+                </div>`).join("")}
+            </div>
+          </section>
+          <section class="card">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Multi Lokasi</span><h3>Stok Semua Toko</h3>
+              <p class="muted">Stok setiap toko berdiri sendiri. Setelah Toko 3 ditambahkan, kolom stok Toko 3 otomatis muncul di bawah.</p></div>
+            </div>
+            <div style="overflow:auto">
+              <table class="admin-table"><thead><tr><th>Item</th><th>Varian</th>${(locations||[]).map(l=>`<th>${esc(l.name)}</th>`).join("")}<th>Aksi</th></tr></thead>
+              <tbody>
+                ${products.flatMap(item => {
+                  const vars = item.item_variants?.filter(v=>v.is_active) || [];
+                  const list = vars.length ? vars.map(v=>[item,v]) : [[item,null]];
+                  return list.map(([it,v]) => `<tr>
+                    <td>${esc(it.title)}</td><td>${esc(v ? [v.name,v.capacity].filter(Boolean).join(" · ") : "Stok utama")}</td>
+                    ${(locations||[]).map(l=>`<td><input class="input" type="number" min="0" value="${field(it,v,l)}" data-loc-stock data-item-id="${it.id}" data-variant-id="${v?.id||""}" data-location-id="${l.id}" style="max-width:120px"></td>`).join("")}
+                    <td><button class="btn small" type="button" data-save-location-row data-item-id="${it.id}" data-variant-id="${v?.id||""}">Simpan</button></td>
+                  </tr>`);
+                }).join("")}
+              </tbody></table>
+            </div>
+          </section>`;
+        const addBtn = content.querySelector("#aocAddLocationBtn");
+        const form = content.querySelector("#aocLocationForm");
+        const nameInput = content.querySelector("#aocLocationName");
+        const codeInput = content.querySelector("#aocLocationCode");
+        const addressInput = content.querySelector("#aocLocationAddress");
+        addBtn?.addEventListener("click", () => {
+          form.hidden = !form.hidden;
+          if (!form.hidden) nameInput?.focus();
+        });
+        content.querySelector("#aocCancelLocationBtn")?.addEventListener("click", () => {
+          form.hidden = true;
+          nameInput.value = ""; codeInput.value = ""; addressInput.value = "";
+        });
+        nameInput?.addEventListener("input", () => {
+          if (!codeInput.dataset.manual) {
+            const n = slugify(nameInput.value).replace(/-/g, "_").toUpperCase();
+            codeInput.value = n || "TOKO";
+          }
+        });
+        codeInput?.addEventListener("input", () => { codeInput.dataset.manual = "1"; codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""); });
+        content.querySelector("#aocSaveLocationBtn")?.addEventListener("click", async (ev) => {
+          const btn = ev.currentTarget;
+          const name = String(nameInput?.value || "").trim();
+          const code = String(codeInput?.value || "").trim().toUpperCase();
+          const address = String(addressInput?.value || "").trim() || null;
+          if (!name || !code) { showAdminMessage("Nama toko dan kode wajib diisi.", "error"); return; }
+          btn.disabled = true;
+          try {
+            const exists = await supabase.from("aoc_locations").select("id").eq("code", code).maybeSingle();
+            if (exists.error) throw exists.error;
+            if (exists.data) throw new Error("Kode toko sudah digunakan. Gunakan kode lain.");
+            const nextSort = Math.max(0, ...locationList.map(x => Number(x.sort_order) || 0)) + 1;
+            const ins = await supabase.from("aoc_locations").insert({ code, name, address, is_active: true, sort_order: nextSort }).select("id").single();
+            if (ins.error) throw ins.error;
+            showAdminMessage(`${name} berhasil ditambahkan.`, "success");
+            await renderLocationsTab();
+          } catch (e) {
+            showAdminMessage(e.message || "Gagal menambahkan toko.", "error");
+          } finally { btn.disabled = false; }
+        });
+        content.querySelectorAll("[data-rename-location]").forEach(btn => btn.addEventListener("click", async () => {
+          const id = btn.dataset.renameLocation;
+          const loc = locationList.find(x => String(x.id) === String(id));
+          if (!loc) return;
+          const currentName = String(loc.name || "");
+          const currentAddress = String(loc.address || "");
+          const name = window.prompt("Nama toko baru:", currentName);
+          if (name === null) return;
+          const cleanName = name.trim();
+          if (!cleanName) { showAdminMessage("Nama toko tidak boleh kosong.", "error"); return; }
+          if (cleanName.length > 80) { showAdminMessage("Nama toko maksimal 80 karakter.", "error"); return; }
+          const address = window.prompt("Alamat toko (opsional):", currentAddress);
+          if (address === null) return;
+          const cleanAddress = address.trim() || null;
+          btn.disabled = true;
+          try {
+            const r = await supabase.from("aoc_locations").update({ name: cleanName, address: cleanAddress }).eq("id", id);
+            if (r.error) throw r.error;
+            showAdminMessage(`${cleanName} berhasil diubah.`, "success");
+            await renderLocationsTab();
+          } catch (e) {
+            showAdminMessage(e.message || "Gagal mengubah nama toko.", "error");
+          } finally { btn.disabled = false; }
+        }));
+
+        content.querySelectorAll("[data-toggle-location]").forEach(btn => btn.addEventListener("click", async () => {
+          const id = btn.dataset.toggleLocation;
+          const active = btn.dataset.active === "1";
+          if (locationList.length <= 1 && active) { showAdminMessage("Minimal harus ada 1 toko aktif.", "error"); return; }
+          btn.disabled = true;
+          try {
+            const r = await supabase.from("aoc_locations").update({ is_active: !active }).eq("id", id);
+            if (r.error) throw r.error;
+            showAdminMessage(!active ? "Toko diaktifkan." : "Toko dinonaktifkan.", "success");
+            await renderLocationsTab();
+          } catch (e) { showAdminMessage(e.message, "error"); }
+          finally { btn.disabled = false; }
+        }));
+
+        content.querySelectorAll("[data-save-location-row]").forEach(btn => btn.addEventListener("click", async () => {
+          const itemId = btn.dataset.itemId, variantId = btn.dataset.variantId || null;
+          const inputs = [...content.querySelectorAll(`[data-loc-stock][data-item-id="${itemId}"][data-variant-id="${variantId || ""}"]`)];
+          btn.disabled = true;
+          try {
+            for (const input of inputs) {
+              const r = await supabase.rpc("aoc_set_location_stock", {
+                p_item_id: itemId, p_variant_id: variantId, p_location_id: input.dataset.locationId,
+                p_stock: Math.max(0, Number(input.value) || 0)
+              });
+              if (r.error) throw r.error;
+            }
+            await refreshItems();
+            btn.disabled = false;
+            showAdminMessage("Stok lokasi berhasil disimpan.", "success");
+            renderLocationsTab();
+          } catch (e) {
+            btn.disabled = false;
+            showAdminMessage(e.message, "error");
+          }
+        }));
+      }
+
       function renderActiveTab() {
-        if (activeTab === "rental") renderRentalTab();
+        if (activeTab === "locations") renderLocationsTab();
+        else if (activeTab === "rental") renderRentalTab();
         else if (activeTab === "trips") renderTripTab();
         else if (activeTab === "orders") renderOrdersTab();
         else if (activeTab === "vouchers") renderVoucherTab();

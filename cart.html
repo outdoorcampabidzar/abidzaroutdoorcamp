@@ -228,6 +228,14 @@
             disimpan. Jangan unggah foto KTP/SIM ke website statis.
           </p>
           <form id="form" class="form">
+            <section class="card" style="margin-bottom:16px;padding:16px">
+              <label class="field">
+                <span>📍 Lokasi toko *</span>
+                <select id="checkoutLocation" class="input" required></select>
+                <small class="muted">Stok Toko 1 dan Toko 2 dipisahkan. Pilih lokasi tempat barang diambil.</small>
+              </label>
+            </section>
+            
             <section id="rentalSchedule" class="rental-schedule hidden">
               <div class="rental-schedule-heading">
                 <div>
@@ -403,6 +411,25 @@
         discount = 0,
         user = null,
         siteSettings = null;
+
+      let checkoutLocationId = localStorage.getItem("aoc_location_id") || "";
+
+      async function loadCheckoutLocations() {
+        const select = document.getElementById("checkoutLocation");
+        if (!select) return;
+        const { data, error } = await supabase.from("aoc_locations").select("id,code,name").eq("is_active", true).order("sort_order");
+        if (error) { select.innerHTML = "<option value=\"\">Lokasi gagal dimuat</option>"; return; }
+        const rows = data || [];
+        if (!rows.some(x => String(x.id) === String(checkoutLocationId))) checkoutLocationId = rows[0]?.id || "";
+        select.innerHTML = rows.map(x => `<option value="${esc(x.id)}" ${String(x.id)===String(checkoutLocationId)?"selected":""}>${esc(x.name)}</option>`).join("");
+        select.addEventListener("change", async () => {
+          checkoutLocationId = select.value;
+          localStorage.setItem("aoc_location_id", checkoutLocationId);
+          if (user) await supabase.rpc("aoc_set_current_location", { p_location_id: checkoutLocationId });
+          render();
+        });
+        if (checkoutLocationId && user) await supabase.rpc("aoc_set_current_location", { p_location_id: checkoutLocationId });
+      }
 
       // Migrasi keranjang lama ke format JUAL/SEWA V3. Produk lama dianggap
       // rental karena versi sebelumnya memang hanya menyediakan sewa.
@@ -831,6 +858,12 @@
           trip_date:
             x.type === "trip" ? x.requested_trip_date || null : null,
         }));
+        if (!checkoutLocationId) {
+          return message(document.getElementById("msg"), "Pilih lokasi toko terlebih dahulu.", "error");
+        }
+        const locationResult = await supabase.rpc("aoc_set_current_location", { p_location_id: checkoutLocationId });
+        if (locationResult.error) return message(document.getElementById("msg"), locationResult.error.message, "error");
+
         const { data, error } = await supabase.rpc("create_order", {
           p_customer: customer,
           p_items: items,

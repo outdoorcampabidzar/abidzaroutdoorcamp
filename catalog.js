@@ -1,5 +1,171 @@
 import { supabase, rupiah, esc, message, addCart, getCart, updateCartBadge } from "./app.js";
 
+let catalogLocations = [];
+let selectedCatalogLocationId = localStorage.getItem("aoc_location_id") || "";
+
+function locationStock(item, variantId = null) {
+  const rows = item.item_location_stock || [];
+  const loc = selectedCatalogLocationId || catalogLocations[0]?.id;
+  return Math.max(0, Number(rows.find((r) =>
+    String(r.location_id) === String(loc) &&
+    ((variantId == null && r.variant_id == null) || String(r.variant_id) === String(variantId))
+  )?.stock ?? 0));
+}
+
+function applyLocationStocks(items) {
+  for (const item of items) {
+    if (item.type !== "product") continue;
+    item.stock = locationStock(item, null);
+    if (item.item_variants?.length) {
+      item.item_variants.forEach(v => { v.stock = locationStock(item, v.id); });
+    }
+  }
+}
+
+async function loadCatalogLocations() {
+  const { data } = await supabase.from("aoc_locations").select("id,code,name").eq("is_active", true).order("sort_order");
+  catalogLocations = data || [];
+  if (!catalogLocations.some(x => String(x.id) === String(selectedCatalogLocationId))) {
+    selectedCatalogLocationId = catalogLocations[0]?.id || "";
+    if (selectedCatalogLocationId) localStorage.setItem("aoc_location_id", selectedCatalogLocationId);
+  }
+}
+
+function aocLocationSound(kind = "tap") {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    window.__aocAudioCtx ||= new Ctx();
+    const ctx = window.__aocAudioCtx;
+    if (ctx.state === "suspended") ctx.resume();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    const now = ctx.currentTime;
+    const freq = kind === "select" ? 620 : kind === "key" ? 420 : 520;
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.12, now + 0.055);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.035, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  } catch (_) {}
+}
+
+async function setCatalogLocation(locationId) {
+  selectedCatalogLocationId = locationId;
+  localStorage.setItem("aoc_location_id", selectedCatalogLocationId);
+  applyLocationStocks(window.__aocCatalogItems || []);
+  const mode = window.__aocCatalogMode || "rental";
+  const grid = document.getElementById(window.__aocCatalogGridId);
+  if (grid) {
+    mountRentalFilters(window.__aocCatalogItems || [], grid, mode);
+    renderQuickCart(mode);
+  }
+  if (window.supabase) await supabase.rpc("aoc_set_current_location", { p_location_id: selectedCatalogLocationId });
+}
+
+function renderLocationPicker() {
+  let host = document.getElementById("aocLocationPicker");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "aocLocationPicker";
+    const target = document.getElementById("catalogSearch")?.closest("section") || document.querySelector("main");
+    target?.prepend(host);
+  }
+
+  const selected = catalogLocations.find(l => String(l.id) === String(selectedCatalogLocationId)) || catalogLocations[0];
+  if (selected && !selectedCatalogLocationId) { selectedCatalogLocationId = selected.id; localStorage.setItem("aoc_location_id", selectedCatalogLocationId); }
+
+  host.className = "aoc-location-picker";
+  host.innerHTML = `
+    <button type="button" class="aoc-location-trigger" id="aocLocationTrigger" aria-haspopup="dialog" aria-expanded="false">
+      <span class="aoc-location-pin">⌖</span>
+      <span class="aoc-location-copy">
+        <small>AMBIL / SEWA DARI</small>
+        <strong>${esc(selected?.name || "Pilih toko")}</strong>
+      </span>
+      <span class="aoc-location-status"><i></i> Stok terpisah</span>
+      <span class="aoc-location-chevron">⌄</span>
+    </button>
+    <div class="aoc-location-backdrop" id="aocLocationBackdrop" hidden></div>
+    <div class="aoc-location-modal" id="aocLocationModal" role="dialog" aria-modal="true" aria-labelledby="aocLocationTitle" hidden>
+      <div class="aoc-location-sheet">
+        <div class="aoc-location-handle"></div>
+        <div class="aoc-location-head">
+          <div>
+            <span class="aoc-location-kicker">STORE LOCATION</span>
+            <h3 id="aocLocationTitle">Pilih lokasi pengambilan</h3>
+            <p>Stok dan ketersediaan dihitung khusus untuk toko ini.</p>
+          </div>
+          <button type="button" class="aoc-location-close" id="aocLocationClose" aria-label="Tutup">×</button>
+        </div>
+        <div class="aoc-location-list">
+          ${catalogLocations.map((l, i) => `
+            <button type="button" class="aoc-location-option ${String(l.id) === String(selectedCatalogLocationId) ? "is-selected" : ""}" data-location-id="${esc(l.id)}">
+              <span class="aoc-location-number">${String(i + 1).padStart(2, "0")}</span>
+              <span class="aoc-location-option-copy">
+                <strong>${esc(l.name)}</strong>
+                <small>${esc(l.code || `LOCATION ${i + 1}`)} · Stok mandiri</small>
+              </span>
+              <span class="aoc-location-radio"><i></i></span>
+            </button>
+          `).join("")}
+        </div>
+        <div class="aoc-location-tip">🔊 Suara UI aktif · ketukan dan pilihan memiliki feedback audio</div>
+      </div>
+    </div>`;
+
+  const trigger = host.querySelector("#aocLocationTrigger");
+  const modal = host.querySelector("#aocLocationModal");
+  const backdrop = host.querySelector("#aocLocationBackdrop");
+  const close = host.querySelector("#aocLocationClose");
+
+  const open = () => {
+    aocLocationSound("tap");
+    modal.hidden = false;
+    backdrop.hidden = false;
+    requestAnimationFrame(() => {
+      modal.classList.add("is-open");
+      backdrop.classList.add("is-open");
+    });
+    trigger?.setAttribute("aria-expanded", "true");
+    document.body.classList.add("aoc-location-lock");
+  };
+  const shut = () => {
+    aocLocationSound("tap");
+    modal.classList.remove("is-open");
+    backdrop.classList.remove("is-open");
+    trigger?.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("aoc-location-lock");
+    setTimeout(() => { modal.hidden = true; backdrop.hidden = true; }, 220);
+  };
+
+  trigger?.addEventListener("click", open);
+  close?.addEventListener("click", shut);
+  backdrop?.addEventListener("click", shut);
+
+  host.querySelectorAll(".aoc-location-option").forEach(option => {
+    option.addEventListener("click", async () => {
+      aocLocationSound("select");
+      host.querySelectorAll(".aoc-location-option").forEach(x => x.classList.remove("is-selected"));
+      option.classList.add("is-selected");
+      await setCatalogLocation(option.dataset.locationId);
+      const name = catalogLocations.find(l => String(l.id) === String(selectedCatalogLocationId))?.name || "Toko";
+      const strong = host.querySelector(".aoc-location-copy strong");
+      if (strong) strong.textContent = name;
+      setTimeout(shut, 180);
+    });
+  });
+
+  host.addEventListener("keydown", e => {
+    if (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter") aocLocationSound("key");
+    if (e.key === "Escape" && !modal.hidden) shut();
+  });
+}
+
 function availableQuantity(item) {
   return Math.max(
     0,
@@ -233,12 +399,16 @@ function renderCategoryQuickChoices(categories, category, draw) {
 }
 
 export async function mountCatalog({ type, gridId, messageId, limit = null, mode = type === "trip" ? "trip" : "rental" }) {
+  await loadCatalogLocations();
+  renderLocationPicker();
+  window.__aocCatalogGridId = gridId;
+  window.__aocCatalogMode = mode;
   const grid = document.getElementById(gridId);
   const messageElement = document.getElementById(messageId);
 
   let query = supabase
     .from("items")
-    .select("*,item_categories(id,name,slug),item_images(*),item_variants(*),item_price_tiers(*),trip_details(*)")
+    .select("*,item_categories(id,name,slug),item_images(*),item_variants(*),item_location_stock(*),item_price_tiers(*),trip_details(*)")
     .eq("is_active", true)
     .eq("type", type)
     .is("archived_at", null)
@@ -255,6 +425,8 @@ export async function mountCatalog({ type, gridId, messageId, limit = null, mode
   }
 
   let items = data || [];
+  window.__aocCatalogItems = items;
+  applyLocationStocks(items);
   if (type === "product") {
     items = items.filter((item) => mode === "sale" ? Boolean(item.sale_enabled) : item.rental_enabled !== false);
   }

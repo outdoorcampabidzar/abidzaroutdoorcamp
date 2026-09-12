@@ -1,0 +1,18 @@
+FITUR RENAME TOKO / LOKASI
+===========================
+
+Sekarang Admin Panel > Stok Lokasi memiliki tombol "✏️ Rename" pada setiap toko.
+
+Cara penggunaan:
+1. Buka Admin Panel.
+2. Masuk ke menu "📍 Stok Lokasi".
+3. Pada toko yang ingin diubah, tekan "✏️ Rename".
+4. Masukkan nama toko baru.
+5. Masukkan alamat baru jika ingin diubah, atau biarkan sama.
+6. Simpan/konfirmasi.
+
+PENTING:
+- Rename hanya mengubah NAMA dan ALAMAT tampilan toko.
+- KODE TOKO (contoh TOKO1/TOKO2/TOKO_3) tidak diubah agar stok, pesanan, dan relasi database lama tetap aman.
+- Nama baru otomatis tampil pada pemilihan lokasi pelanggan dan header kolom stok admin karena halaman membaca nama langsung dari tabel aoc_locations.
+- Tidak perlu menjalankan SQL baru jika sistem multi-lokasi sebelumnya sudah aktif.

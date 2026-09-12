@@ -1,0 +1,34 @@
+# AOC Multi-Lokasi Stock — Toko 1 & Toko 2
+
+Patch ini memisahkan stok produk berdasarkan lokasi toko.
+
+## Yang berubah
+- Tabel `aoc_locations`: Toko 1 dan Toko 2.
+- Tabel `item_location_stock`: stok per item/varian/per toko.
+- Stok lama dimigrasikan ke Toko 1 agar tidak hilang.
+- Checkout memiliki pilihan lokasi toko.
+- Katalog menampilkan stok sesuai lokasi yang dipilih.
+- Detail item mengikuti lokasi yang dipilih.
+- Pesanan menyimpan lokasi toko.
+- Stok penjualan dikurangi/dikembalikan pada toko yang benar.
+- Admin memiliki menu **📍 Stok Lokasi** untuk mengatur stok Toko 1 dan Toko 2.
+
+## INSTALL
+1. BACKUP database Supabase terlebih dahulu.
+2. Upload/replace file resource dengan isi ZIP ini.
+3. Buka Supabase Dashboard → SQL Editor.
+4. Jalankan file `MULTI-LOKASI-STOCK.sql` SATU KALI.
+5. Refresh schema jika Supabase meminta.
+6. Login sebagai admin → Admin Panel → **📍 Stok Lokasi**.
+7. Atur stok setiap barang:
+   - Toko 1 = stok gudang/toko 1.
+   - Toko 2 = stok gudang/toko 2.
+8. Di website, pelanggan memilih lokasi pengambilan. Stok yang tampil hanya stok lokasi tersebut.
+
+## Migrasi stok lama
+Stok lama otomatis dianggap berada di **Toko 1**. Toko 2 dimulai dari 0. Setelah patch selesai, atur stok Toko 2 melalui Admin → Stok Lokasi.
+
+## Penting
+Jangan mengandalkan kolom `items.stock` / `item_variants.stock` untuk membagi stok toko. Kolom tersebut sekarang berfungsi sebagai TOTAL stok gabungan. Pembagian toko dikelola di `item_location_stock`.
+
+Jika ada stok Toko 1 = 10 dan Toko 2 = 5, total legacy akan menjadi 15, tetapi katalog hanya menampilkan 10 ketika Toko 1 dipilih dan 5 ketika Toko 2 dipilih.
