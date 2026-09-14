@@ -80,6 +80,13 @@ function renderLocationPicker() {
   if (selected && !selectedCatalogLocationId) { selectedCatalogLocationId = selected.id; localStorage.setItem("aoc_location_id", selectedCatalogLocationId); }
 
   host.className = "aoc-location-picker";
+
+  // mountCatalog() can run more than once on the same page. Remove any
+  // previously portalled layers before rebuilding them, otherwise stale
+  // hidden overlays can remain attached to <body>.
+  document.getElementById("aocLocationModal")?.remove();
+  document.getElementById("aocLocationBackdrop")?.remove();
+
   host.innerHTML = `
     <button type="button" class="aoc-location-trigger" id="aocLocationTrigger" aria-haspopup="dialog" aria-expanded="false">
       <span class="aoc-location-pin">⌖</span>
@@ -122,6 +129,13 @@ function renderLocationPicker() {
   const modal = host.querySelector("#aocLocationModal");
   const backdrop = host.querySelector("#aocLocationBackdrop");
   const close = host.querySelector("#aocLocationClose");
+
+  // Portal the overlay to <body>. The page uses several z-index stacking
+  // contexts (main, rating section, cards, etc.), so keeping a fixed modal
+  // inside <main> can cause normal content to render above the backdrop.
+  // Moving both layers to body makes the modal reliably sit above all page UI.
+  if (modal && modal.parentElement !== document.body) document.body.appendChild(modal);
+  if (backdrop && backdrop.parentElement !== document.body) document.body.appendChild(backdrop);
 
   const open = () => {
     aocLocationSound("tap");

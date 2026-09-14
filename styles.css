@@ -6982,6 +6982,9 @@ body{
 .aoc-location-option.is-selected .aoc-location-radio i{transform:scale(1)}
 .aoc-location-tip{text-align:center;margin:15px 0 0;color:#627987;font-size:9px;letter-spacing:.02em}
 .aoc-location-lock{overflow:hidden}
+/* Safety fallback for browsers/embeds that keep a stacking context around the picker. */
+body.aoc-location-lock .aoc-location-backdrop{z-index:2147483646}
+body.aoc-location-lock .aoc-location-modal{z-index:2147483647}
 @media(max-width:560px){.aoc-location-trigger{padding:12px}.aoc-location-status{display:none}.aoc-location-sheet{padding-left:14px;padding-right:14px}.aoc-location-head h3{font-size:18px}}
 
 /* Admin multi-location controls */
