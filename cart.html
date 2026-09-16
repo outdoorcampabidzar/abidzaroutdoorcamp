@@ -1,402 +1,221 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="id">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width,initial-scale=1,viewport-fit=cover"
-    />
-    <meta name="theme-color" content="#050d17" />
-    <title>Keranjang & Checkout</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <nav class="nav">
-      <div class="nav-shell">
-        <a class="brand" href="index.html"> Abidzar<span>Outdoorcamp</span> </a>
-
-        <button
-          class="nav-toggle"
-          type="button"
-          data-nav-toggle
-          aria-label="Buka menu navigasi"
-          aria-expanded="false"
-        >
-          <span aria-hidden="true">☰</span>
-        </button>
-
-        <div class="nav-menu" data-nav-menu>
-          <div class="nav-primary">
-            <a class="nav-link" href="index.html">Beranda</a>
-            <a class="nav-link" href="rental.html">Sewa Item</a>
-            <a class="nav-link" href="sale.html">Jual Item</a>
-            <a class="nav-link" href="trips.html">Open Trip</a>
-          </div>
-
-          <div class="nav-account">
-            <a class="nav-cart active" href="cart.html">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<meta content="#050d17" name="theme-color"/>
+<title>Keranjang &amp; Checkout</title>
+<link href="styles.css" rel="stylesheet"/>
+</head>
+<body>
+<nav class="nav">
+<div class="nav-shell">
+<a class="brand" href="index.html"> Abidzar<span>Outdoorcamp</span> </a>
+<button aria-expanded="false" aria-label="Buka menu navigasi" class="nav-toggle" data-nav-toggle="" type="button">
+<span aria-hidden="true">☰</span>
+</button>
+<div class="nav-menu" data-nav-menu="">
+<div class="nav-primary">
+<a class="nav-link" href="index.html">Beranda</a>
+<a class="nav-link" href="rental.html">Sewa Item</a>
+<a class="nav-link" href="sale.html">Jual Item</a>
+<a class="nav-link" href="trips.html">Open Trip</a>
+<a class="nav-cart active" href="cart.html">
               Keranjang
-              <span data-cart-count class="cart-count hidden">0</span>
-            </a>
+              <span class="cart-count hidden" data-cart-count="">0</span>
+</a><a aria-label="Lihat status pesanan" class="nav-notification hidden" data-notification="" href="orders.html" title="Status pesanan">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+<path d="M10 21h4"></path>
+</svg>
+<span class="notification-dot hidden" data-notification-dot=""></span>
+</a></div>
 
-            <a
-              data-notification
-              class="nav-notification hidden"
-              href="orders.html"
-              aria-label="Lihat status pesanan"
-              title="Status pesanan"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
-                ></path>
-                <path d="M10 21h4"></path>
-              </svg>
-              <span
-                data-notification-dot
-                class="notification-dot hidden"
-              ></span>
-            </a>
+</div><div class="nav-account">
 
-            <a data-login class="btn nav-login" href="login.html"> Login </a>
 
-            <div data-account-menu class="account-menu hidden">
-              <button
-                data-user-menu-toggle
-                class="account-trigger"
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded="false"
-              >
-                <span data-user-avatar class="account-avatar">U</span>
-
-                <span class="account-trigger-copy">
-                  <strong data-user-name>Halo, Pengguna</strong>
-                  <small data-user-role>Akun</small>
-                </span>
-
-                <svg
-                  class="account-chevron"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path d="m7 10 5 5 5-5"></path>
-                </svg>
-              </button>
-
-              <div
-                data-user-dropdown
-                class="account-dropdown"
-                role="menu"
-                aria-hidden="true"
-              >
-                <div class="account-dropdown-head">
-                  <span
-                    data-user-avatar
-                    class="account-avatar account-avatar-large"
-                    >U</span
-                  >
-                  <div>
-                    <strong data-user-full-name>Pengguna</strong>
-                    <small data-user-email>email@pengguna.com</small>
-                  </div>
-                </div>
-
-                <div class="account-dropdown-list">
-                  <a
-                    class="account-dropdown-item"
-                    href="profile.html"
-                    role="menuitem"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M20 21a8 8 0 0 0-16 0"></path>
-                      <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <span>Profil Saya</span>
-                  </a>
-
-                  <a
-                    class="account-dropdown-item"
-                    href="orders.html"
-                    role="menuitem"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M6 2h9l3 3v17H6z"></path>
-                      <path d="M14 2v4h4"></path>
-                      <path d="M9 12h6M9 16h6"></path>
-                    </svg>
-                    <span>Pesanan Saya</span>
-                  </a>
-
-                  <a
-                    class="account-dropdown-item"
-                    href="cart.html#voucher"
-                    role="menuitem"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"
-                      ></path>
-                      <path d="M13 7v12"></path>
-                    </svg>
-                    <span>Voucher & Checkout</span>
-                  </a>
-
-                  <a
-                    data-admin
-                    class="account-dropdown-item hidden"
-                    href="admin.html"
-                    role="menuitem"
-                    aria-hidden="true"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <circle cx="12" cy="12" r="3"></circle>
-                      <path
-                        d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z"
-                      ></path>
-                    </svg>
-                    <span>Admin Panel</span>
-                  </a>
-                </div>
-
-                <div class="account-dropdown-footer">
-                  <button
-                    data-logout
-                    class="account-dropdown-item account-logout hidden"
-                    type="button"
-                    role="menuitem"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M10 17l5-5-5-5"></path>
-                      <path d="M15 12H3"></path>
-                      <path
-                        d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"
-                      ></path>
-                    </svg>
-                    <span>Keluar</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+<a class="btn nav-login" data-login="" href="login.html"> Login </a>
+<div class="account-menu hidden" data-account-menu="">
+<button aria-expanded="false" aria-haspopup="menu" class="account-trigger" data-user-menu-toggle="" type="button">
+<span class="account-avatar" data-user-avatar="">U</span>
+<span class="account-trigger-copy">
+<strong data-user-name="">Halo, Pengguna</strong>
+<small data-user-role="">Akun</small>
+</span>
+<svg aria-hidden="true" class="account-chevron" viewbox="0 0 24 24">
+<path d="m7 10 5 5 5-5"></path>
+</svg>
+</button>
+<div aria-hidden="true" class="account-dropdown" data-user-dropdown="" role="menu">
+<div class="account-dropdown-head">
+<span class="account-avatar account-avatar-large" data-user-avatar="">U</span>
+<div>
+<strong data-user-full-name="">Pengguna</strong>
+<small data-user-email="">email@pengguna.com</small>
+</div>
+</div>
+<div class="account-dropdown-list">
+<a class="account-dropdown-item" href="profile.html" role="menuitem">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M20 21a8 8 0 0 0-16 0"></path>
+<circle cx="12" cy="7" r="4"></circle>
+</svg>
+<span>Profil Saya</span>
+</a>
+<a class="account-dropdown-item" href="orders.html" role="menuitem">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M6 2h9l3 3v17H6z"></path>
+<path d="M14 2v4h4"></path>
+<path d="M9 12h6M9 16h6"></path>
+</svg>
+<span>Pesanan Saya</span>
+</a>
+<a class="account-dropdown-item" href="cart.html#voucher" role="menuitem">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"></path>
+<path d="M13 7v12"></path>
+</svg>
+<span>Voucher &amp; Checkout</span>
+</a>
+<a aria-hidden="true" class="account-dropdown-item hidden" data-admin="" href="admin.html" role="menuitem">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="3"></circle>
+<path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z"></path>
+</svg>
+<span>Admin Panel</span>
+</a>
+</div>
+<div class="account-dropdown-footer">
+<button class="account-dropdown-item account-logout hidden" data-logout="" role="menuitem" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M10 17l5-5-5-5"></path>
+<path d="M15 12H3"></path>
+<path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"></path>
+</svg>
+<span>Keluar</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<main class="container section">
+<h2>Keranjang &amp; Checkout</h2>
+<p class="muted">Pesan beberapa item sekaligus.</p>
+<div class="notice hidden" id="empty">
+        Keranjang kosong. <a href="index.html"><b>Pilih item</b></a>.
       </div>
-    </nav>
-    <main class="container section">
-      <h2>Keranjang & Checkout</h2>
-      <p class="muted">Pesan beberapa item sekaligus.</p>
-      <div id="empty" class="notice hidden">
-        Keranjang kosong. <a href="index.html"><b>Pilih item</b></a
-        >.
-      </div>
-      <div id="content" class="hidden">
-        <div class="cart-layout">
-          <section id="list" class="cart-list"></section>
-          <aside class="card summary">
-            <h3>Ringkasan</h3>
-            <div class="summary-line">
-              <span>Subtotal</span><b id="subtotal"></b>
-            </div>
-            <div class="summary-line">
-              <span>Diskon</span><b id="discount"></b>
-            </div>
-            <div class="summary-line total">
-              <span>Total</span><span id="total"></span>
-            </div>
-            <input
-              id="voucher"
-              class="input"
-              placeholder="Kode voucher"
-            /><button
-              id="checkVoucher"
-              class="btn secondary"
-              style="width: 100%; margin-top: 10px"
-            >
+<div class="hidden" id="content">
+<div class="cart-layout">
+<section class="cart-list" id="list"></section>
+<aside class="card summary">
+<h3>Ringkasan</h3>
+<div class="summary-line">
+<span>Subtotal</span><b id="subtotal"></b>
+</div>
+<div class="summary-line">
+<span>Diskon</span><b id="discount"></b>
+</div>
+<div class="summary-line total">
+<span>Total</span><span id="total"></span>
+</div>
+<input class="input" id="voucher" placeholder="Kode voucher"/><button class="btn secondary" id="checkVoucher" style="width: 100%; margin-top: 10px">
               Cek Voucher
             </button>
-            <div
-              id="voucherMsg"
-              class="notice hidden"
-              style="margin-top: 10px"
-            ></div>
-          </aside>
-        </div>
-        <section class="card checkout">
-          <h2>Identitas Pemesan</h2>
-          <p class="muted">
+<div class="notice hidden" id="voucherMsg" style="margin-top: 10px"></div>
+</aside>
+</div>
+<section class="card checkout">
+<h2>Identitas Pemesan</h2>
+<p class="muted">
             Untuk keamanan, hanya 4 karakter terakhir nomor identitas yang
             disimpan. Jangan unggah foto KTP/SIM ke website statis.
           </p>
-          <form id="form" class="form">
-            <section class="card" style="margin-bottom:16px;padding:16px">
-              <label class="field">
-                <span>📍 Lokasi toko *</span>
-                <select id="checkoutLocation" class="input" required></select>
-                <small class="muted">Stok Toko 1 dan Toko 2 dipisahkan. Pilih lokasi tempat barang diambil.</small>
-              </label>
-            </section>
-            
-            <section id="rentalSchedule" class="rental-schedule hidden">
-              <div class="rental-schedule-heading">
-                <div>
-                  <span class="badge">Jadwal Penyewaan</span>
-                  <h3>Kapan barang akan disewa?</h3>
-                </div>
-                <strong id="rentalDuration">1 hari</strong>
-              </div>
-              <div class="two">
-                <label class="field">
-                  <span>Mulai sewa *</span>
-                  <input
-                    id="rentalStart"
-                    class="input"
-                    name="rental_start"
-                    type="date"
-                  />
-                </label>
-                <label class="field">
-                  <span>Selesai sewa *</span>
-                  <input
-                    id="rentalEnd"
-                    class="input"
-                    name="rental_end"
-                    type="date"
-                  />
-                </label>
-              </div>
-              <div class="rental-duration-picker">
-                <label class="field rental-days-field">
-                  <span>Lama sewa (hari) *</span>
-                  <input
-                    id="rentalDaysInput"
-                    class="input"
-                    type="number"
-                    min="1"
-                    max="30"
-                    step="1"
-                    value="1"
-                    inputmode="numeric"
-                    aria-describedby="rentalDaysHelp"
-                  />
-                </label>
-                <small id="rentalDaysHelp" class="muted">
+<form class="form" id="form">
+<section class="card" style="margin-bottom:16px;padding:16px">
+<label class="field">
+<span>📍 Lokasi toko *</span>
+<select class="input" id="checkoutLocation" required=""></select>
+<small class="muted">Stok Toko 1 dan Toko 2 dipisahkan. Pilih lokasi tempat barang diambil.</small>
+</label>
+</section>
+<section class="rental-schedule hidden" id="rentalSchedule">
+<div class="rental-schedule-heading">
+<div>
+<span class="badge">Jadwal Penyewaan</span>
+<h3>Kapan barang akan disewa?</h3>
+</div>
+<strong id="rentalDuration">1 hari</strong>
+</div>
+<div class="two">
+<label class="field">
+<span>Mulai sewa *</span>
+<input class="input" id="rentalStart" name="rental_start" type="date"/>
+</label>
+<label class="field">
+<span>Selesai sewa *</span>
+<input class="input" id="rentalEnd" name="rental_end" type="date"/>
+</label>
+</div>
+<div class="rental-duration-picker">
+<label class="field rental-days-field">
+<span>Lama sewa (hari) *</span>
+<input aria-describedby="rentalDaysHelp" class="input" id="rentalDaysInput" inputmode="numeric" max="30" min="1" step="1" type="number" value="1"/>
+</label>
+<small class="muted" id="rentalDaysHelp">
                   Ketik jumlah hari. Tanggal selesai akan terisi otomatis.
                 </small>
-              </div>
-              <div id="rentalDateSummary" class="rental-date-summary"></div>
-              <div id="availabilityMessage" class="notice hidden"></div>
-              <small class="muted"
-                >Tanggal mulai dan selesai yang sama dihitung 1 hari. Harga item
-                sewa dihitung per hari.</small
-              >
-            </section>
-            <div class="two">
-              <label class="field"
-                ><span>Nama lengkap *</span
-                ><input class="input" name="full_name" required /></label
-              ><label class="field"
-                ><span>Email *</span
-                ><input
-                  class="input"
-                  name="email"
-                  type="email"
-                  readonly /></label
-              ><label class="field"
-                ><span>Nomor HP/WhatsApp *</span
-                ><input class="input" name="phone" required /></label
-              ><label class="field"
-                ><span>Kota/Kabupaten *</span
-                ><input class="input" name="city" required
-              /></label>
-            </div>
-            <label class="field"
-              ><span>Alamat lengkap *</span
-              ><textarea class="input" name="address" required></textarea>
-            </label>
-            <div class="two">
-              <label class="field"
-                ><span>Kode pos</span
-                ><input class="input" name="postal_code" /></label
-              ><label class="field"
-                ><span>Jenis identitas *</span
-                ><select class="input" name="identity_type" required>
-                  <option value="">Pilih</option>
-                  <option>KTP</option>
-                  <option>SIM</option>
-                  <option>Passport</option>
-                  <option>Kartu Pelajar</option>
-                </select></label
-              ><label class="field"
-                ><span>4 karakter terakhir identitas *</span
-                ><input
-                  class="input"
-                  name="identity_last4"
-                  minlength="4"
-                  maxlength="4"
-                  required /></label
-              ><label class="field"
-                ><span>Nama kontak darurat *</span
-                ><input
-                  class="input"
-                  name="emergency_contact_name"
-                  required /></label
-              ><label class="field"
-                ><span>Nomor kontak darurat *</span
-                ><input class="input" name="emergency_contact_phone" required
-              /></label>
-            </div>
-            <div class="guarantee">
-              <h3>Jaminan</h3>
-              <p id="guaranteeInfo" class="muted"></p>
-              <div class="two">
-                <label class="field"
-                  ><span>Jenis jaminan</span
-                  ><select
-                    id="guaranteeType"
-                    class="input"
-                    name="guarantee_type"
-                  >
-                    <option value="">Tidak ada</option>
-                    <option>KTP saat pengambilan</option>
-                    <option>SIM saat pengambilan</option>
-                    <option>Deposit</option>
-                    <option>Barang lain</option>
-                  </select></label
-                ><label class="field"
-                  ><span>Rincian jaminan</span
-                  ><input
-                    id="guaranteeNotes"
-                    class="input"
-                    name="guarantee_notes"
-                    placeholder="Contoh: deposit Rp200.000"
-                /></label>
-              </div>
-            </div>
-            <section
-              id="tripParticipants"
-              class="trip-checkout-section hidden"
-            ></section>
-            <label class="field"
-              ><span>Catatan pesanan</span
-              ><textarea class="input" name="customer_notes"></textarea></label
-            ><div id="paymentModeInfo" class="notice" style="margin-top:12px"></div><label
-              ><input type="checkbox" required /> Data yang saya isi benar dan
-              boleh digunakan untuk memproses pesanan.</label
-            ><button id="checkout" class="btn">Buat Pesanan</button>
-          </form>
-          <div id="msg" class="notice hidden" style="margin-top: 12px"></div>
-        </section>
-      </div>
-      <section id="success" class="card panel hidden">
-        <h2>Pesanan berhasil</h2>
-        <p id="successText"></p>
-        <div class="actions">
-          <a id="wa" class="btn" target="_blank">Konfirmasi WhatsApp</a
-          ><a class="btn secondary" href="orders.html">Pesanan Saya</a>
-        </div>
-      </section>
-    </main>
-    <script type="module">
+</div>
+<div class="rental-date-summary" id="rentalDateSummary"></div>
+<div class="notice hidden" id="availabilityMessage"></div>
+<small class="muted">Tanggal mulai dan selesai yang sama dihitung 1 hari. Harga item
+                sewa dihitung per hari.</small>
+</section>
+<div class="two">
+<label class="field"><span>Nama lengkap *</span><input class="input" name="full_name" required=""/></label><label class="field"><span>Email *</span><input class="input" name="email" readonly="" type="email"/></label><label class="field"><span>Nomor HP/WhatsApp *</span><input class="input" name="phone" required=""/></label><label class="field"><span>Kota/Kabupaten *</span><input class="input" name="city" required=""/></label>
+</div>
+<label class="field"><span>Alamat lengkap *</span><textarea class="input" name="address" required=""></textarea>
+</label>
+<div class="two">
+<label class="field"><span>Kode pos</span><input class="input" name="postal_code"/></label><label class="field"><span>Jenis identitas *</span><select class="input" name="identity_type" required="">
+<option value="">Pilih</option>
+<option>KTP</option>
+<option>SIM</option>
+<option>Passport</option>
+<option>Kartu Pelajar</option>
+</select></label><label class="field"><span>4 karakter terakhir identitas *</span><input class="input" maxlength="4" minlength="4" name="identity_last4" required=""/></label><label class="field"><span>Nama kontak darurat *</span><input class="input" name="emergency_contact_name" required=""/></label><label class="field"><span>Nomor kontak darurat *</span><input class="input" name="emergency_contact_phone" required=""/></label>
+</div>
+<div class="guarantee">
+<h3>Jaminan</h3>
+<p class="muted" id="guaranteeInfo"></p>
+<div class="two">
+<label class="field"><span>Jenis jaminan</span><select class="input" id="guaranteeType" name="guarantee_type">
+<option value="">Tidak ada</option>
+<option>KTP saat pengambilan</option>
+<option>SIM saat pengambilan</option>
+<option>Deposit</option>
+<option>Barang lain</option>
+</select></label><label class="field"><span>Rincian jaminan</span><input class="input" id="guaranteeNotes" name="guarantee_notes" placeholder="Contoh: deposit Rp200.000"/></label>
+</div>
+</div>
+<section class="trip-checkout-section hidden" id="tripParticipants"></section>
+<label class="field"><span>Catatan pesanan</span><textarea class="input" name="customer_notes"></textarea></label><div class="notice" id="paymentModeInfo" style="margin-top:12px"></div><label><input required="" type="checkbox"/> Data yang saya isi benar dan
+              boleh digunakan untuk memproses pesanan.</label><button class="btn" id="checkout">Buat Pesanan</button>
+</form>
+<div class="notice hidden" id="msg" style="margin-top: 12px"></div>
+</section>
+</div>
+<section class="card panel hidden" id="success">
+<h2>Pesanan berhasil</h2>
+<p id="successText"></p>
+<div class="actions">
+<a class="btn" id="wa" target="_blank">Konfirmasi WhatsApp</a><a class="btn secondary" href="orders.html">Pesanan Saya</a>
+</div>
+</section>
+</main>
+<script type="module">
       import {
         supabase,
         getCart,
@@ -972,29 +791,17 @@
       render();
       init();
     </script>
-    <a
-      class="customer-service-float"
-      href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan."
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp"
-      title="Hubungi CS: +62 895-0934-9428"
-    >
-      <span class="customer-service-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path
-            d="M21 11.5a8.5 8.5 0 0 1-12.55 7.47L3 20.5l1.53-5.3A8.5 8.5 0 1 1 21 11.5Z"
-          ></path>
-          <path
-            d="M8.3 7.8c.25-.25.7-.2.88.1l1.05 1.72c.14.24.11.54-.08.74l-.62.64a8.1 8.1 0 0 0 3.47 3.47l.64-.62c.2-.19.5-.22.74-.08l1.72 1.05c.3.18.35.63.1.88l-.75.75c-.65.65-1.62.86-2.48.55a10.7 10.7 0 0 1-5.97-5.97c-.31-.86-.1-1.83.55-2.48l.75-.75Z"
-          ></path>
-        </svg>
-      </span>
-
-      <span class="customer-service-copy">
-        <strong>Hubungi CS</strong>
-        <small>WhatsApp</small>
-      </span>
-    </a>
-  </body>
+<a aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp" class="customer-service-float" href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan." rel="noopener noreferrer" target="_blank" title="Hubungi CS: +62 895-0934-9428">
+<span aria-hidden="true" class="customer-service-icon">
+<svg viewbox="0 0 24 24">
+<path d="M21 11.5a8.5 8.5 0 0 1-12.55 7.47L3 20.5l1.53-5.3A8.5 8.5 0 1 1 21 11.5Z"></path>
+<path d="M8.3 7.8c.25-.25.7-.2.88.1l1.05 1.72c.14.24.11.54-.08.74l-.62.64a8.1 8.1 0 0 0 3.47 3.47l.64-.62c.2-.19.5-.22.74-.08l1.72 1.05c.3.18.35.63.1.88l-.75.75c-.65.65-1.62.86-2.48.55a10.7 10.7 0 0 1-5.97-5.97c-.31-.86-.1-1.83.55-2.48l.75-.75Z"></path>
+</svg>
+</span>
+<span class="customer-service-copy">
+<strong>Hubungi CS</strong>
+<small>WhatsApp</small>
+</span>
+</a>
+</body>
 </html>
