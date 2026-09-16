@@ -7,6 +7,7 @@ export const supabase = createClient(
 );
 export const DEFAULT_SITE_SETTINGS = Object.freeze({
   site_name: CONFIG.SITE_NAME || "AbidzarOutdoorcamp",
+  site_logo_url: "",
   whatsapp_number: CONFIG.WHATSAPP_NUMBER || "6289509349428",
   whatsapp_message:
     "Halo CS AbidzarOutdoorcamp, saya ingin bertanya mengenai layanan.",
@@ -77,17 +78,35 @@ export function applySiteSettings(settings) {
   const whatsappText = String(value.whatsapp_message || "").trim();
 
   document.querySelectorAll(".brand").forEach((element) => {
+    const logoUrl = String(value.site_logo_url || "").trim();
+    const textWrap = document.createElement("span");
+    textWrap.className = "brand-text";
     const splitAt = siteName.toLowerCase().indexOf("outdoor");
     if (splitAt > 0) {
-      element.replaceChildren(
+      textWrap.append(
         document.createTextNode(siteName.slice(0, splitAt)),
-        Object.assign(document.createElement("span"), {
-          textContent: siteName.slice(splitAt),
-        }),
+        Object.assign(document.createElement("span"), { textContent: siteName.slice(splitAt) }),
       );
     } else {
-      element.textContent = siteName;
+      textWrap.textContent = siteName;
     }
+    element.replaceChildren();
+    element.classList.toggle("has-custom-logo", Boolean(logoUrl));
+    if (logoUrl) {
+      const img = document.createElement("img");
+      img.className = "brand-logo";
+      img.src = logoUrl;
+      img.alt = siteName;
+      img.loading = "eager";
+      img.decoding = "async";
+      img.referrerPolicy = "no-referrer";
+      img.onerror = () => {
+        element.classList.remove("has-custom-logo");
+        img.remove();
+      };
+      element.append(img);
+    }
+    element.append(textWrap);
   });
 
   if (document.title.includes("AbidzarOutdoorcamp")) {

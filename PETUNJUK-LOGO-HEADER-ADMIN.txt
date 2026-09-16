@@ -1,0 +1,11 @@
+AOC - UPLOAD LOGO HEADER MELALUI ADMIN
+
+1. Jalankan file site-logo-storage.sql di Supabase SQL Editor.
+2. Login sebagai akun yang memiliki izin settings.manage / Super Admin.
+3. Buka Admin Panel > Pengaturan Website.
+4. Di bagian Logo Header pilih PNG/JPG/WebP/SVG maksimal 2 MB.
+5. Klik Upload Logo.
+6. Klik Simpan Pengaturan.
+7. Refresh website. Logo akan tampil otomatis di header seluruh halaman yang memakai app.js.
+
+Catatan: upload disimpan di Supabase Storage bucket site-assets. Public hanya untuk membaca file logo; upload/update/delete tetap dibatasi akun admin berizin.

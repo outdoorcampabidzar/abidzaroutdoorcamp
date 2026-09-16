@@ -29,6 +29,7 @@
 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
 <path d="M10 21h4"></path>
 </svg>
+<span class="notification-label">Status pesanan</span>
 <span class="notification-dot hidden" data-notification-dot=""></span>
 </a></div>
 
@@ -148,6 +149,28 @@
       let customerNotifications = [];
       let currentStaffRole = "user";
       let currentPermissions = new Set();
+      let itemsLoaded = false;
+      let ordersLoaded = false;
+      let categoriesLoaded = false;
+      let siteSettingsLoaded = false;
+      let administratorsLoaded = false;
+      let itemsLoadPromise = null;
+      let ordersLoadPromise = null;
+      let categoriesLoadPromise = null;
+      let administratorsLoadPromise = null;
+      let renderRequestId = 0;
+
+      function withTimeout(promise, ms, label = "Operasi Supabase") {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error(`${label} timeout setelah ${Math.round(ms / 1000)} detik.`)),
+              ms,
+            ),
+          ),
+        ]);
+      }
 
       function can(permission) {
         return (
@@ -190,7 +213,11 @@
       async function verifyAdmin() {
         const {
           data: { user },
-        } = await supabase.auth.getUser();
+        } = await withTimeout(
+          supabase.auth.getUser(),
+          8000,
+          "Pemeriksaan sesi login",
+        );
 
         if (!user) {
           location.href = "login.html?next=admin.html";
@@ -199,25 +226,49 @@
 
         currentAdminUserId = user.id;
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
+        let profile = null;
+        try {
+          const profileResult = await withTimeout(
+            supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+            5000,
+            "Pemeriksaan role admin",
+          );
+          profile = profileResult.data || null;
+        } catch (error) {
+          console.warn("Profile admin check timeout/error:", error);
+        }
 
-        const { data: access } = await supabase.rpc("get_my_staff_permissions");
-        currentStaffRole = access?.role || String(profile?.role || "user");
-        currentPermissions = new Set(
-          access?.permissions || (currentStaffRole === "admin" ? ["*"] : []),
-        );
-        let allowed = currentPermissions.size > 0;
+        const profileRole = String(profile?.role || "user").toLowerCase();
+
+        // Akun admin tidak perlu menunggu RPC permission yang bisa lambat.
+        if (profileRole === "admin") {
+          currentStaffRole = "admin";
+          currentPermissions = new Set(["*"]);
+          return true;
+        }
+
+        try {
+          const { data: access } = await withTimeout(
+            supabase.rpc("get_my_staff_permissions"),
+            7000,
+            "Pemeriksaan permission admin",
+          );
+          currentStaffRole = access?.role || profileRole;
+          currentPermissions = new Set(access?.permissions || []);
+        } catch (error) {
+          console.warn("Staff permission check timeout/error:", error);
+          currentStaffRole = profileRole;
+          currentPermissions = new Set();
+        }
+
+        const allowed = currentPermissions.size > 0;
 
         if (!allowed) {
           root.innerHTML = `
           <section class="container section">
             <div class="notice error">
               Akses admin diperlukan. Pastikan role akun pada tabel
-              <b>profiles</b> bernilai <b>admin</b>.
+              <b>profiles</b> bernilai <b>admin</b> atau akun memiliki permission staff.
             </div>
           </section>`;
         }
@@ -225,9 +276,12 @@
         return allowed;
       }
 
-      async function loadAllData() {
-        let [itemResult, categoryResult, orderResult, loadedSettings] =
-          await Promise.all([
+      async function loadItemsData() {
+        if (itemsLoaded) return;
+        if (itemsLoadPromise) return itemsLoadPromise;
+
+        itemsLoadPromise = (async () => {
+          const [itemResult, categoryResult] = await Promise.all([
             supabase
               .from("items")
               .select(
@@ -237,46 +291,105 @@
               .order("is_featured", { ascending: false })
               .order("sort_order", { ascending: true })
               .order("created_at", { ascending: false }),
-
             supabase.from("item_categories").select("*").order("sort_order"),
-
-            can("orders.view")
-              ? supabase
-                  .from("orders")
-                  .select(
-                    "*,order_items(*),payment_transactions(*),order_status_history(*),order_refunds(*),order_returns(*)",
-                  )
-                  .order("created_at", { ascending: false })
-              : Promise.resolve({ data: [], error: null }),
-
-            loadSiteSettings(),
           ]);
 
-        if (
-          orderResult.error &&
-          String(orderResult.error.message || "").includes(
-            "order_status_history",
-          )
-        ) {
-          orderResult = await supabase
-            .from("orders")
-            .select("*,order_items(*),payment_transactions(*)")
-            .order("created_at", { ascending: false });
+          if (itemResult.error) throw itemResult.error;
+          if (categoryResult.error) throw categoryResult.error;
+
+          items = itemResult.data || [];
+          categories = categoryResult.data || [];
+          itemsLoaded = true;
+          categoriesLoaded = true;
+        })();
+
+        try {
+          await itemsLoadPromise;
+        } finally {
+          itemsLoadPromise = null;
         }
+      }
 
-        if (itemResult.error) throw itemResult.error;
-        if (categoryResult.error) throw categoryResult.error;
-        if (orderResult.error) throw orderResult.error;
+      async function loadOrdersData() {
+        if (ordersLoaded) return;
+        if (ordersLoadPromise) return ordersLoadPromise;
 
-        items = itemResult.data || [];
-        categories = categoryResult.data || [];
-        orders = orderResult.data || [];
-        siteSettings = { ...DEFAULT_SITE_SETTINGS, ...loadedSettings };
+        ordersLoadPromise = (async () => {
+          let { data, error } = await supabase
+            .from("orders")
+            .select(
+              "*,order_items(*),payment_transactions(*),order_status_history(*),order_refunds(*),order_returns(*)",
+            )
+            .order("created_at", { ascending: false });
 
-        const { data: adminData } = can("*")
-          ? await supabase.rpc("secure_list_staff_users")
-          : { data: [] };
-        administrators = adminData || [];
+          if (
+            error &&
+            String(error.message || "").includes("order_status_history")
+          ) {
+            const fallback = await supabase
+              .from("orders")
+              .select("*,order_items(*),payment_transactions(*)")
+              .order("created_at", { ascending: false });
+            data = fallback.data;
+            error = fallback.error;
+          }
+
+          if (error) throw error;
+          orders = data || [];
+          ordersLoaded = true;
+        })();
+
+        try {
+          await ordersLoadPromise;
+        } finally {
+          ordersLoadPromise = null;
+        }
+      }
+
+      async function loadSettingsData() {
+        if (siteSettingsLoaded) return;
+        siteSettings = { ...DEFAULT_SITE_SETTINGS, ...(await loadSiteSettings()) };
+        siteSettingsLoaded = true;
+      }
+
+      async function loadAdministratorsData() {
+        if (administratorsLoaded || !can("*")) return;
+        if (administratorsLoadPromise) return administratorsLoadPromise;
+
+        administratorsLoadPromise = (async () => {
+          const { data, error } = await supabase.rpc("secure_list_staff_users");
+          if (error) throw error;
+          administrators = data || [];
+          administratorsLoaded = true;
+        })();
+
+        try {
+          await administratorsLoadPromise;
+        } finally {
+          administratorsLoadPromise = null;
+        }
+      }
+
+      async function ensureAdminDataForTab(tab) {
+        if (["rental", "trips", "locations"].includes(tab)) {
+          await loadItemsData();
+          return;
+        }
+        if (["orders", "schedule"].includes(tab)) {
+          await loadOrdersData();
+          return;
+        }
+        if (tab === "customers") {
+          await loadOrdersData();
+          return;
+        }
+        if (tab === "settings") {
+          await loadSettingsData();
+          return;
+        }
+        if (tab === "administrators") {
+          await loadAdministratorsData();
+        }
       }
 
       function renderShell() {
@@ -416,110 +529,172 @@
             editingVoucher = null;
             editingShopReward = null;
             renderShell();
-            renderActiveTab();
           });
         });
 
         renderActiveTab();
       }
 
+      let aocSelectedLocationId = null;
+      let aocSelectedStockCategoryId = "all";
+
       async function renderLocationsTab() {
         const content = document.getElementById("adminContent");
-        content.innerHTML = '<div class="notice">Memuat stok per lokasi...</div>';
+        content.innerHTML = '<div class="notice">Memuat lokasi dan stok...</div>';
+
         const [{ data: locations, error: le }, { data: rows, error: se }] = await Promise.all([
           supabase.from("aoc_locations").select("*").order("sort_order"),
           supabase.from("item_location_stock").select("*,aoc_locations(id,code,name),items(id,title),item_variants(id,name,capacity)").order("updated_at", { ascending: false })
         ]);
+
         if (le || se) {
           content.innerHTML = `<div class="notice error">${esc((le || se).message)}</div>`;
           return;
         }
+
+        const locationList = locations || [];
+        if (!aocSelectedLocationId || !locationList.some(l => String(l.id) === String(aocSelectedLocationId))) {
+          aocSelectedLocationId = locationList.find(l => l.is_active !== false)?.id || locationList[0]?.id || null;
+        }
+
+        const selectedLocation = locationList.find(l => String(l.id) === String(aocSelectedLocationId)) || locationList[0];
         const products = rentalItems();
         const stockMap = new Map((rows || []).map(r => [`${r.item_id}|${r.variant_id || ""}|${r.location_id}`, r]));
-        const locationList = locations || [];
-        const field = (item, variant, loc) => {
-          const key = `${item.id}|${variant?.id || ""}|${loc.id}`;
-          const row = stockMap.get(key);
+        const stockValue = (item, variant, locationId) => {
+          const row = stockMap.get(`${item.id}|${variant?.id || ""}|${locationId}`);
           return Number(row?.stock || 0);
         };
+
         content.innerHTML = `
-          <section class="card aoc-location-admin-card">
-            <div class="admin-editor-heading aoc-location-admin-head">
-              <div>
-                <span class="badge">Manajemen Lokasi</span>
-                <h3>Toko / Lokasi</h3>
-                <p class="muted">Tambahkan Toko 3, Toko 4, Toko 5, dan seterusnya. Tidak ada batas jumlah lokasi.</p>
+          <section class="card aoc-stock-dashboard">
+            <div class="aoc-stock-top">
+              <div class="aoc-stock-title">
+                <span class="aoc-stock-icon">📦</span>
+                <div>
+                  <h3>Stok Toko</h3>
+                  <p>Pilih toko, lalu atur jumlah stok.</p>
+                </div>
               </div>
-              <button class="btn primary" type="button" id="aocAddLocationBtn">＋ Tambah Toko</button>
+              <button class="btn small" type="button" id="aocAddLocationBtn">＋ Toko</button>
             </div>
+
+            <label class="aoc-store-select">
+              <span>Lokasi</span>
+              <select class="input" id="aocLocationSelect">
+                ${locationList.map(l => `<option value="${esc(l.id)}" ${String(l.id) === String(selectedLocation?.id) ? "selected" : ""}>${esc(l.name)}${l.is_active === false ? " — Nonaktif" : ""}</option>`).join("")}
+              </select>
+            </label>
+
+            ${selectedLocation ? `
+              <div class="aoc-store-bar">
+                <div>
+                  <strong>${esc(selectedLocation.name)}</strong>
+                  <small>${esc(selectedLocation.code)}${selectedLocation.is_active === false ? " · Nonaktif" : " · Aktif"}</small>
+                </div>
+                <div class="aoc-store-actions">
+                  <button class="btn tiny" type="button" data-rename-location="${esc(selectedLocation.id)}">Rename</button>
+                  <button class="btn tiny" type="button" data-toggle-location="${esc(selectedLocation.id)}" data-active="${selectedLocation.is_active ? "1" : "0"}">${selectedLocation.is_active ? "Nonaktifkan" : "Aktifkan"}</button>
+                </div>
+              </div>` : `<div class="notice">Belum ada toko.</div>`}
+
             <div id="aocLocationForm" class="aoc-location-admin-form" hidden>
               <div class="aoc-location-admin-grid">
-                <label class="field"><span>Nama Toko *</span><input class="input" id="aocLocationName" placeholder="Contoh: Toko 3" maxlength="80"></label>
-                <label class="field"><span>Kode *</span><input class="input" id="aocLocationCode" placeholder="TOKO3" maxlength="30" autocapitalize="characters"></label>
-                <label class="field aoc-location-admin-address"><span>Alamat</span><input class="input" id="aocLocationAddress" placeholder="Alamat toko (opsional)" maxlength="200"></label>
+                <label class="field"><span>Nama Toko</span><input class="input" id="aocLocationName" placeholder="Contoh: Toko 3" maxlength="80"></label>
+                <label class="field"><span>Kode</span><input class="input" id="aocLocationCode" placeholder="TOKO3" maxlength="30" autocapitalize="characters"></label>
+                <label class="field aoc-location-admin-address"><span>Alamat (opsional)</span><input class="input" id="aocLocationAddress" placeholder="Alamat toko" maxlength="200"></label>
               </div>
               <div class="aoc-location-admin-actions">
                 <button class="btn" type="button" id="aocCancelLocationBtn">Batal</button>
                 <button class="btn primary" type="button" id="aocSaveLocationBtn">Simpan Toko</button>
               </div>
-              <p class="muted" style="margin:8px 0 0;font-size:12px">Kode harus unik. Nama toko dapat di-rename kapan saja; kode tetap agar data stok dan pesanan lama tidak berubah.</p>
-            </div>
-            <div class="aoc-location-admin-list">
-              ${locationList.map((l,i)=>`
-                <div class="aoc-location-admin-row" data-location-admin-row="${esc(l.id)}">
-                  <div class="aoc-location-admin-icon">${String(i+1).padStart(2,"0")}</div>
-                  <div class="aoc-location-admin-copy">
-                    <strong>${esc(l.name)}</strong>
-                    <small>${esc(l.code)}${l.address ? ` · ${esc(l.address)}` : ""}</small>
-                  </div>
-                  <span class="aoc-location-active ${l.is_active ? "on" : "off"}">${l.is_active ? "Aktif" : "Nonaktif"}</span>
-                  <div class="aoc-location-admin-actions-inline">
-                    <button class="btn small" type="button" data-rename-location="${esc(l.id)}">✏️ Rename</button>
-                    <button class="btn small" type="button" data-toggle-location="${esc(l.id)}" data-active="${l.is_active ? "1" : "0"}">${l.is_active ? "Nonaktifkan" : "Aktifkan"}</button>
-                  </div>
-                </div>`).join("")}
             </div>
           </section>
-          <section class="card">
-            <div class="admin-editor-heading">
-              <div><span class="badge">Multi Lokasi</span><h3>Stok Semua Toko</h3>
-              <p class="muted">Stok setiap toko berdiri sendiri. Setelah Toko 3 ditambahkan, kolom stok Toko 3 otomatis muncul di bawah.</p></div>
+
+          ${selectedLocation ? `
+          <section class="card aoc-stock-list-card">
+            <div class="aoc-stock-list-head">
+              <div>
+                <h3>Daftar Item</h3>
+                <p>${products.length} item · stok khusus ${esc(selectedLocation.name)}</p>
+              </div>
+              <div class="aoc-stock-filters">
+                <div class="aoc-stock-category-wrap">
+                  <label class="sr-only" for="aocStockCategory">Kategori item</label>
+                  <select class="input aoc-stock-category-filter" id="aocStockCategory">
+                    <option value="all" ${aocSelectedStockCategoryId === "all" ? "selected" : ""}>Semua Kategori</option>
+                    <option value="__none__" ${aocSelectedStockCategoryId === "__none__" ? "selected" : ""}>Tanpa Kategori</option>
+                    ${(categories || []).map(c => `<option value="${esc(c.id)}" ${String(aocSelectedStockCategoryId) === String(c.id) ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+                  </select>
+                </div>
+                <div class="aoc-stock-search-wrap">
+                  <input class="input aoc-stock-search" id="aocStockSearch" type="search" placeholder="Cari item..." autocomplete="off">
+                </div>
+              </div>
             </div>
-            <div style="overflow:auto">
-              <table class="admin-table"><thead><tr><th>Item</th><th>Varian</th>${(locations||[]).map(l=>`<th>${esc(l.name)}</th>`).join("")}<th>Aksi</th></tr></thead>
-              <tbody>
-                ${products.flatMap(item => {
-                  const vars = item.item_variants?.filter(v=>v.is_active) || [];
-                  const list = vars.length ? vars.map(v=>[item,v]) : [[item,null]];
-                  return list.map(([it,v]) => `<tr>
-                    <td>${esc(it.title)}</td><td>${esc(v ? [v.name,v.capacity].filter(Boolean).join(" · ") : "Stok utama")}</td>
-                    ${(locations||[]).map(l=>`<td><input class="input" type="number" min="0" value="${field(it,v,l)}" data-loc-stock data-item-id="${it.id}" data-variant-id="${v?.id||""}" data-location-id="${l.id}" style="max-width:120px"></td>`).join("")}
-                    <td><button class="btn small" type="button" data-save-location-row data-item-id="${it.id}" data-variant-id="${v?.id||""}">Simpan</button></td>
-                  </tr>`);
-                }).join("")}
-              </tbody></table>
+            <div class="aoc-stock-list">
+              ${products.flatMap(item => {
+                const vars = item.item_variants?.filter(v => v.is_active) || [];
+                return (vars.length ? vars.map(v => [item, v]) : [[item, null]]).map(([it, v]) => {
+                  const categoryId = it.item_categories?.id || it.category_id || "";
+                  const categoryName = it.item_categories?.name || "Tanpa Kategori";
+                  const menuImage = it.image_url || (it.item_images || []).slice().sort((a,b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))[0]?.image_url || "";
+                  const searchText = `${it.title} ${categoryName} ${v ? [v.name, v.capacity].filter(Boolean).join(" ") : "Stok utama"}`.toLowerCase();
+                  return `
+                  <div class="aoc-stock-card" data-stock-card data-search="${esc(searchText)}" data-category-id="${esc(categoryId)}">
+                    <div class="aoc-stock-card-main">
+                      <div class="aoc-stock-thumb ${menuImage ? "" : "is-fallback"}">
+                        ${menuImage ? `<img src="${esc(menuImage)}" alt="${esc(it.title)}" loading="lazy" onerror="this.closest('.aoc-stock-thumb').classList.add('is-fallback');this.remove();">` : ""}
+                        <span class="aoc-stock-thumb-fallback">${esc((it.title || "I").trim().charAt(0).toUpperCase())}</span>
+                      </div>
+                      <div class="aoc-stock-name">
+                        <div class="aoc-stock-name-row"><strong>${esc(it.title)}</strong><span class="aoc-stock-category">${esc(categoryName)}</span></div>
+                        <span>${esc(v ? [v.name, v.capacity].filter(Boolean).join(" · ") : "Stok utama")}</span>
+                      </div>
+                    </div>
+                    <div class="aoc-stock-control">
+                      <button class="aoc-stock-step" type="button" data-stock-minus aria-label="Kurangi stok">−</button>
+                      <input class="input aoc-stock-number" type="number" min="0" value="${stockValue(it, v, selectedLocation.id)}" data-simple-stock data-item-id="${esc(it.id)}" data-variant-id="${esc(v?.id || "")}" data-location-id="${esc(selectedLocation.id)}" aria-label="Stok ${esc(it.title)}">
+                      <button class="aoc-stock-step" type="button" data-stock-plus aria-label="Tambah stok">+</button>
+                      <button class="btn primary aoc-stock-save" type="button" data-save-simple-stock data-item-id="${esc(it.id)}" data-variant-id="${esc(v?.id || "")}" data-location-id="${esc(selectedLocation.id)}">Simpan</button>
+                    </div>
+                  </div>`;
+                });
+              }).join("") || `<div class="notice">Belum ada item sewa.</div>`}
+              <div class="aoc-stock-empty" id="aocStockEmpty" hidden>Tidak ada item yang cocok.</div>
             </div>
-          </section>`;
+          </section>` : ""}`;
+        const select = content.querySelector("#aocLocationSelect");
+        select?.addEventListener("change", () => {
+          aocSelectedLocationId = select.value;
+          renderLocationsTab();
+        });
+
         const addBtn = content.querySelector("#aocAddLocationBtn");
         const form = content.querySelector("#aocLocationForm");
         const nameInput = content.querySelector("#aocLocationName");
         const codeInput = content.querySelector("#aocLocationCode");
         const addressInput = content.querySelector("#aocLocationAddress");
         addBtn?.addEventListener("click", () => {
+          if (!form) return;
           form.hidden = !form.hidden;
           if (!form.hidden) nameInput?.focus();
         });
         content.querySelector("#aocCancelLocationBtn")?.addEventListener("click", () => {
           form.hidden = true;
-          nameInput.value = ""; codeInput.value = ""; addressInput.value = "";
+          if (nameInput) nameInput.value = "";
+          if (codeInput) { codeInput.value = ""; delete codeInput.dataset.manual; }
+          if (addressInput) addressInput.value = "";
         });
         nameInput?.addEventListener("input", () => {
-          if (!codeInput.dataset.manual) {
+          if (!codeInput?.dataset.manual) {
             const n = slugify(nameInput.value).replace(/-/g, "_").toUpperCase();
             codeInput.value = n || "TOKO";
           }
         });
-        codeInput?.addEventListener("input", () => { codeInput.dataset.manual = "1"; codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""); });
+        codeInput?.addEventListener("input", () => {
+          codeInput.dataset.manual = "1";
+          codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "");
+        });
         content.querySelector("#aocSaveLocationBtn")?.addEventListener("click", async (ev) => {
           const btn = ev.currentTarget;
           const name = String(nameInput?.value || "").trim();
@@ -534,35 +709,32 @@
             const nextSort = Math.max(0, ...locationList.map(x => Number(x.sort_order) || 0)) + 1;
             const ins = await supabase.from("aoc_locations").insert({ code, name, address, is_active: true, sort_order: nextSort }).select("id").single();
             if (ins.error) throw ins.error;
+            aocSelectedLocationId = ins.data.id;
             showAdminMessage(`${name} berhasil ditambahkan.`, "success");
             await renderLocationsTab();
           } catch (e) {
             showAdminMessage(e.message || "Gagal menambahkan toko.", "error");
           } finally { btn.disabled = false; }
         });
+
         content.querySelectorAll("[data-rename-location]").forEach(btn => btn.addEventListener("click", async () => {
           const id = btn.dataset.renameLocation;
           const loc = locationList.find(x => String(x.id) === String(id));
           if (!loc) return;
-          const currentName = String(loc.name || "");
-          const currentAddress = String(loc.address || "");
-          const name = window.prompt("Nama toko baru:", currentName);
+          const name = window.prompt("Nama toko baru:", String(loc.name || ""));
           if (name === null) return;
           const cleanName = name.trim();
           if (!cleanName) { showAdminMessage("Nama toko tidak boleh kosong.", "error"); return; }
-          if (cleanName.length > 80) { showAdminMessage("Nama toko maksimal 80 karakter.", "error"); return; }
-          const address = window.prompt("Alamat toko (opsional):", currentAddress);
+          const address = window.prompt("Alamat toko (opsional):", String(loc.address || ""));
           if (address === null) return;
-          const cleanAddress = address.trim() || null;
           btn.disabled = true;
           try {
-            const r = await supabase.from("aoc_locations").update({ name: cleanName, address: cleanAddress }).eq("id", id);
+            const r = await supabase.from("aoc_locations").update({ name: cleanName, address: address.trim() || null }).eq("id", id);
             if (r.error) throw r.error;
-            showAdminMessage(`${cleanName} berhasil diubah.`, "success");
+            showAdminMessage(`${cleanName} berhasil diperbarui.`, "success");
             await renderLocationsTab();
-          } catch (e) {
-            showAdminMessage(e.message || "Gagal mengubah nama toko.", "error");
-          } finally { btn.disabled = false; }
+          } catch (e) { showAdminMessage(e.message || "Gagal mengubah toko.", "error"); }
+          finally { btn.disabled = false; }
         }));
 
         content.querySelectorAll("[data-toggle-location]").forEach(btn => btn.addEventListener("click", async () => {
@@ -575,48 +747,98 @@
             if (r.error) throw r.error;
             showAdminMessage(!active ? "Toko diaktifkan." : "Toko dinonaktifkan.", "success");
             await renderLocationsTab();
-          } catch (e) { showAdminMessage(e.message, "error"); }
+          } catch (e) { showAdminMessage(e.message || "Gagal mengubah status toko.", "error"); }
           finally { btn.disabled = false; }
         }));
 
-        content.querySelectorAll("[data-save-location-row]").forEach(btn => btn.addEventListener("click", async () => {
-          const itemId = btn.dataset.itemId, variantId = btn.dataset.variantId || null;
-          const inputs = [...content.querySelectorAll(`[data-loc-stock][data-item-id="${itemId}"][data-variant-id="${variantId || ""}"]`)];
+        const stockSearch = content.querySelector("#aocStockSearch");
+        const stockCategory = content.querySelector("#aocStockCategory");
+        const stockEmpty = content.querySelector("#aocStockEmpty");
+        const filterStock = () => {
+          const q = String(stockSearch?.value || "").trim().toLowerCase();
+          const category = String(stockCategory?.value || "all");
+          let shown = 0;
+          content.querySelectorAll("[data-stock-card]").forEach(card => {
+            const matchesSearch = !q || String(card.dataset.search || "").includes(q);
+            const cardCategory = String(card.dataset.categoryId || "");
+            const matchesCategory = category === "all" || (category === "__none__" ? !cardCategory : cardCategory === category);
+            const ok = matchesSearch && matchesCategory;
+            card.hidden = !ok;
+            if (ok) shown++;
+          });
+          if (stockEmpty) stockEmpty.hidden = shown !== 0;
+        };
+        stockSearch?.addEventListener("input", filterStock);
+        stockCategory?.addEventListener("change", () => {
+          aocSelectedStockCategoryId = stockCategory.value || "all";
+          filterStock();
+        });
+        filterStock();
+
+        content.querySelectorAll("[data-stock-card]").forEach(card => {
+          const input = card.querySelector("[data-simple-stock]");
+          card.querySelector("[data-stock-minus]")?.addEventListener("click", () => {
+            if (!input) return;
+            input.value = Math.max(0, (Number(input.value) || 0) - 1);
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          card.querySelector("[data-stock-plus]")?.addEventListener("click", () => {
+            if (!input) return;
+            input.value = Math.max(0, (Number(input.value) || 0) + 1);
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+        });
+
+        content.querySelectorAll("[data-save-simple-stock]").forEach(btn => btn.addEventListener("click", async () => {
+          const input = content.querySelector(`[data-simple-stock][data-item-id="${btn.dataset.itemId}"][data-variant-id="${btn.dataset.variantId}"][data-location-id="${btn.dataset.locationId}"]`);
+          if (!input) return;
           btn.disabled = true;
           try {
-            for (const input of inputs) {
-              const r = await supabase.rpc("aoc_set_location_stock", {
-                p_item_id: itemId, p_variant_id: variantId, p_location_id: input.dataset.locationId,
-                p_stock: Math.max(0, Number(input.value) || 0)
-              });
-              if (r.error) throw r.error;
-            }
+            const r = await supabase.rpc("aoc_set_location_stock", {
+              p_item_id: btn.dataset.itemId,
+              p_variant_id: btn.dataset.variantId || null,
+              p_location_id: btn.dataset.locationId,
+              p_stock: Math.max(0, Number(input.value) || 0)
+            });
+            if (r.error) throw r.error;
             await refreshItems();
-            btn.disabled = false;
-            showAdminMessage("Stok lokasi berhasil disimpan.", "success");
-            renderLocationsTab();
+            showAdminMessage("Stok berhasil disimpan.", "success");
           } catch (e) {
-            btn.disabled = false;
-            showAdminMessage(e.message, "error");
-          }
+            showAdminMessage(e.message || "Gagal menyimpan stok.", "error");
+          } finally { btn.disabled = false; }
         }));
       }
 
-      function renderActiveTab() {
-        if (activeTab === "locations") renderLocationsTab();
-        else if (activeTab === "rental") renderRentalTab();
-        else if (activeTab === "trips") renderTripTab();
-        else if (activeTab === "orders") renderOrdersTab();
-        else if (activeTab === "vouchers") renderVoucherTab();
-        else if (activeTab === "shop") renderShopTab();
-        else if (activeTab === "settings") renderSettingsTab();
-        else if (activeTab === "schedule") renderRentalScheduleTab();
-        else if (activeTab === "payment_logs") renderPaymentLogsTab();
-        else if (activeTab === "customers") renderCustomersTab();
-        else if (activeTab === "reviews") renderReviewsTab();
-        else if (activeTab === "notifications") renderNotificationsTab();
-        else if (activeTab === "activity_logs") renderActivityLogsTab();
-        else renderAdministratorsTab();
+      async function renderActiveTab() {
+        const tab = activeTab;
+        const requestId = ++renderRequestId;
+        const content = document.getElementById("adminContent");
+        if (!content) return;
+
+        content.innerHTML = '<div class="notice">Memuat data menu...</div>';
+
+        try {
+          await ensureAdminDataForTab(tab);
+          if (requestId !== renderRequestId || tab !== activeTab) return;
+
+          if (tab === "locations") await renderLocationsTab();
+          else if (tab === "rental") renderRentalTab();
+          else if (tab === "trips") renderTripTab();
+          else if (tab === "orders") renderOrdersTab();
+          else if (tab === "vouchers") await renderVoucherTab();
+          else if (tab === "shop") await renderShopTab();
+          else if (tab === "settings") renderSettingsTab();
+          else if (tab === "schedule") renderRentalScheduleTab();
+          else if (tab === "payment_logs") await renderPaymentLogsTab();
+          else if (tab === "customers") await renderCustomersTab();
+          else if (tab === "reviews") await renderReviewsTab();
+          else if (tab === "notifications") await renderNotificationsTab();
+          else if (tab === "activity_logs") await renderActivityLogsTab();
+          else await renderAdministratorsTab();
+        } catch (error) {
+          if (requestId !== renderRequestId || tab !== activeTab) return;
+          content.innerHTML = `<div class="notice error">${esc(error?.message || "Gagal memuat data menu.")}</div>`;
+        }
       }
 
       function voucherDateInput(value) {
@@ -1154,14 +1376,15 @@
       }
 
       async function refreshRentalSchedule() {
-        const { data, error } = await supabase
-          .from("orders")
-          .select("*,order_items(*),payment_transactions(*)")
-          .order("created_at", { ascending: false });
-        if (error) return showAdminMessage(error.message, "error");
-        orders = data || [];
-        renderRentalScheduleTab();
-        showAdminMessage("Jadwal penyewaan dimuat ulang.", "success");
+        ordersLoaded = false;
+        ordersLoadPromise = null;
+        try {
+          await loadOrdersData();
+          renderRentalScheduleTab();
+          showAdminMessage("Jadwal penyewaan dimuat ulang.", "success");
+        } catch (error) {
+          showAdminMessage(error?.message || "Gagal memuat jadwal.", "error");
+        }
       }
 
       function settingInput(name, label, options = {}) {
@@ -1209,6 +1432,32 @@
             </div>
             <button id="saveSiteSettings" class="btn" type="submit">Simpan Pengaturan</button>
           </div>
+
+          <section class="card admin-settings-section">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Logo Header</span><h3>Logo Website</h3></div>
+            </div>
+            <div class="site-logo-manager">
+              <div class="site-logo-preview-wrap">
+                <div class="site-logo-preview ${siteSettings.site_logo_url ? "has-logo" : ""}" id="siteLogoPreview">
+                  ${siteSettings.site_logo_url ? `<img src="${esc(siteSettings.site_logo_url)}" alt="Preview logo" loading="lazy">` : `<span>AOC</span>`}
+                </div>
+              </div>
+              <div class="site-logo-controls">
+                <label class="field">
+                  <span>Upload logo header</span>
+                  <input class="input" id="siteLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+                  <small class="muted">PNG/JPG/WebP/SVG, maksimal 2 MB. Logo akan tampil otomatis di header seluruh halaman.</small>
+                </label>
+                <input type="hidden" name="site_logo_url" id="siteLogoUrl" value="${esc(siteSettings.site_logo_url || "")}">
+                <div class="actions site-logo-actions">
+                  <button class="btn secondary small" id="uploadSiteLogo" type="button">Upload Logo</button>
+                  <button class="btn danger small ${siteSettings.site_logo_url ? "" : "hidden"}" id="removeSiteLogo" type="button">Hapus Logo</button>
+                </div>
+                <div id="siteLogoUploadStatus" class="muted" aria-live="polite"></div>
+              </div>
+            </div>
+          </section>
 
           <section class="card admin-settings-section">
             <div class="admin-editor-heading">
@@ -1357,6 +1606,8 @@
         document
           .getElementById("siteSettingsForm")
           .addEventListener("submit", saveSiteSettings);
+        document.getElementById("uploadSiteLogo")?.addEventListener("click", uploadSiteLogo);
+        document.getElementById("removeSiteLogo")?.addEventListener("click", removeSiteLogo);
         document
           .getElementById("resetSiteSettings")
           .addEventListener("click", () => {
@@ -1369,6 +1620,90 @@
             siteSettings = { ...DEFAULT_SITE_SETTINGS };
             renderSettingsTab();
           });
+      }
+
+      async function uploadSiteLogo() {
+        const input = document.getElementById("siteLogoFile");
+        const status = document.getElementById("siteLogoUploadStatus");
+        const file = input?.files?.[0];
+        if (!file) {
+          showAdminMessage("Pilih file logo terlebih dahulu.", "error");
+          return;
+        }
+        const allowed = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+        if (!allowed.includes(file.type)) {
+          showAdminMessage("Format logo harus PNG, JPG, WebP, atau SVG.", "error");
+          return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+          showAdminMessage("Ukuran logo maksimal 2 MB.", "error");
+          return;
+        }
+        const button = document.getElementById("uploadSiteLogo");
+        button.disabled = true;
+        button.textContent = "Mengunggah...";
+        status.textContent = "Mengunggah logo ke penyimpanan...";
+        const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+        const path = `branding/header-logo.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("site-assets")
+          .upload(path, file, { upsert: true, cacheControl: "3600", contentType: file.type });
+        if (uploadError) {
+          button.disabled = false;
+          button.textContent = "Upload Logo";
+          status.textContent = "";
+          showAdminMessage(`Upload logo gagal: ${uploadError.message}. Pastikan SQL site-logo-storage.sql sudah dijalankan.`, "error");
+          return;
+        }
+        const { data } = supabase.storage.from("site-assets").getPublicUrl(path);
+        if (!data?.publicUrl) {
+          button.disabled = false;
+          button.textContent = "Upload Logo";
+          status.textContent = "";
+          showAdminMessage("URL logo tidak berhasil dibuat.", "error");
+          return;
+        }
+
+        // Cache-busting memastikan logo baru langsung terlihat di semua halaman.
+        const url = `${data.publicUrl}?v=${Date.now()}`;
+        siteSettings.site_logo_url = url;
+        document.getElementById("siteLogoUrl").value = url;
+        const preview = document.getElementById("siteLogoPreview");
+        preview.classList.add("has-logo");
+        preview.innerHTML = `<img src="${esc(url)}" alt="Preview logo">`;
+        document.getElementById("removeSiteLogo")?.classList.remove("hidden");
+
+        // Simpan URL logo langsung setelah upload supaya admin tidak perlu
+        // menekan Simpan Pengaturan lagi.
+        status.textContent = "Logo berhasil diunggah. Menyimpan ke pengaturan website...";
+        const nextSettings = { ...siteSettings, site_logo_url: url };
+        const { data: savedSettings, error: saveLogoError } = await supabase.rpc(
+          "secure_admin_save_site_settings",
+          { p_settings: nextSettings },
+        );
+        if (saveLogoError) {
+          button.disabled = false;
+          button.textContent = "Upload Logo";
+          status.textContent = "Logo sudah masuk penyimpanan, tetapi pengaturan belum tersimpan.";
+          showAdminMessage(`Logo ter-upload tetapi gagal diterapkan: ${saveLogoError.message}`, "error");
+          return;
+        }
+
+        siteSettings = { ...DEFAULT_SITE_SETTINGS, ...(savedSettings || nextSettings) };
+        status.textContent = "Logo berhasil disimpan dan langsung diterapkan ke header.";
+        button.disabled = false;
+        button.textContent = "Upload Logo";
+        showAdminMessage("Logo berhasil di-upload dan langsung diterapkan ke seluruh header.", "success");
+      }
+
+      function removeSiteLogo() {
+        siteSettings.site_logo_url = "";
+        document.getElementById("siteLogoUrl").value = "";
+        const preview = document.getElementById("siteLogoPreview");
+        preview.classList.remove("has-logo");
+        preview.innerHTML = "<span>AOC</span>";
+        document.getElementById("removeSiteLogo")?.classList.add("hidden");
+        document.getElementById("siteLogoUploadStatus").textContent = "Logo akan dihapus dari header setelah pengaturan disimpan.";
       }
 
       async function saveSiteSettings(event) {
@@ -3318,18 +3653,10 @@
       }
 
       async function refreshItems() {
-        const { data, error } = await supabase
-          .from("items")
-          .select(
-            "*,item_categories(id,name,slug),item_images(*),item_variants(*),inventory_units(*),item_price_tiers(*),trip_details(*)",
-          )
-          .is("archived_at", null)
-          .order("is_featured", { ascending: false })
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-        items = data || [];
+        itemsLoaded = false;
+        categoriesLoaded = false;
+        itemsLoadPromise = null;
+        await loadItemsData();
       }
 
       function renderOrdersTab() {
@@ -3622,33 +3949,16 @@
       }
 
       async function refreshOrders() {
-        let { data, error } = await supabase
-          .from("orders")
-          .select(
-            "*,order_items(*),payment_transactions(*),order_status_history(*),order_refunds(*),order_returns(*)",
-          )
-          .order("created_at", { ascending: false });
-
-        if (
-          error &&
-          String(error.message || "").includes("order_status_history")
-        ) {
-          const fallback = await supabase
-            .from("orders")
-            .select("*,order_items(*),payment_transactions(*)")
-            .order("created_at", { ascending: false });
-          data = fallback.data;
-          error = fallback.error;
+        ordersLoaded = false;
+        ordersLoadPromise = null;
+        try {
+          await loadOrdersData();
+          if (activeTab === "orders") renderOrdersTab();
+          if (activeTab === "schedule") renderRentalScheduleTab();
+          showAdminMessage("Daftar pesanan dimuat ulang.", "success");
+        } catch (error) {
+          showAdminMessage(error?.message || "Gagal memuat pesanan.", "error");
         }
-
-        if (error) {
-          showAdminMessage(error.message, "error");
-          return;
-        }
-
-        orders = data || [];
-        renderOrdersTab();
-        showAdminMessage("Daftar pesanan dimuat ulang.", "success");
       }
 
       async function deleteAllOrders() {
@@ -4330,13 +4640,16 @@
           const allowed = await verifyAdmin();
           if (!allowed) return;
 
-          await loadAllData();
           if (
             (activeTab === "rental" && !can("catalog.manage")) ||
+            (activeTab === "locations" && !can("catalog.manage")) ||
+            (activeTab === "trips" && !can("catalog.manage")) ||
             (activeTab === "orders" && !can("orders.view")) ||
             (activeTab === "shop" && !can("coinshop.manage"))
           )
             activeTab = firstAllowedAdminTab();
+
+          // Tampilkan shell admin segera. Data berat dimuat setelah menu dibuka.
           renderShell();
         } catch (error) {
           const rawMessage = String(error?.message || "Admin panel gagal dimuat.");

@@ -7530,3 +7530,690 @@ img, svg, video, canvas { max-width: 100%; }
     font-size: 13px !important;
   }
 }
+
+/* =========================================================
+   AOC PROFESSIONAL HEADER — FINAL
+   Visual-only override. Existing navigation/JS selectors are preserved.
+   ========================================================= */
+.nav{
+  position:fixed!important;
+  top:0!important;left:0!important;right:0!important;
+  width:100%!important;
+  z-index:10000!important;
+  min-height:72px!important;
+  background:rgba(6,10,14,.88)!important;
+  border-bottom:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.20)!important;
+  backdrop-filter:blur(20px) saturate(150%)!important;
+  -webkit-backdrop-filter:blur(20px) saturate(150%)!important;
+}
+.nav::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(101,230,164,.55),transparent);
+  opacity:.75;
+  pointer-events:none;
+}
+.nav-shell{
+  width:min(1320px,calc(100% - 36px))!important;
+  min-height:72px!important;
+  gap:24px!important;
+}
+.nav-shell .brand{
+  position:relative!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  flex:0 0 auto!important;
+  min-height:44px!important;
+  padding:5px 10px 5px 5px!important;
+  border:1px solid rgba(255,255,255,.075)!important;
+  border-radius:14px!important;
+  background:rgba(255,255,255,.028)!important;
+  font-size:17px!important;
+  line-height:1!important;
+  letter-spacing:-.04em!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+.nav-shell .brand::before{
+  content:"AOC";
+  display:grid;
+  place-items:center;
+  width:34px;height:34px;
+  flex:0 0 34px;
+  border-radius:10px;
+  color:#06110c;
+  background:linear-gradient(145deg,#8af3bc,#65e6a4);
+  box-shadow:0 6px 18px rgba(101,230,164,.16),inset 0 1px 0 rgba(255,255,255,.5);
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.05em;
+}
+.nav-shell .brand span{
+  color:var(--brand)!important;
+  background:none!important;
+  -webkit-background-clip:initial!important;
+  background-clip:initial!important;
+}
+.nav-menu{gap:14px!important}
+.nav-primary,.nav-account{gap:4px!important}
+.nav-link,.nav-cart{
+  position:relative!important;
+  min-height:40px!important;
+  padding:9px 11px!important;
+  border:1px solid transparent!important;
+  border-radius:11px!important;
+  color:#aeb9c0!important;
+  font-size:12px!important;
+  font-weight:800!important;
+  letter-spacing:.005em!important;
+  transition:background .18s ease,color .18s ease,border-color .18s ease,transform .18s ease!important;
+}
+.nav-link::after,.nav-cart::after{
+  content:"";
+  position:absolute;
+  left:11px;right:11px;bottom:4px;
+  height:2px;
+  border-radius:99px;
+  transform:scaleX(0);
+  transform-origin:center;
+  background:var(--brand);
+  transition:transform .18s ease;
+}
+.nav-link:hover,.nav-cart:hover{
+  color:#f4f8f6!important;
+  background:rgba(255,255,255,.045)!important;
+  border-color:rgba(255,255,255,.07)!important;
+  transform:translateY(-1px)!important;
+}
+.nav-link:hover::after,.nav-cart:hover::after,
+.nav-link.active::after,.nav-cart.active::after{transform:scaleX(1)}
+.nav-link.active,.nav-cart.active{
+  color:#dff9e9!important;
+  background:rgba(101,230,164,.07)!important;
+  border-color:rgba(101,230,164,.15)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important;
+}
+.nav-cart{gap:7px!important}
+.cart-count{
+  min-width:19px;height:19px;
+  display:inline-grid;place-items:center;
+  padding:0 5px!important;
+  border:1px solid rgba(255,255,255,.15);
+  background:#ff6f91!important;
+  color:white!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  box-shadow:0 4px 12px rgba(255,111,145,.18);
+}
+.nav-notification{
+  width:40px!important;height:40px!important;
+  min-height:40px!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:1px solid transparent!important;
+  border-radius:11px!important;
+  color:#aeb9c0!important;
+  background:transparent!important;
+  position:relative!important;
+  transition:background .18s ease,border-color .18s ease,color .18s ease!important;
+}
+.nav-notification:hover{
+  color:#fff!important;
+  background:rgba(255,255,255,.045)!important;
+  border-color:rgba(255,255,255,.07)!important;
+}
+.nav-notification svg{width:18px!important;height:18px!important;stroke:currentColor!important}
+.notification-dot{
+  position:absolute!important;
+  width:7px!important;height:7px!important;
+  top:8px!important;right:8px!important;
+  border:2px solid #070b0f!important;
+  border-radius:50%!important;
+  background:#ff6f91!important;
+}
+.nav-account .nav-login{
+  min-height:40px!important;
+  padding:9px 15px!important;
+  border-radius:11px!important;
+  border:1px solid rgba(101,230,164,.28)!important;
+  color:#06110c!important;
+  background:linear-gradient(135deg,#8af3bc,#65e6a4)!important;
+  box-shadow:0 8px 20px rgba(101,230,164,.11),inset 0 1px 0 rgba(255,255,255,.4)!important;
+  font-size:12px!important;
+  font-weight:950!important;
+}
+.nav-account .nav-login:hover{transform:translateY(-1px)!important;filter:brightness(1.03)!important}
+.account-trigger{
+  min-height:40px!important;
+  padding:5px 8px 5px 5px!important;
+  border-radius:12px!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  background:rgba(255,255,255,.03)!important;
+  color:#eef4f1!important;
+}
+.account-trigger:hover,.account-trigger[aria-expanded="true"]{
+  border-color:rgba(101,230,164,.18)!important;
+  background:rgba(101,230,164,.055)!important;
+}
+.account-avatar{box-shadow:inset 0 1px 0 rgba(255,255,255,.25)!important}
+.account-dropdown{
+  border-color:rgba(255,255,255,.09)!important;
+  background:#0b1116!important;
+  box-shadow:0 26px 65px rgba(0,0,0,.38)!important;
+  border-radius:16px!important;
+}
+.account-dropdown-head{border-bottom-color:rgba(255,255,255,.07)!important}
+.account-dropdown-item{border-radius:10px!important}
+.account-dropdown-item:hover,.account-dropdown-item.active{
+  background:rgba(101,230,164,.07)!important;
+  color:#edfff5!important;
+}
+.nav-toggle{
+  width:42px!important;height:42px!important;
+  border-radius:12px!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  background:rgba(255,255,255,.035)!important;
+  color:#eef5f1!important;
+  box-shadow:none!important;
+}
+.nav-toggle:hover{background:rgba(101,230,164,.06)!important;border-color:rgba(101,230,164,.18)!important}
+
+/* Shop page uses a compact legacy nav; make it visually match without changing behavior. */
+.nav-shell.nav-shop-shell{min-height:72px!important}
+.nav-shop-links{display:flex;align-items:center;gap:4px;flex:1;min-width:0}
+.nav-shop-links a{white-space:nowrap}
+
+@media (max-width:1080px){
+  .nav{min-height:68px!important}
+  .nav-shell{min-height:68px!important;width:calc(100% - 24px)!important}
+  .nav-shell .brand{font-size:16px!important}
+  .nav-shell .brand::before{width:32px;height:32px;flex-basis:32px}
+  .nav-menu{
+    top:calc(100% + 1px)!important;
+    left:6px!important;right:6px!important;
+    padding:9px!important;
+    border:1px solid rgba(255,255,255,.08)!important;
+    border-top:0!important;
+    border-radius:0 0 18px 18px!important;
+    background:rgba(7,11,15,.985)!important;
+    box-shadow:0 26px 55px rgba(0,0,0,.42)!important;
+  }
+  .nav-primary{padding:8px!important;gap:5px!important}
+  .nav-primary .nav-link,.nav-primary .nav-cart,.nav-primary .nav-notification{
+    min-height:44px!important;padding:10px 12px!important;border-radius:11px!important;font-size:13px!important;
+  }
+  .nav-primary .nav-link::after,.nav-primary .nav-cart::after{left:12px;right:auto;width:28px;bottom:8px;transform:scaleX(0)}
+  .nav-primary .nav-link.active::after,.nav-primary .nav-cart.active::after{transform:scaleX(1)}
+  .nav-account{gap:6px!important}
+}
+@media (max-width:560px){
+  .nav-shell{width:calc(100% - 16px)!important}
+  .nav-shell .brand{padding-right:7px!important}
+  .nav-shell .brand::before{width:31px;height:31px;flex-basis:31px}
+  .nav-shell .brand span{font-size:15px!important}
+  .nav-shell > .nav-account .nav-login{padding:8px 11px!important;font-size:11px!important}
+  .nav-toggle{width:40px!important;height:40px!important}
+}
+
+@media (max-width:1080px){
+  .nav-shop-links{
+    min-width:0!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    scrollbar-width:none!important;
+    -webkit-overflow-scrolling:touch!important;
+    white-space:nowrap!important;
+  }
+  .nav-shop-links::-webkit-scrollbar{display:none!important}
+  .nav-shop-links .nav-link{flex:0 0 auto!important}
+}
+@media (max-width:700px){
+  .nav-shop-shell{gap:8px!important}
+  .nav-shop-links{gap:2px!important}
+  .nav-shop-links .nav-link{font-size:11px!important;padding:8px 9px!important}
+  .nav-shop-shell .nav-account{gap:3px!important}
+  .nav-shop-shell .nav-account .btn{font-size:10px!important;padding:7px 8px!important}
+}
+
+/* AOC HEADER — NAVIGASI + HALO NICKNAME (FINAL POLISH) */
+.nav {
+  background: rgba(5, 10, 16, .88) !important;
+  border-bottom: 1px solid rgba(255,255,255,.075) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,.14) !important;
+}
+.nav-shell {
+  width: min(1480px, calc(100% - 40px)) !important;
+  min-height: 74px !important;
+  gap: 18px !important;
+}
+.nav-shell .brand {
+  display:flex !important;
+  align-items:center !important;
+  gap:9px !important;
+  min-width: 190px !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+  letter-spacing: -.02em !important;
+}
+.nav-menu {
+  gap: 10px !important;
+  justify-content: flex-start !important;
+}
+.nav-primary {
+  gap: 3px !important;
+  padding: 4px !important;
+  border: 1px solid rgba(255,255,255,.055) !important;
+  border-radius: 14px !important;
+  background: rgba(255,255,255,.025) !important;
+}
+.nav-link, .nav-cart {
+  position:relative !important;
+  min-height: 42px !important;
+  padding: 9px 12px !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+.nav-link.active, .nav-cart.active {
+  color:#f2fff8 !important;
+  background:rgba(101,230,164,.09) !important;
+}
+.nav-link.active::after, .nav-cart.active::after {
+  content:"" !important;
+  position:absolute !important;
+  left:12px !important;
+  right:12px !important;
+  bottom:5px !important;
+  height:2px !important;
+  border-radius:99px !important;
+  background:#65e6a4 !important;
+}
+.nav-account {
+  margin-left: auto !important;
+  gap: 8px !important;
+}
+.account-trigger {
+  min-width: 174px !important;
+  min-height: 46px !important;
+  grid-template-columns: 34px minmax(0,1fr) 16px !important;
+  padding: 5px 9px 5px 5px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.025)) !important;
+  border-color: rgba(101,230,164,.14) !important;
+}
+.account-trigger-copy strong {
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: -.01em !important;
+}
+.account-trigger-copy small {
+  margin-top: 2px !important;
+  font-size: 9px !important;
+  opacity:.72 !important;
+}
+.account-avatar {
+  width:34px !important;
+  height:34px !important;
+  background:linear-gradient(135deg,#65e6a4,#2bbf86) !important;
+  color:#06120c !important;
+}
+.nav-account .nav-login {
+  min-height:46px !important;
+  border-radius:14px !important;
+  padding:9px 16px !important;
+}
+
+/* The greeting is intentionally part of the same visual navigation bar. */
+@media (min-width:1081px) {
+  .nav-menu { flex: 1 1 auto !important; min-width: 0 !important; }
+  .nav-primary { overflow-x:auto !important; scrollbar-width:none !important; }
+  .nav-primary::-webkit-scrollbar { display:none !important; }
+  .nav-account { flex:0 0 auto !important; }
+}
+
+@media (max-width:1260px) and (min-width:1081px) {
+  .nav-shell .brand { min-width:170px !important; }
+  .nav-link,.nav-cart { padding-left:9px !important; padding-right:9px !important; font-size:12px !important; }
+  .account-trigger { min-width:158px !important; }
+}
+
+@media (max-width:1080px) {
+  .nav-shell { min-height:68px !important; width:calc(100% - 24px) !important; }
+  .nav-shell .brand { min-width:0 !important; flex:1 1 auto !important; }
+  .nav-toggle { flex:0 0 auto !important; }
+  .nav-account { margin-left:0 !important; }
+  .nav-shell > .nav-account .account-trigger { min-width:150px !important; }
+  .nav-menu { gap:8px !important; }
+}
+
+@media (max-width:620px) {
+  .nav-shell { width:calc(100% - 16px) !important; gap:7px !important; }
+  .nav-shell .brand { font-size:14px !important; gap:6px !important; }
+  .nav-shell .brand span { font-size:14px !important; }
+  .nav-shell > .nav-account .account-trigger { min-width:0 !important; width:44px !important; grid-template-columns:34px 0 0 !important; padding:5px !important; overflow:hidden !important; }
+  .nav-shell > .nav-account .account-trigger-copy,
+  .nav-shell > .nav-account .account-chevron { display:none !important; }
+  .nav-shell > .nav-account { flex:0 0 auto !important; }
+}
+
+/* =========================================================
+   AOC STATUS PESANAN — FINAL MOBILE FIX
+   Ikon + label berada dalam satu garis/container.
+   Tidak menggunakan ::after agar tidak keluar dari border.
+   ========================================================= */
+.nav-notification {
+  box-sizing: border-box !important;
+}
+.nav-notification::after {
+  content: none !important;
+  display: none !important;
+}
+.nav-notification .notification-label {
+  display: none;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width:1080px) {
+  .nav-primary .nav-notification {
+    width: 100% !important;
+    min-height: 44px !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 11px !important;
+    padding: 10px 13px !important;
+    margin: 0 !important;
+    border: 1px solid rgba(255,255,255,.065) !important;
+    border-radius: 11px !important;
+    background: rgba(255,255,255,.025) !important;
+    color: #aeb9c0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  .nav-primary .nav-notification svg {
+    display: block !important;
+    width: 20px !important;
+    height: 20px !important;
+    flex: 0 0 20px !important;
+    margin: 0 !important;
+  }
+
+  .nav-primary .nav-notification .notification-label {
+    display: block !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    text-align: left !important;
+  }
+
+  .nav-primary .nav-notification .notification-dot {
+    position: absolute !important;
+    top: 9px !important;
+    right: 10px !important;
+    width: 7px !important;
+    height: 7px !important;
+    margin: 0 !important;
+  }
+
+  .nav-primary .nav-notification:hover,
+  .nav-primary .nav-notification:focus-visible {
+    color: #f2fff8 !important;
+    border-color: rgba(101,230,164,.18) !important;
+    background: rgba(101,230,164,.055) !important;
+  }
+}
+
+@media (max-width:620px) {
+  .nav-primary .nav-notification {
+    min-height: 42px !important;
+    padding: 9px 12px !important;
+    gap: 10px !important;
+  }
+  .nav-primary .nav-notification svg {
+    width: 19px !important;
+    height: 19px !important;
+    flex-basis: 19px !important;
+  }
+  .nav-primary .nav-notification .notification-label {
+    font-size: 12px !important;
+  }
+}
+
+
+/* =========================================================
+   AOC HEADER LOGO + ADMIN LOGO MANAGER
+   ========================================================= */
+.nav-shell .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.brand-logo {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--line);
+  padding: 4px;
+}
+.brand-text {
+  min-width: 0;
+  white-space: nowrap;
+}
+.brand-text > span { color: var(--brand); }
+.site-logo-manager {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 22px;
+  align-items: center;
+}
+.site-logo-preview-wrap { display:flex; justify-content:center; }
+.site-logo-preview {
+  width: 132px;
+  height: 92px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:rgba(255,255,255,.035);
+  color:var(--brand);
+  font-weight:900;
+  font-size:24px;
+  overflow:hidden;
+}
+.site-logo-preview img { width:100%; height:100%; object-fit:contain; padding:12px; }
+.site-logo-controls { min-width:0; }
+.site-logo-actions { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+@media (max-width: 600px) {
+  .site-logo-manager { grid-template-columns:1fr; }
+  .site-logo-preview { width:100%; max-width:220px; height:110px; }
+  .brand-logo { width:34px; height:34px; flex-basis:34px; }
+}
+
+
+/* =========================================================
+   AOC HEADER LOGO — FINAL VISIBILITY FIX
+   Logo upload menggantikan emblem AOC bawaan, bukan tampil ganda.
+   ========================================================= */
+.nav-shell .brand.has-custom-logo::before {
+  content: none !important;
+  display: none !important;
+}
+.nav-shell .brand.has-custom-logo .brand-logo {
+  display: block !important;
+  width: 42px !important;
+  height: 42px !important;
+  flex: 0 0 42px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  padding: 3px !important;
+  border: 1px solid rgba(255,255,255,.09) !important;
+  border-radius: 11px !important;
+  background: rgba(255,255,255,.025) !important;
+  box-sizing: border-box !important;
+}
+.nav-shell .brand.has-custom-logo .brand-text {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+@media (max-width:620px) {
+  .nav-shell .brand.has-custom-logo .brand-logo {
+    width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+    border-radius: 9px !important;
+    padding: 2px !important;
+  }
+}
+
+/* =========================================================
+   ADMIN — SIMPLE MULTI-STORE STOCK UI
+   ========================================================= */
+.aoc-location-simple,
+.aoc-stock-simple { overflow: hidden; }
+.aoc-location-picker {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: 16px;
+  align-items: end;
+  margin-top: 18px;
+}
+.aoc-location-current {
+  min-height: 72px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,.025);
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+}
+.aoc-location-current strong { font-size: 15px; }
+.aoc-location-current > span { color: var(--muted); font-size: 12px; }
+.aoc-location-current-actions { margin-left: auto; display:flex; gap:8px; flex-wrap:wrap; }
+.aoc-stock-simple { margin-top: 16px; }
+.aoc-stock-list { display:flex; flex-direction:column; gap:8px; }
+.aoc-stock-row {
+  display:grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap:14px;
+  align-items:center;
+  padding:12px 0;
+  border-top:1px solid var(--line);
+}
+.aoc-stock-name { min-width:0; display:flex; flex-direction:column; gap:4px; }
+.aoc-stock-name strong { font-size:14px; }
+.aoc-stock-name span { color:var(--muted); font-size:12px; line-height:1.35; }
+.aoc-stock-edit { display:flex; align-items:center; gap:8px; }
+.aoc-stock-edit .input { width:90px; min-width:90px; }
+@media (max-width: 700px) {
+  .aoc-location-picker { grid-template-columns:1fr; gap:10px; }
+  .aoc-location-current { align-items:flex-start; flex-direction:column; }
+  .aoc-location-current-actions { margin-left:0; }
+  .aoc-stock-row { grid-template-columns:1fr; gap:10px; }
+  .aoc-stock-edit { width:100%; }
+  .aoc-stock-edit .input { flex:1; width:auto; min-width:0; }
+  .aoc-stock-edit .btn { min-width:82px; }
+}
+
+/* =========================================================
+   ADMIN — ULTRA SIMPLE STOCK UI
+   ========================================================= */
+.aoc-stock-dashboard,
+.aoc-stock-list-card{overflow:hidden}
+.aoc-stock-top{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.aoc-stock-title{display:flex;align-items:center;gap:12px;min-width:0}
+.aoc-stock-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:rgba(69,224,138,.10);border:1px solid rgba(69,224,138,.18);font-size:20px}
+.aoc-stock-title h3,.aoc-stock-list-head h3{margin:0;font-size:17px}
+.aoc-stock-title p,.aoc-stock-list-head p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.aoc-store-select{display:block;margin-top:16px}
+.aoc-store-select>span{display:block;margin:0 0 7px;font-size:11px;font-weight:700;color:var(--muted)}
+.aoc-store-select .input{height:48px;border-radius:14px;font-weight:750}
+.aoc-store-bar{margin-top:9px;padding:10px 12px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.025);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.aoc-store-bar strong{display:block;font-size:12px}.aoc-store-bar small{display:block;margin-top:2px;color:var(--muted);font-size:10px}
+.aoc-store-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.aoc-stock-list-card{margin-top:14px}
+.aoc-stock-list-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.aoc-stock-filters{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.aoc-stock-category-wrap{width:min(180px,36%)}
+.aoc-stock-category-filter{height:40px!important;border-radius:12px!important;font-size:11px!important;font-weight:750}
+.aoc-stock-search-wrap{width:min(230px,42%)}
+.aoc-stock-search{height:40px!important;border-radius:12px!important}
+.aoc-stock-list{display:flex;flex-direction:column;gap:7px}
+.aoc-stock-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.018);transition:.18s ease}
+.aoc-stock-card:hover{border-color:rgba(69,224,138,.24);background:rgba(69,224,138,.035)}
+.aoc-stock-card-main{display:flex;align-items:center;gap:10px;min-width:0}
+.aoc-stock-avatar{width:34px;height:34px;display:grid;place-items:center;flex:0 0 34px;border-radius:10px;background:rgba(255,255,255,.045);border:1px solid var(--line);font-size:12px;font-weight:850;color:#9debc5}
+.aoc-stock-name{min-width:0;display:flex;flex-direction:column;gap:2px}
+.aoc-stock-name strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aoc-stock-name span{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aoc-stock-control{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.aoc-stock-step{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--text);font-size:18px;line-height:1;cursor:pointer}
+.aoc-stock-step:active{transform:scale(.95)}
+.aoc-stock-number{width:58px!important;min-width:58px!important;height:34px!important;padding:5px!important;text-align:center;font-size:12px!important;font-weight:800}
+.aoc-stock-save{height:34px!important;min-width:62px;padding:0 10px!important;border-radius:10px!important;font-size:10px!important}
+.aoc-stock-empty{text-align:center;padding:24px 10px;color:var(--muted);font-size:12px}
+.btn.tiny{min-height:30px!important;padding:0 9px!important;font-size:10px!important;border-radius:9px!important}
+@media(max-width:700px){
+ .aoc-stock-top{align-items:flex-start}.aoc-stock-title h3{font-size:16px}
+ .aoc-stock-list-head{display:block}.aoc-stock-filters{display:flex;flex-direction:column;align-items:stretch;gap:7px;margin-top:10px}
+ .aoc-stock-category-wrap,.aoc-stock-search-wrap{width:100%;margin-top:0}
+ .aoc-stock-category-filter,.aoc-stock-search{width:100%}
+ .aoc-stock-card{padding:9px 8px;align-items:center}
+ .aoc-stock-card-main{min-width:0;flex:1}
+ .aoc-stock-control{gap:4px}
+ .aoc-stock-step{width:30px;height:34px}
+ .aoc-stock-number{width:50px!important;min-width:50px!important}
+ .aoc-stock-save{min-width:54px;padding:0 8px!important}
+ .aoc-store-bar{align-items:flex-start;flex-direction:column}
+ .aoc-store-actions{justify-content:flex-start}
+}
+@media(max-width:390px){
+ .aoc-stock-avatar{display:none}
+ .aoc-stock-name strong{max-width:105px}
+ .aoc-stock-name span{max-width:105px}
+ .aoc-stock-step{width:28px}
+ .aoc-stock-number{width:45px!important;min-width:45px!important}
+ .aoc-stock-save{min-width:50px;font-size:9px!important}
+}
+
+/* =========================================================
+   ADMIN STOCK — MENU IMAGE + CATEGORY
+   ========================================================= */
+.aoc-stock-thumb{
+  width:48px;height:48px;flex:0 0 48px;position:relative;overflow:hidden;
+  display:grid;place-items:center;border-radius:13px;
+  background:rgba(255,255,255,.045);border:1px solid var(--line);
+}
+.aoc-stock-thumb img{width:100%;height:100%;display:block;object-fit:cover}
+.aoc-stock-thumb-fallback{font-size:15px;font-weight:850;color:#9debc5}
+.aoc-stock-thumb:not(.is-fallback) .aoc-stock-thumb-fallback{display:none}
+.aoc-stock-name-row{display:flex;align-items:center;gap:7px;min-width:0}
+.aoc-stock-category{display:inline-flex;align-items:center;max-width:110px;padding:3px 7px;border:1px solid rgba(69,224,138,.18);border-radius:999px;background:rgba(69,224,138,.07);color:#8ce9bc;font-size:8px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:700px){
+  .aoc-stock-thumb{width:44px;height:44px;flex-basis:44px;border-radius:12px}
+  .aoc-stock-name-row{gap:5px}
+  .aoc-stock-category{max-width:82px;font-size:7px;padding:3px 6px}
+}
+@media(max-width:390px){
+  .aoc-stock-thumb{width:40px;height:40px;flex-basis:40px}
+  .aoc-stock-category{max-width:72px;font-size:7px;padding:3px 5px}
+}

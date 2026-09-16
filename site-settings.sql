@@ -20,7 +20,7 @@ grant select on public.site_settings to anon, authenticated;
 
 insert into public.site_settings (id, settings)
 values ('main', jsonb_build_object(
-  'site_name', 'AbidzarOutdoorcamp',
+  'site_name', 'AbidzarOutdoorcamp', 'site_logo_url', '', 'site_logo_url', '',
   'whatsapp_number', '6289509349428',
   'whatsapp_message', 'Halo CS AbidzarOutdoorcamp, saya ingin bertanya mengenai layanan.',
   'admin_1_name', 'Admin 1', 'admin_1_whatsapp', '',
