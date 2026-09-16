@@ -18,6 +18,75 @@ const confirmPasswordInput = document.getElementById("confirmPassword");
 
 let mode = "login";
 let isSubmitting = false;
+let pendingCodeType = null;
+let pendingCode = null;
+
+const authCodePanel = document.getElementById("authCodePanel");
+const authCodeTitle = document.getElementById("authCodeTitle");
+const authCodeHint = document.getElementById("authCodeHint");
+const authCodeDisplay = document.getElementById("authCodeDisplay");
+const authCodeInput = document.getElementById("authCodeInput");
+const authCodeVerify = document.getElementById("authCodeVerify");
+const authCodeNew = document.getElementById("authCodeNew");
+
+function hideCodePanel() {
+  authCodePanel.classList.add("hidden");
+  authCodeDisplay.textContent = "------";
+  authCodeInput.value = "";
+  pendingCodeType = null;
+  pendingCode = null;
+}
+
+function showCodePanel(type, code) {
+  pendingCodeType = type;
+  pendingCode = String(code || "");
+  authCodeTitle.textContent = type === "login" ? "Kode Login" : "Kode Aktivasi";
+  authCodeHint.textContent = type === "login"
+    ? "Setiap login menghasilkan kode 6 digit acak. Masukkan kode yang tampil untuk melanjutkan."
+    : "Akun dibuat. Masukkan kode 6 digit yang tampil untuk mengaktifkan akun.";
+  authCodeDisplay.textContent = pendingCode || "------";
+  authCodePanel.classList.remove("hidden");
+  authCodeInput.value = "";
+  requestAnimationFrame(() => authCodeInput.focus());
+}
+
+async function issueCode(type) {
+  const fn = type === "login" ? "issue_login_code" : "issue_account_activation_code";
+  const { data, error } = await supabase.rpc(fn);
+  if (error) throw error;
+  const code = data?.code ?? data;
+  if (!/^\d{6}$/.test(String(code || ""))) {
+    throw new Error("Supabase tidak mengembalikan kode 6 digit.");
+  }
+  showCodePanel(type, String(code));
+  message(messageBox, type === "login" ? "Kode login baru berhasil dibuat." : "Kode aktivasi berhasil dibuat.", "success");
+}
+
+async function verifyCode() {
+  if (!pendingCodeType) return;
+  const code = String(authCodeInput.value || "").replace(/\D/g, "");
+  if (!/^\d{6}$/.test(code)) {
+    message(messageBox, "Masukkan tepat 6 digit kode.", "error");
+    return;
+  }
+
+  authCodeVerify.disabled = true;
+  try {
+    const fn = pendingCodeType === "login" ? "verify_login_code" : "verify_account_activation_code";
+    const { data, error } = await supabase.rpc(fn, { p_code: code });
+    if (error) throw error;
+    if (data === false || data?.success === false) throw new Error("Kode salah atau sudah kedaluwarsa.");
+
+    const verifiedType = pendingCodeType;
+    hideCodePanel();
+    message(messageBox, verifiedType === "login" ? "Login berhasil." : "Akun berhasil diaktifkan.", "success");
+    setTimeout(() => { location.href = nextPage; }, 400);
+  } catch (error) {
+    message(messageBox, error.message || "Kode tidak valid.", "error");
+  } finally {
+    authCodeVerify.disabled = false;
+  }
+}
 
 function safeNextPage() {
   const rawNext =
@@ -97,6 +166,7 @@ function setRegisterRequired(enabled) {
 }
 
 function setMode(nextMode) {
+  hideCodePanel();
   mode = nextMode;
   const isRegister = mode === "register";
 
@@ -214,30 +284,12 @@ async function register(values) {
 
   if (data.session && data.user) {
     await saveImmediateProfile(data.user.id, profile);
-
-    message(
-      messageBox,
-      "Akun berhasil dibuat. Mengarahkan ke halaman berikutnya...",
-      "success"
-    );
-
-    setTimeout(() => {
-      location.href = nextPage;
-    }, 700);
-
+    await issueCode("register");
+    message(messageBox, "Akun berhasil dibuat. Masukkan kode aktivasi 6 digit.", "success");
     return;
   }
 
-  message(
-    messageBox,
-    "Pendaftaran berhasil. Periksa email untuk konfirmasi akun, lalu login.",
-    "success"
-  );
-
-  form.reset();
-  setMode("login");
-  form.elements.email.value =
-    String(values.email || "").trim().toLowerCase();
+  throw new Error("Akun dibuat tetapi sesi belum tersedia. Matikan Confirm email di Supabase → Authentication → Sign In / Providers → Email, lalu daftar lagi.");
 }
 
 async function login(values) {
@@ -248,7 +300,8 @@ async function login(values) {
 
   if (error) throw error;
 
-  location.href = nextPage;
+  await issueCode("login");
+  message(messageBox, "Password benar. Masukkan kode login 6 digit untuk melanjutkan.", "success");
 }
 
 form.addEventListener("submit", async event => {
@@ -297,6 +350,18 @@ toggleButton.addEventListener("click", () => {
 
 passwordInput.addEventListener("input", updatePasswordStrength);
 
+authCodeInput.addEventListener("input", () => {
+  authCodeInput.value = authCodeInput.value.replace(/\D/g, "").slice(0, 6);
+});
+authCodeVerify.addEventListener("click", verifyCode);
+authCodeNew.addEventListener("click", async () => {
+  if (!pendingCodeType) return;
+  authCodeNew.disabled = true;
+  try { await issueCode(pendingCodeType); }
+  catch (error) { message(messageBox, error.message || "Gagal membuat kode baru.", "error"); }
+  finally { authCodeNew.disabled = false; }
+});
+
 document.querySelectorAll("[data-password-toggle]").forEach(button => {
   button.addEventListener("click", () => {
     const input = document.getElementById(button.dataset.passwordToggle);
@@ -314,7 +379,13 @@ document.querySelectorAll("[data-password-toggle]").forEach(button => {
 const { data: { user } } = await supabase.auth.getUser();
 
 if (user) {
-  location.href = nextPage;
+  setMode("login");
+  try {
+    await issueCode("login");
+  } catch (error) {
+    console.warn("Kode login otomatis gagal:", error.message);
+    message(messageBox, "Sesi ditemukan. Silakan login ulang untuk mendapatkan kode 6 digit.", "warning");
+  }
 } else {
   setMode("login");
 }

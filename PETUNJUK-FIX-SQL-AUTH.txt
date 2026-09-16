@@ -1,0 +1,26 @@
+FIX ERROR 42P13 - AUTH KODE 6 DIGIT
+
+Error sebelumnya:
+ERROR: 42P13: cannot change return type of existing function
+
+Penyebab:
+Fungsi issue_account_activation_code() sudah pernah dibuat di Supabase dengan tipe return berbeda. PostgreSQL tidak mengizinkan CREATE OR REPLACE mengubah tipe return tersebut.
+
+CARA FIX:
+1. Buka Supabase -> SQL Editor.
+2. Buka file PATCH-AUTH-LOGIN-DAN-AKTIVASI-KODE-6-DIGIT.sql dari paket ini.
+3. Copy SEMUA isi file ke New query.
+4. Klik Run.
+5. Pastikan tidak ada error merah.
+6. Buka Authentication -> Sign In / Providers -> Email.
+7. Pastikan Confirm email = OFF.
+8. Refresh website.
+9. Coba daftar dengan email baru.
+
+Script sudah melakukan DROP FUNCTION berdasarkan signature terlebih dahulu, lalu membuat ulang fungsi dengan return:
+- issue_account_activation_code() -> text
+- verify_account_activation_code(text) -> boolean
+- issue_login_code() -> text
+- verify_login_code(text) -> boolean
+
+Jangan menjalankan script lama yang sebelumnya menyebabkan ERROR 42P13.

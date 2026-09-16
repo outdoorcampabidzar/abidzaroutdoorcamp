@@ -1,0 +1,24 @@
+PERBAIKAN STORE LOCATION - FINAL
+
+Masalah sebelumnya:
+Modal dipindahkan ke <body>, tetapi event klik masih dicari dari #aocLocationPicker.
+Akibatnya tombol toko terlihat bisa disentuh tetapi pilihan tidak diproses.
+
+Perbaikan:
+- Event pointerup + click dipasang langsung pada modal.
+- Pilihan toko langsung disimpan ke localStorage.
+- UI radio/nama toko langsung berubah.
+- Event aoc-location-changed tetap memperbarui stok katalog.
+- RPC Supabase tidak memblokir pemilihan toko.
+- Tetap kompatibel untuk guest maupun user login.
+
+INSTALL:
+1. Backup folder website lama.
+2. Extract ZIP ini.
+3. Ganti folder website dengan folder abidzaroutdoorcamp-main dari ZIP.
+4. Pertahankan config.js milik Anda jika berisi URL/Anon Key Supabase.
+5. Hard refresh / hapus cache browser.
+6. Buka index.html.
+7. Klik Store Location lalu pilih Toko 1, Toko 2, atau Toko 3.
+
+Tidak perlu menjalankan SQL baru untuk perbaikan UI ini.

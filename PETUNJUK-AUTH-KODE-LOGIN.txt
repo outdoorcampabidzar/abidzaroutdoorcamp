@@ -1,0 +1,10 @@
+AUTH KODE ACAK 6 DIGIT
+
+1. Jalankan PATCH-AUTH-LOGIN-DAN-AKTIVASI-KODE-6-DIGIT.sql di Supabase SQL Editor.
+2. Supabase -> Authentication -> Sign In / Providers -> Email -> Confirm email = OFF.
+3. Refresh website.
+4. Registrasi: setelah akun dibuat, website menampilkan kode aktivasi 6 digit. Masukkan kode tersebut.
+5. Login ulang: email + password harus benar terlebih dahulu. Setelah itu website membuat dan menampilkan kode login 6 digit. Masukkan kode untuk melanjutkan.
+6. Tombol Buat Kode Baru akan mengganti kode lama.
+
+CATATAN: kode yang ditampilkan di website adalah lapisan konfirmasi tambahan sesuai permintaan. Kode bukan OTP email dan tidak dikirim melalui Brevo. Supabase Auth tetap menjadi autentikasi email/password utama.

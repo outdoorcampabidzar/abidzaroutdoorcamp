@@ -6991,3 +6991,28 @@ body.aoc-location-lock .aoc-location-modal{z-index:2147483647}
 .aoc-location-admin-actions-inline{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
 .aoc-location-admin-actions-inline .btn{white-space:nowrap}
 @media(max-width:700px){.aoc-location-admin-actions-inline{justify-content:flex-start;grid-column:1/-1}.aoc-location-admin-row{flex-wrap:wrap}.aoc-location-admin-copy{min-width:150px;flex:1}}
+
+
+/* Auth 6-digit login/activation code */
+.auth-code-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 18px;
+  background: rgba(255,255,255,.035);
+}
+.auth-code-head { display:flex; flex-direction:column; gap:.35rem; margin-bottom:.8rem; }
+.auth-code-display {
+  letter-spacing: .34em;
+  font-size: clamp(2rem, 10vw, 3rem);
+  font-weight: 900;
+  text-align:center;
+  padding: .7rem .4rem;
+  margin-bottom: .8rem;
+  border-radius: 14px;
+  background: rgba(0,0,0,.28);
+  font-variant-numeric: tabular-nums;
+}
+.auth-code-input { text-align:center; letter-spacing:.35em; font-weight:800; font-size:1.2rem; }
+.auth-code-actions { display:grid; grid-template-columns:1fr 1fr; gap:.65rem; }
+@media (max-width: 620px) { .auth-code-actions { grid-template-columns:1fr; } }

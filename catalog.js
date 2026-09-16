@@ -55,16 +55,36 @@ function aocLocationSound(kind = "tap") {
 }
 
 async function setCatalogLocation(locationId) {
-  selectedCatalogLocationId = locationId;
-  localStorage.setItem("aoc_location_id", selectedCatalogLocationId);
-  applyLocationStocks(window.__aocCatalogItems || []);
-  const mode = window.__aocCatalogMode || "rental";
-  const grid = document.getElementById(window.__aocCatalogGridId);
-  if (grid) {
-    mountRentalFilters(window.__aocCatalogItems || [], grid, mode);
-    renderQuickCart(mode);
-  }
-  if (window.supabase) await supabase.rpc("aoc_set_current_location", { p_location_id: selectedCatalogLocationId });
+  if (locationId == null || locationId === "") return false;
+  const id = String(locationId);
+
+  // Change the UI state first. Never wait for Supabase before confirming the
+  // store choice; this page must also work for guests.
+  selectedCatalogLocationId = id;
+  localStorage.setItem("aoc_location_id", id);
+
+  // Keep the selector UI synchronized immediately.
+  document.querySelectorAll(".aoc-location-option").forEach((option) => {
+    option.classList.toggle("is-selected", String(option.dataset.locationId) === id);
+  });
+  const selected = catalogLocations.find((l) => String(l.id) === id);
+  document.querySelectorAll(".aoc-location-copy strong").forEach((el) => {
+    el.textContent = selected?.name || "Pilih toko";
+  });
+
+  document.dispatchEvent(new CustomEvent("aoc-location-changed", {
+    detail: { locationId: id }
+  }));
+
+  // Supabase current-location is only a server-side convenience. It must
+  // never prevent the local selector from working.
+  try {
+    const { data: { user } = {} } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.rpc("aoc_set_current_location", { p_location_id: id });
+    }
+  } catch (_) {}
+  return true;
 }
 
 function renderLocationPicker() {
@@ -73,20 +93,27 @@ function renderLocationPicker() {
     host = document.createElement("div");
     host.id = "aocLocationPicker";
     const target = document.getElementById("catalogSearch")?.closest("section") || document.querySelector("main");
-    target?.prepend(host);
+    if (target) target.prepend(host);
   }
 
   const selected = catalogLocations.find(l => String(l.id) === String(selectedCatalogLocationId)) || catalogLocations[0];
-  if (selected && !selectedCatalogLocationId) { selectedCatalogLocationId = selected.id; localStorage.setItem("aoc_location_id", selectedCatalogLocationId); }
+  if (selected && !selectedCatalogLocationId) {
+    selectedCatalogLocationId = String(selected.id);
+    localStorage.setItem("aoc_location_id", selectedCatalogLocationId);
+  }
+
+  // Build the picker only once. The modal is portaled to <body> so it is not
+  // trapped by parent stacking/overflow contexts on mobile.
+  if (document.getElementById("aocLocationModal")) {
+    const strong = host.querySelector(".aoc-location-copy strong");
+    if (strong) strong.textContent = selected?.name || "Pilih toko";
+    document.querySelectorAll(".aoc-location-option").forEach(option => {
+      option.classList.toggle("is-selected", String(option.dataset.locationId) === String(selectedCatalogLocationId));
+    });
+    return;
+  }
 
   host.className = "aoc-location-picker";
-
-  // mountCatalog() can run more than once on the same page. Remove any
-  // previously portalled layers before rebuilding them, otherwise stale
-  // hidden overlays can remain attached to <body>.
-  document.getElementById("aocLocationModal")?.remove();
-  document.getElementById("aocLocationBackdrop")?.remove();
-
   host.innerHTML = `
     <button type="button" class="aoc-location-trigger" id="aocLocationTrigger" aria-haspopup="dialog" aria-expanded="false">
       <span class="aoc-location-pin">⌖</span>
@@ -125,17 +152,14 @@ function renderLocationPicker() {
       </div>
     </div>`;
 
-  const trigger = host.querySelector("#aocLocationTrigger");
-  const modal = host.querySelector("#aocLocationModal");
-  const backdrop = host.querySelector("#aocLocationBackdrop");
-  const close = host.querySelector("#aocLocationClose");
+  const trigger = document.getElementById("aocLocationTrigger");
+  const modal = document.getElementById("aocLocationModal");
+  const backdrop = document.getElementById("aocLocationBackdrop");
+  const close = document.getElementById("aocLocationClose");
 
-  // Portal the overlay to <body>. The page uses several z-index stacking
-  // contexts (main, rating section, cards, etc.), so keeping a fixed modal
-  // inside <main> can cause normal content to render above the backdrop.
-  // Moving both layers to body makes the modal reliably sit above all page UI.
-  if (modal && modal.parentElement !== document.body) document.body.appendChild(modal);
-  if (backdrop && backdrop.parentElement !== document.body) document.body.appendChild(backdrop);
+  // Portal overlays to body.
+  document.body.appendChild(backdrop);
+  document.body.appendChild(modal);
 
   const open = () => {
     aocLocationSound("tap");
@@ -145,36 +169,54 @@ function renderLocationPicker() {
       modal.classList.add("is-open");
       backdrop.classList.add("is-open");
     });
-    trigger?.setAttribute("aria-expanded", "true");
+    trigger.setAttribute("aria-expanded", "true");
     document.body.classList.add("aoc-location-lock");
   };
+
   const shut = () => {
     aocLocationSound("tap");
     modal.classList.remove("is-open");
     backdrop.classList.remove("is-open");
-    trigger?.setAttribute("aria-expanded", "false");
+    trigger.setAttribute("aria-expanded", "false");
     document.body.classList.remove("aoc-location-lock");
-    setTimeout(() => { modal.hidden = true; backdrop.hidden = true; }, 220);
+    window.setTimeout(() => {
+      if (!modal.classList.contains("is-open")) {
+        modal.hidden = true;
+        backdrop.hidden = true;
+      }
+    }, 220);
   };
 
-  trigger?.addEventListener("click", open);
-  close?.addEventListener("click", shut);
-  backdrop?.addEventListener("click", shut);
+  trigger.addEventListener("click", open);
+  close.addEventListener("click", shut);
+  backdrop.addEventListener("click", shut);
 
-  host.querySelectorAll(".aoc-location-option").forEach(option => {
-    option.addEventListener("click", async () => {
+  // IMPORTANT: modal is now a child of <body>, not #aocLocationPicker.
+  // Bind directly to the modal instead of checking host.contains(...).
+  let choosing = false;
+  const choose = async (event) => {
+    const option = event.target.closest?.(".aoc-location-option");
+    if (!option || !modal.contains(option) || choosing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    choosing = true;
+    try {
+      const id = option.dataset.locationId;
+      if (!id) return;
       aocLocationSound("select");
-      host.querySelectorAll(".aoc-location-option").forEach(x => x.classList.remove("is-selected"));
-      option.classList.add("is-selected");
-      await setCatalogLocation(option.dataset.locationId);
-      const name = catalogLocations.find(l => String(l.id) === String(selectedCatalogLocationId))?.name || "Toko";
-      const strong = host.querySelector(".aoc-location-copy strong");
-      if (strong) strong.textContent = name;
-      setTimeout(shut, 180);
-    });
-  });
+      await setCatalogLocation(id);
+      modal.querySelectorAll(".aoc-location-option").forEach(x => {
+        x.classList.toggle("is-selected", String(x.dataset.locationId) === String(id));
+      });
+      shut();
+    } finally {
+      choosing = false;
+    }
+  };
 
-  host.addEventListener("keydown", e => {
+  modal.addEventListener("pointerup", choose, { passive: false });
+  modal.addEventListener("click", choose, { passive: false });
+  modal.addEventListener("keydown", e => {
     if (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter") aocLocationSound("key");
     if (e.key === "Escape" && !modal.hidden) shut();
   });
@@ -415,10 +457,24 @@ function renderCategoryQuickChoices(categories, category, draw) {
 export async function mountCatalog({ type, gridId, messageId, limit = null, mode = type === "trip" ? "trip" : "rental" }) {
   await loadCatalogLocations();
   renderLocationPicker();
-  window.__aocCatalogGridId = gridId;
-  window.__aocCatalogMode = mode;
   const grid = document.getElementById(gridId);
   const messageElement = document.getElementById(messageId);
+  if (!grid) return;
+
+  // Re-render this catalog whenever the shared store selector changes.
+  if (!grid.dataset.aocLocationBound) {
+    grid.dataset.aocLocationBound = "1";
+    document.addEventListener("aoc-location-changed", () => {
+      const current = grid._aocAllItems || [];
+      applyLocationStocks(current);
+      if (type === "product" && document.getElementById("catalogSearch")) {
+        const visible = current.filter((item) => mode === "sale" ? Boolean(item.sale_enabled) : item.rental_enabled !== false);
+        mountRentalFilters(visible, grid, mode);
+      } else {
+        grid.innerHTML = current.map((item) => renderCard(item, mode)).join("");
+      }
+    });
+  }
 
   let query = supabase
     .from("items")
@@ -439,6 +495,7 @@ export async function mountCatalog({ type, gridId, messageId, limit = null, mode
   }
 
   let items = data || [];
+  grid._aocAllItems = items;
   window.__aocCatalogItems = items;
   applyLocationStocks(items);
   if (type === "product") {

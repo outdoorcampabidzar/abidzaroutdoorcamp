@@ -407,6 +407,23 @@
 
       <div id="authMessage" class="notice hidden"></div>
 
+      <section id="authCodePanel" class="auth-code-panel hidden" aria-live="polite">
+        <div class="auth-code-head">
+          <span class="badge">Kode Keamanan</span>
+          <strong id="authCodeTitle">Kode Aktivasi</strong>
+          <p id="authCodeHint" class="muted">Masukkan kode 6 digit yang muncul di bawah.</p>
+        </div>
+        <div id="authCodeDisplay" class="auth-code-display" aria-label="Kode keamanan">------</div>
+        <label class="field">
+          <span>Masukkan kode 6 digit</span>
+          <input id="authCodeInput" class="input auth-code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000">
+        </label>
+        <div class="auth-code-actions">
+          <button id="authCodeVerify" class="btn auth-submit" type="button">Verifikasi Kode</button>
+          <button id="authCodeNew" class="btn secondary" type="button">Buat Kode Baru</button>
+        </div>
+      </section>
+
       <div class="auth-divider">
         <span>atau</span>
       </div>
