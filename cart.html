@@ -233,25 +233,90 @@
         siteSettings = null;
 
       let checkoutLocationId = localStorage.getItem("aoc_location_id") || "";
+      let checkoutLocationsLoaded = false;
 
       async function loadCheckoutLocations() {
         const select = document.getElementById("checkoutLocation");
-        if (!select) return;
-        const { data, error } = await supabase.from("aoc_locations").select("id,code,name").eq("is_active", true).order("sort_order");
-        if (error) { select.innerHTML = "<option value=\"\">Lokasi gagal dimuat</option>"; return; }
-        const rows = data || [];
-        if (!rows.some(x => String(x.id) === String(checkoutLocationId))) checkoutLocationId = rows[0]?.id || "";
-        select.innerHTML = rows.map(x => `<option value="${esc(x.id)}" ${String(x.id)===String(checkoutLocationId)?"selected":""}>${esc(x.name)}</option>`).join("");
-        select.addEventListener("change", async () => {
-          checkoutLocationId = select.value;
-          localStorage.setItem("aoc_location_id", checkoutLocationId);
-          if (user) await supabase.rpc("aoc_set_current_location", { p_location_id: checkoutLocationId });
-          render();
-        });
-        if (checkoutLocationId && user) await supabase.rpc("aoc_set_current_location", { p_location_id: checkoutLocationId });
+        if (!select) return false;
+
+        select.disabled = true;
+        select.innerHTML = '<option value="">Memuat toko...</option>';
+
+        const { data, error } = await supabase
+          .from("aoc_locations")
+          .select("id,code,name")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true });
+
+        if (error) {
+          console.error("Gagal memuat lokasi checkout:", error);
+          select.innerHTML = '<option value="">Toko tidak tersedia</option>';
+          checkoutLocationId = "";
+          checkoutLocationsLoaded = false;
+          return false;
+        }
+
+        const rows = Array.isArray(data) ? data : [];
+        if (!rows.length) {
+          select.innerHTML = '<option value="">Belum ada toko aktif</option>';
+          checkoutLocationId = "";
+          checkoutLocationsLoaded = false;
+          return false;
+        }
+
+        // Pertahankan toko yang sebelumnya dipilih jika masih aktif.
+        if (!rows.some(x => String(x.id) === String(checkoutLocationId))) {
+          checkoutLocationId = String(rows[0].id);
+        }
+
+        select.innerHTML = rows
+          .map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`)
+          .join("");
+        select.value = checkoutLocationId;
+        select.disabled = false;
+        localStorage.setItem("aoc_location_id", checkoutLocationId);
+        checkoutLocationsLoaded = true;
+
+        if (select.dataset.bound !== "1") {
+          select.dataset.bound = "1";
+          select.addEventListener("change", async () => {
+            const id = String(select.value || "");
+            if (!id) return;
+
+            checkoutLocationId = id;
+            localStorage.setItem("aoc_location_id", id);
+
+            // Simpan lokasi akun bila login, tetapi jangan mengunci UI bila RPC gagal.
+            if (user) {
+              try {
+                const { error: rpcError } = await supabase.rpc(
+                  "aoc_set_current_location",
+                  { p_location_id: id },
+                );
+                if (rpcError) console.warn("Lokasi server gagal disimpan:", rpcError.message);
+              } catch (rpcError) {
+                console.warn("RPC lokasi gagal:", rpcError);
+              }
+            }
+            render();
+          });
+        }
+
+        if (checkoutLocationId && user) {
+          try {
+            const { error: rpcError } = await supabase.rpc(
+              "aoc_set_current_location",
+              { p_location_id: checkoutLocationId },
+            );
+            if (rpcError) console.warn("Lokasi server gagal disinkronkan:", rpcError.message);
+          } catch (rpcError) {
+            console.warn("RPC lokasi gagal:", rpcError);
+          }
+        }
+        return true;
       }
 
-      // Migrasi keranjang lama ke format JUAL/SEWA V3. Produk lama dianggap
+      // Migrasi keranjangg lama ke format JUAL/SEWA V3. Produk lama dianggap
       // rental karena versi sebelumnya memang hanya menyediakan sewa.
       cart.forEach((entry) => {
         if (!entry.fulfillment_type)
@@ -265,7 +330,7 @@
         }
       });
 
-      // Migrasi keranjang lama: pilih otomatis varian pertama yang masih tersedia.
+      // Migrasi keranjangg lama: pilih otomatis varian pertama yang masih tersedia.
       cart.forEach((entry) => {
         if (entry.type !== "product" || entry.variant_id || !(entry.variants || []).length) return;
         const variant = entry.variants.find((row) => Number(row.stock) > 0) || entry.variants[0];
@@ -440,6 +505,9 @@
       }
       async function init() {
         siteSettings = await loadSiteSettings();
+        // FIX: checkout sebelumnya tidak pernah memanggil loader lokasi,
+        // sehingga <select> selalu kosong dan submit selalu ditolak.
+        await loadCheckoutLocations();
         const localToday = dateInputValue(new Date());
         const startInput = document.getElementById("rentalStart");
         const endInput = document.getElementById("rentalEnd");
@@ -678,11 +746,40 @@
           trip_date:
             x.type === "trip" ? x.requested_trip_date || null : null,
         }));
-        if (!checkoutLocationId) {
-          return message(document.getElementById("msg"), "Pilih lokasi toko terlebih dahulu.", "error");
+        if (!checkoutLocationId || !checkoutLocationsLoaded) {
+          const loaded = await loadCheckoutLocations();
+          if (!loaded || !checkoutLocationId) {
+            return message(
+              document.getElementById("msg"),
+              "Toko belum tersedia. Pastikan toko aktif di database lalu muat ulang halaman.",
+              "error",
+            );
+          }
         }
-        const locationResult = await supabase.rpc("aoc_set_current_location", { p_location_id: checkoutLocationId });
-        if (locationResult.error) return message(document.getElementById("msg"), locationResult.error.message, "error");
+
+        // Sinkronkan toko yang dipilih ke akun SEBELUM validasi stok/order.
+        // Jika gagal, checkout dihentikan agar stok/order tidak masuk ke toko lain.
+        try {
+          const locationResult = await supabase.rpc(
+            "aoc_set_current_location",
+            { p_location_id: checkoutLocationId },
+          );
+          if (locationResult.error) {
+            console.error("Lokasi server gagal disinkronkan:", locationResult.error);
+            return message(
+              document.getElementById("msg"),
+              `Toko belum berhasil dipilih: ${locationResult.error.message}`,
+              "error",
+            );
+          }
+        } catch (locationError) {
+          console.error("RPC lokasi gagal:", locationError);
+          return message(
+            document.getElementById("msg"),
+            "Toko belum berhasil dipilih. Silakan pilih toko lagi lalu coba checkout.",
+            "error",
+          );
+        }
 
         const { data, error } = await supabase.rpc("create_order", {
           p_customer: customer,

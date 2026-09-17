@@ -210,53 +210,87 @@
         return items.filter((item) => item.type === "trip");
       }
 
+      function getCachedAuthSession() {
+        try {
+          // Supabase menyimpan sesi dengan key sb-<project-ref>-auth-token.
+          // Jangan mengunci project pada satu key karena versi/library auth dapat berubah.
+          for (let i = 0; i < localStorage.length; i += 1) {
+            const key = localStorage.key(i) || "";
+            if (!key.includes("-auth-token")) continue;
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const parsed = JSON.parse(raw);
+            const session = parsed?.currentSession || parsed;
+            const user = session?.user || parsed?.user || null;
+            if (user?.id) return { session, user };
+          }
+        } catch (error) {
+          console.warn("Gagal membaca sesi lokal:", error);
+        }
+        return { session: null, user: null };
+      }
+
       async function verifyAdmin() {
-        const {
-          data: { user },
-        } = await withTimeout(
-          supabase.auth.getUser(),
-          8000,
-          "Pemeriksaan sesi login",
-        );
+        // Jangan membuat Admin Panel menggantung di getUser().
+        // Ambil sesi lokal terlebih dahulu; Supabase akan tetap memvalidasi akses
+        // pada query/RPC berikutnya.
+        let { user } = getCachedAuthSession();
 
         if (!user) {
+          try {
+            const sessionResult = await withTimeout(
+              supabase.auth.getSession(),
+              1800,
+              "Membaca sesi login",
+            );
+            user = sessionResult?.data?.session?.user || null;
+          } catch (error) {
+            console.warn("Pembacaan sesi Supabase gagal/timeout:", error);
+          }
+        }
+
+        if (!user?.id) {
           location.href = "login.html?next=admin.html";
           return false;
         }
 
         currentAdminUserId = user.id;
 
-        let profile = null;
+        // access-security.sql menggunakan role super_admin, bukan lagi "admin".
+        // Cek profile dengan timeout pendek, lalu fallback ke RPC permission.
+        let profileRole = "user";
         try {
           const profileResult = await withTimeout(
-            supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
-            5000,
+            supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", user.id)
+              .maybeSingle(),
+            2500,
             "Pemeriksaan role admin",
           );
-          profile = profileResult.data || null;
+          profileRole = String(profileResult?.data?.role || "user").toLowerCase();
         } catch (error) {
-          console.warn("Profile admin check timeout/error:", error);
+          console.warn("Pemeriksaan profile gagal/timeout:", error);
         }
 
-        const profileRole = String(profile?.role || "user").toLowerCase();
-
-        // Akun admin tidak perlu menunggu RPC permission yang bisa lambat.
-        if (profileRole === "admin") {
-          currentStaffRole = "admin";
+        if (["admin", "super_admin"].includes(profileRole)) {
+          currentStaffRole = profileRole;
           currentPermissions = new Set(["*"]);
           return true;
         }
 
         try {
-          const { data: access } = await withTimeout(
+          const permissionResult = await withTimeout(
             supabase.rpc("get_my_staff_permissions"),
-            7000,
+            3000,
             "Pemeriksaan permission admin",
           );
-          currentStaffRole = access?.role || profileRole;
-          currentPermissions = new Set(access?.permissions || []);
+          const access = permissionResult?.data;
+          currentStaffRole = String(access?.role || profileRole || "user");
+          currentPermissions = new Set(Array.isArray(access?.permissions) ? access.permissions : []);
         } catch (error) {
-          console.warn("Staff permission check timeout/error:", error);
+          console.warn("Pemeriksaan permission gagal/timeout:", error);
           currentStaffRole = profileRole;
           currentPermissions = new Set();
         }
@@ -267,8 +301,12 @@
           root.innerHTML = `
           <section class="container section">
             <div class="notice error">
-              Akses admin diperlukan. Pastikan role akun pada tabel
-              <b>profiles</b> bernilai <b>admin</b> atau akun memiliki permission staff.
+              <b>Akses Admin tidak terverifikasi.</b><br><br>
+              Sesi login ditemukan, tetapi hak akses admin belum dapat diverifikasi.
+              Pastikan role akun pada tabel <b>profiles</b> adalah <b>super_admin</b>
+              atau role staff memiliki permission yang sesuai.<br><br>
+              <button class="btn primary" type="button" onclick="location.reload()">↻ Coba Lagi</button>
+              <a class="btn" href="login.html?next=admin.html">Login Ulang</a>
             </div>
           </section>`;
         }
@@ -375,7 +413,7 @@
           await loadItemsData();
           return;
         }
-        if (["orders", "schedule"].includes(tab)) {
+        if (["rental_orders", "rental_returns", "orders", "schedule"].includes(tab)) {
           await loadOrdersData();
           return;
         }
@@ -418,6 +456,31 @@
               type="button"
             >
               🎒 Sewa Item
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "rental_orders" ? "active" : ""} ${can("orders.view") ? "" : "hidden"}"
+              data-admin-tab="rental_orders"
+              type="button"
+            >
+              🧾 Pesanan Sewa
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "rental_returns" ? "active" : ""} ${can("orders.view") ? "" : "hidden"}"
+              data-admin-tab="rental_returns"
+              type="button"
+            >
+              📦 Pengembalian Barang
+            </button>
+
+            <button
+              class="admin-tab admin-reminder-tab ${activeTab === "rental_reminders" ? "active" : ""}"
+              data-admin-tab="rental_reminders"
+              type="button"
+              title="Buka Pengingat Customer"
+            >
+              🔔 Pengingat Customer
             </button>
 
             <button
@@ -519,6 +582,9 @@
           </nav>
 
           <div id="adminMessage" class="notice hidden"></div>
+          <div class="admin-reminder-shortcut">
+            <button class="btn primary admin-reminder-open" data-admin-tab="rental_reminders" type="button">🔔 Buka Pengingat Customer</button>
+          </div>
           <section id="adminContent"></section>
         </section>`;
 
@@ -823,6 +889,9 @@
 
           if (tab === "locations") await renderLocationsTab();
           else if (tab === "rental") renderRentalTab();
+          else if (tab === "rental_orders") renderRentalOrdersTab();
+          else if (tab === "rental_returns") renderRentalReturnsTab();
+          else if (tab === "rental_reminders") renderRentalRemindersTab();
           else if (tab === "trips") renderTripTab();
           else if (tab === "orders") renderOrdersTab();
           else if (tab === "vouchers") await renderVoucherTab();
@@ -1911,6 +1980,334 @@
         });
         form.addEventListener("submit", syncAll, { capture: true });
         syncAll();
+      }
+
+      function rentalOrderLines(order) {
+        return (order.order_items || []).filter((line) =>
+          line.item_type === "product" && (line.fulfillment_type === "rental" || !!order.rental_start)
+        );
+      }
+      function rentalOrderIsComplete(order) {
+        const lines = rentalOrderLines(order);
+        return lines.length > 0 && lines.every((line) => Number(line.returned_quantity || 0) >= Number(line.quantity || 0));
+      }
+      function conditionLabel(value) {
+        return ({good:"Baik",dirty:"Kotor / perlu dicuci",damaged:"Rusak",lost:"Hilang"}[value] || value || "Belum diperiksa");
+      }
+      function renderRentalIncomingOrders() {
+        const rentalOrders = orders
+          .filter(o => o.status !== "cancelled" && rentalOrderLines(o).length)
+          .sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+        const active = rentalOrders.filter(o => o.status !== "completed");
+        const card = (order) => {
+          const lines = rentalOrderLines(order), complete = rentalOrderIsComplete(order);
+          const canInspect = ["paid","returned"].includes(order.status) && !complete;
+          const lastByLine = new Map();
+          (order.order_returns || []).forEach(r => {
+            const key = String(r.order_item_id || `item:${r.item_id}`);
+            const prev = lastByLine.get(key);
+            if (!prev || String(r.inspected_at) > String(prev.inspected_at)) lastByLine.set(key, r);
+          });
+          return `<details class="card rental-incoming-card" data-rental-order="${esc(order.id)}" ${order.status !== "completed" ? "open" : ""}>
+            <summary><div class="rental-incoming-summary"><span class="status">${esc(statusLabels[order.status] || order.status)}</span><strong class="rental-order-code">${esc(order.order_number)}</strong><small>${esc(order.customer_name || "-")} · ${esc(order.phone || "-")}</small><small>${esc(formatRentalDate(order.rental_start))} → ${esc(formatRentalDate(order.rental_end))} · ${Number(order.rental_days || 1)} hari</small></div><strong>${rupiah(order.total)}</strong><span>Lihat ▾</span></summary>
+            <div class="rental-incoming-body">
+              <div class="rental-order-meta"><div><b>Kode Order</b><strong>${esc(order.order_number)}</strong></div><div><b>Barang</b><strong>${lines.length} jenis / ${lines.reduce((n,l)=>n+Number(l.quantity||0),0)} unit</strong></div><div><b>Lokasi/Toko</b><strong>${esc(order.location_name || order.location_id || "Sesuai checkout")}</strong></div><div><b>Pembayaran</b><strong>${esc(order.payment_status || "unpaid")}</strong></div></div>
+              <section class="rental-inspection-box">
+                <div class="admin-editor-heading"><div><span class="badge">CHECKLIST PENGEMBALIAN</span><h4>${order.status === "completed" ? "Pesanan sudah selesai" : "Periksa semua barang sebelum selesai"}</h4></div></div>
+                <p class="muted">Semua barang dari checkout tampil otomatis. Isi kondisi <b>semua barang</b>, lalu tekan <b>Simpan Semua Pengembalian</b> sekali. Sistem menyimpan seluruh checklist dalam satu transaksi.</p>
+                <div class="rental-check-list">
+                  ${lines.map(line=>{
+                    const returned=Number(line.returned_quantity||0), total=Number(line.quantity||0), remaining=Math.max(0,total-returned);
+                    const last=lastByLine.get(String(line.id)) || lastByLine.get(`item:${line.item_id}`);
+                    return `<div class="rental-check-line" data-rental-line="${esc(line.id)}">
+                      <div class="rental-check-main"><div><strong>${esc(line.title_snapshot)}${line.variant_name_snapshot?` · ${esc(line.variant_name_snapshot)}`:""}</strong><small>Jumlah: ${total} · Sudah kembali: ${returned} · Sisa: ${remaining}</small>${last?`<small>Pemeriksaan terakhir: <b>${esc(conditionLabel(last.condition))}</b>${last.notes?` · ${esc(last.notes)}`:""}${last.fee?` · Biaya ${rupiah(last.fee)}`:""}</small>`:`<small>Belum diperiksa.</small>`}</div><b>${rupiah(line.line_total)}</b></div>
+                      ${canInspect ? `<div class="rental-check-controls"><label class="field"><span>Jumlah kembali</span><input class="input" type="number" min="${remaining}" max="${remaining}" value="${remaining}" data-return-qty="${esc(line.id)}" readonly></label><label class="field"><span>Kondisi *</span><select class="input" data-return-condition="${esc(line.id)}" required><option value="">Pilih kondisi</option><option value="good">Baik</option><option value="dirty">Kotor / perlu dicuci</option><option value="damaged">Rusak</option><option value="lost">Hilang</option></select></label><label class="field rental-note-field"><span>Catatan kondisi</span><input class="input" data-return-note="${esc(line.id)}" placeholder="Contoh: lengkap / resleting rusak"></label><label class="field"><span>Biaya</span><input class="input" type="number" min="0" step="1000" value="0" data-return-fee="${esc(line.id)}"></label></div>` : `<div class="rental-condition-readonly">Kondisi: <b>${esc(conditionLabel(last?.condition || (complete ? order.return_condition : "Belum diperiksa")))}</b></div>`}
+                    </div>`;
+                  }).join("")}
+                </div>
+                <div class="rental-complete-bar"><span>${complete?"✅ Semua barang sudah dikembalikan dan tercatat.":"⏳ Semua barang wajib diperiksa sebelum pesanan selesai."}</span>${canInspect?`<button class="btn primary" data-rental-bulk-return="${esc(order.id)}" type="button">Simpan Semua Pengembalian</button>`:""}${order.status === "returned" && complete?`<button class="btn primary small" data-finalize-rental="${esc(order.id)}" type="button">Finalisasi → Selesai</button>`:""}${order.status === "completed"?`<span class="rental-complete-ok">✓ Selesai & dikembalikan</span>`:""}</div>
+              </section>
+            </div>
+          </details>`;
+        };
+        return `<section class="card rental-incoming-section"><div class="admin-list-heading"><div><span class="badge">CHECKOUT → SEWA</span><h3>Pesanan Sewa Masuk</h3><p class="muted">${active.length} pesanan operasional · ${rentalOrders.length-active.length} selesai.</p></div><button id="refreshRentalOrders" class="btn secondary small" type="button">Muat Ulang</button></div><div class="rental-workflow-note"><b>Alur:</b> Checkout → Dibayar → Sewa → Barang kembali → <b>Checklist semua barang</b> → Dikembalikan → <b>Selesai</b></div><div class="rental-incoming-list">${rentalOrders.map(card).join("") || '<div class="notice">Belum ada pesanan sewa dari checkout.</div>'}</div></section>`;
+      }
+      function bindRentalIncomingEvents() {
+        const content=document.getElementById("adminContent");
+        content.querySelector("#refreshRentalOrders")?.addEventListener("click", refreshOrders);
+        content.querySelectorAll("[data-rental-bulk-return]").forEach(btn=>btn.addEventListener("click",async()=>{
+          const order=orders.find(o=>String(o.id)===String(btn.dataset.rentalBulkReturn));
+          if(!order) return;
+          const lines=rentalOrderLines(order).filter(line=>Number(line.quantity||0)>Number(line.returned_quantity||0));
+          if(!lines.length) return showAdminMessage("Semua barang pada pesanan ini sudah dikembalikan.","warning");
+          const inspections=[];
+          for(const line of lines){
+            const id=line.id;
+            const qty=Number(content.querySelector(`[data-return-qty="${id}"]`)?.value||0);
+            const condition=content.querySelector(`[data-return-condition="${id}"]`)?.value||"";
+            const note=String(content.querySelector(`[data-return-note="${id}"]`)?.value||"").trim()||null;
+            const fee=Number(content.querySelector(`[data-return-fee="${id}"]`)?.value||0);
+            const remaining=Math.max(0,Number(line.quantity||0)-Number(line.returned_quantity||0));
+            if(!condition) return showAdminMessage(`Pilih kondisi untuk ${line.title_snapshot}.`,"error");
+            if(!Number.isInteger(qty)||qty!==remaining) return showAdminMessage(`Jumlah kembali ${line.title_snapshot} harus ${remaining}.`,"error");
+            if(!Number.isFinite(fee)||fee<0) return showAdminMessage(`Biaya ${line.title_snapshot} tidak valid.`,"error");
+            inspections.push({order_item_id:line.id,item_id:line.item_id,quantity:qty,condition,notes:note,fee});
+          }
+          if(!confirm(`Simpan checklist ${inspections.length} barang sekaligus untuk ${order.order_number}?`)) return;
+          btn.disabled=true;btn.textContent="Menyimpan semua...";
+          const {error}=await supabase.rpc("secure_admin_bulk_return_inspection",{p_order_id:order.id,p_items:inspections});
+          if(error){btn.disabled=false;btn.textContent="Simpan Semua Pengembalian";return showAdminMessage(`${error.message}. Jalankan PATCH-BULK-RETURN-INSPECTION.sql.`,"error");}
+          await refreshOrders();showAdminMessage(`${order.order_number}: semua kondisi barang berhasil disimpan dalam satu transaksi dan pesanan dikembalikan.`,"success");
+        }));
+        content.querySelectorAll("[data-finalize-rental]").forEach(btn=>btn.addEventListener("click",async()=>{const order=orders.find(o=>String(o.id)===String(btn.dataset.finalizeRental));if(!order||order.status!=="returned"||!rentalOrderIsComplete(order))return showAdminMessage("Checklist pengembalian belum lengkap.","error");if(!confirm(`Finalisasi ${order.order_number} menjadi Selesai?`))return;btn.disabled=true;const {error}=await supabase.rpc("secure_admin_update_order_status",{a:order.id,b:"completed",c:"Semua barang dikembalikan dan diperiksa."});if(error){btn.disabled=false;return showAdminMessage(error.message,"error");}await refreshOrders();showAdminMessage(`${order.order_number} selesai dan dikembalikan.` ,"success");}));
+      }
+
+      function renderRentalOrdersTab() {
+        const content = document.getElementById("adminContent");
+        const rentalOrders = orders
+          .filter(o => o.status !== "cancelled" && rentalOrderLines(o).length && o.status !== "completed")
+          .sort((a,b) => String(b.created_at).localeCompare(String(a.created_at)));
+        content.innerHTML = `
+          <section class="card rental-incoming-section">
+            <div class="admin-list-heading">
+              <div><span class="badge">CHECKOUT → SEWA</span><h3>Pesanan Sewa</h3><p class="muted">Order rental yang masih berjalan/menunggu. Pemeriksaan barang tidak dilakukan di menu ini.</p></div>
+              <button id="refreshRentalOrdersOnly" class="btn secondary small" type="button">Muat Ulang</button>
+            </div>
+            <div class="rental-workflow-note"><b>Alur:</b> Checkout → Dibayar → Sewa → Pengembalian Barang → Selesai</div>
+            <div class="rental-incoming-list">${rentalOrders.map(order => {
+              const lines = rentalOrderLines(order);
+              return `<details class="card rental-incoming-card" data-rental-order="${esc(order.id)}">
+                <summary><div class="rental-incoming-summary"><span class="status">${esc(statusLabels[order.status] || order.status)}</span><strong class="rental-order-code">${esc(order.order_number)}</strong><small>${esc(order.customer_name || "-")} · ${esc(order.phone || "-")}</small><small>${esc(formatRentalDate(order.rental_start))} → ${esc(formatRentalDate(order.rental_end))} · ${Number(order.rental_days || 1)} hari</small></div><strong>${rupiah(order.total)}</strong><span>Lihat ▾</span></summary>
+                <div class="rental-incoming-body"><div class="rental-order-meta"><div><b>Kode Order</b><strong>${esc(order.order_number)}</strong></div><div><b>Barang</b><strong>${lines.length} jenis / ${lines.reduce((n,l)=>n+Number(l.quantity||0),0)} unit</strong></div><div><b>Lokasi/Toko</b><strong>${esc(order.location_name || order.location_id || "Sesuai checkout")}</strong></div><div><b>Pembayaran</b><strong>${esc(order.payment_status || "unpaid")}</strong></div></div><div class="rental-check-list">${lines.map(line => `<div class="rental-check-line"><div class="rental-check-main"><div><strong>${esc(line.title_snapshot)}${line.variant_name_snapshot ? ` · ${esc(line.variant_name_snapshot)}` : ""}</strong><small>Jumlah: ${Number(line.quantity||0)} · Harga: ${rupiah(line.line_total)}</small></div><b>${rupiah(line.line_total)}</b></div></div>`).join("")}</div></div>
+              </details>`;
+            }).join("") || '<div class="notice">Belum ada pesanan sewa aktif.</div>'}</div>
+          </section>`;
+        content.querySelector("#refreshRentalOrdersOnly")?.addEventListener("click", refreshOrders);
+      }
+
+      function renderRentalReturnsTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = renderRentalIncomingOrders();
+        bindRentalIncomingEvents();
+      }
+
+      const AOC_RENTAL_REMINDER_HIDDEN_KEY = "aoc_rental_reminder_hidden_v1";
+
+      function getHiddenRentalReminderIds() {
+        try {
+          const raw = localStorage.getItem(AOC_RENTAL_REMINDER_HIDDEN_KEY);
+          const parsed = raw ? JSON.parse(raw) : [];
+          return new Set(Array.isArray(parsed) ? parsed.map(String) : []);
+        } catch (error) {
+          console.warn("Gagal membaca daftar pengingat yang dihapus:", error);
+          return new Set();
+        }
+      }
+
+      function saveHiddenRentalReminderIds(ids) {
+        try {
+          localStorage.setItem(AOC_RENTAL_REMINDER_HIDDEN_KEY, JSON.stringify([...new Set([...ids].map(String))]));
+          return true;
+        } catch (error) {
+          console.warn("Gagal menyimpan daftar pengingat yang dihapus:", error);
+          return false;
+        }
+      }
+
+      function hideRentalReminderPermanently(orderId) {
+        const ids = getHiddenRentalReminderIds();
+        ids.add(String(orderId));
+        return saveHiddenRentalReminderIds(ids);
+      }
+
+      function clearRentalRemindersPermanently(orderIds) {
+        const ids = getHiddenRentalReminderIds();
+        orderIds.forEach(id => ids.add(String(id)));
+        return saveHiddenRentalReminderIds(ids);
+      }
+
+      function restoreRentalReminders() {
+        try {
+          localStorage.removeItem(AOC_RENTAL_REMINDER_HIDDEN_KEY);
+          return true;
+        } catch (error) {
+          console.warn("Gagal memulihkan pengingat:", error);
+          return false;
+        }
+      }
+
+      async function renderRentalRemindersTab() {
+        const content = document.getElementById("adminContent");
+        content.innerHTML = `<section class="card"><div class="admin-list-heading"><div><span class="badge">CUSTOMER REMINDER MONITOR</span><h3>🔔 Pengingat Customer</h3><p class="muted">Semua barang yang di-checkout sebagai rental ditampilkan sebagai monitor waktu. Setiap order menampilkan kode order, seluruh barang, jumlah, batas waktu, countdown, dan tombol pengingat customer.</p></div><button id="refreshRentalReminders" class="btn secondary small" type="button">Muat Ulang</button></div><div class="notice">Memuat monitor rental...</div></section>`;
+        try {
+          await supabase.rpc("admin_process_rental_reminders");
+          const { data: reminderRows, error } = await supabase.rpc("admin_list_rental_reminders");
+          if (error) throw error;
+
+          const now = Date.now();
+          const reminders = reminderRows || [];
+          const reminderByOrder = new Map();
+          reminders.forEach(r => {
+            const key = String(r.order_id);
+            const prev = reminderByOrder.get(key);
+            if (!prev || new Date(r.triggered_at || 0).getTime() > new Date(prev.triggered_at || 0).getTime()) reminderByOrder.set(key, r);
+          });
+
+          // Monitor berasal dari order checkout, bukan hanya dari tabel reminder,
+          // sehingga order yang masih jauh dari H-4 tetap terlihat beserta semua barangnya.
+          const hiddenReminderIds = getHiddenRentalReminderIds();
+          const rentalOrders = orders
+            .filter(o => !hiddenReminderIds.has(String(o.id)) && o.status !== "cancelled" && o.status !== "completed" && rentalOrderLines(o).length)
+            .sort((a,b) => {
+              const da = new Date(a.rental_due_at || 0).getTime();
+              const db = new Date(b.rental_due_at || 0).getTime();
+              return (Number.isFinite(da) ? da : Infinity) - (Number.isFinite(db) ? db : Infinity);
+            });
+
+          const dueSoonCount = rentalOrders.filter(o => {
+            const due = new Date(o.rental_due_at || 0).getTime();
+            return Number.isFinite(due) && due - now > 0 && due - now <= 4 * 3600000;
+          }).length;
+          const overdueCount = rentalOrders.filter(o => {
+            const due = new Date(o.rental_due_at || 0).getTime();
+            return Number.isFinite(due) && due <= now;
+          }).length;
+
+          const cards = rentalOrders.map(order => {
+            const lines = rentalOrderLines(order);
+            const days = Math.max(1, Number(order.rental_days || 1));
+            let due = new Date(order.rental_due_at || "");
+            if (!Number.isFinite(due.getTime()) && order.rental_start) {
+              due = new Date(`${order.rental_start}T00:00:00+07:00`);
+              due = new Date(due.getTime() + days * 28 * 3600000);
+            }
+            const dueMs = due.getTime();
+            const validDue = Number.isFinite(dueMs);
+            const diff = validDue ? dueMs - now : NaN;
+            const overdueNow = validDue && diff <= 0;
+            const within4h = validDue && diff > 0 && diff <= 4 * 3600000;
+            const customerName = order.customer_name || "Customer";
+            const phone = order.phone || "";
+            const total = Number(order.rental_total ?? order.total ?? order.subtotal ?? 0) || 0;
+            const fee = Number(order.late_fee || 0) || (overdueNow ? Math.round(total * 0.10) : 0);
+            const digits = String(phone).replace(/\D/g, "").replace(/^0/, "62");
+            const msg = overdueNow
+              ? `Halo ${customerName}, pengingat pesanan ${order.order_number}. Waktu pengembalian sudah lewat. Mohon segera mengembalikan seluruh barang rental. Denda keterlambatan 10% dari total sewa akan dikenakan.`
+              : `Halo ${customerName}, ini pengingat untuk pesanan ${order.order_number}. Waktu sewa akan berakhir ${validDue ? due.toLocaleString("id-ID") : "sesuai jadwal sewa"}. Mohon segera mempersiapkan pengembalian seluruh barang.`;
+            let countdown = "Waktu belum tersedia";
+            if (overdueNow) {
+              const mins = Math.floor(Math.abs(diff) / 60000);
+              countdown = `Terlambat ${Math.floor(mins / 60)}j ${mins % 60}m`;
+            } else if (validDue) {
+              const mins = Math.floor(diff / 60000);
+              countdown = `${Math.floor(mins / 60)}j ${mins % 60}m tersisa`;
+            }
+            const badge = overdueNow ? "🔴 TERLAMBAT" : within4h ? "⚠️ SEGERA KEMBALI" : "🟢 MONITOR";
+            const reminderState = reminderByOrder.get(String(order.id));
+            const reminderText = reminderState?.reminder_type === "overdue_fee" ? "Denda otomatis 10% aktif" : reminderState?.reminder_type === "4h_before_due" ? "Pengingat H-4 jam aktif" : "Belum masuk H-4 jam";
+            const itemRows = lines.map(line => `<div class="rental-reminder-item"><div><strong>${esc(line.title_snapshot || "Item rental")}${line.variant_name_snapshot ? ` · ${esc(line.variant_name_snapshot)}` : ""}</strong><small>Jumlah: <b>${Number(line.quantity || 0)} unit</b> · ${rupiah(line.line_total || 0)}</small></div><span>${Number(line.quantity || 0)}×</span></div>`).join("");
+            return `<article class="card rental-reminder-card" data-monitor-order="${esc(order.id)}" data-order-code="${esc(order.order_number || "-")}" data-due-ms="${validDue ? dueMs : ""}"><div class="rental-reminder-head"><div><span class="badge reminder-live-badge">${badge}</span><h3>${esc(order.order_number || "-")}</h3><p><b>${esc(customerName)}</b> · ${esc(phone || "No. HP belum ada")}</p></div><strong>${rupiah(total)}</strong></div><div class="rental-reminder-time"><div><small>BATAS WAKTU</small><b>${validDue ? due.toLocaleString("id-ID") : "Waktu belum tersedia"}</b></div><div><small>WAKTU TERSISA</small><b class="reminder-countdown" data-countdown>${esc(countdown)}</b></div><div><small>STATUS</small><b class="reminder-status">${esc(reminderText)}</b></div></div><div class="rental-reminder-items"><div class="rental-reminder-items-title">📦 Semua barang di-checkout (${lines.length} jenis / ${lines.reduce((n,l)=>n+Number(l.quantity||0),0)} unit)</div>${itemRows}</div><p class="muted">Periode: ${esc(formatRentalDate(order.rental_start))} → ${esc(formatRentalDate(order.rental_end))} · ${days} hari · 1 hari = 28 jam</p><div class="notice error reminder-fee" style="display:${overdueNow ? "block" : "none"}">🔴 Denda keterlambatan 10%: <b>${rupiah(fee || Math.round(total * 0.10))}</b></div><div class="actions">${digits ? `<a class="btn primary small" target="_blank" rel="noopener" href="https://wa.me/${digits}?text=${encodeURIComponent(msg)}">🔔 Ingatkan Customer</a>` : `<span class="muted">Nomor customer belum tersedia</span>`}<button class="btn danger small rental-reminder-delete" type="button">🗑️ Hapus</button></div></article>`;
+          }).join("");
+
+          content.innerHTML = `<section class="card"><div class="admin-list-heading rental-reminder-heading"><div><span class="badge">CUSTOMER REMINDER MONITOR</span><h3>🔔 Pengingat Customer</h3><p class="muted">${rentalOrders.length} order rental dipantau · ${dueSoonCount} segera berakhir · ${overdueCount} terlambat.</p></div><div class="rental-reminder-toolbar"><button id="clearRentalReminderArea" class="btn danger small" type="button">🧹 Clear Area</button><button id="restoreRentalReminders" class="btn secondary small" type="button">↺ Pulihkan</button><button id="refreshRentalReminders" class="btn secondary small" type="button">↻ Muat Ulang</button></div></div><div class="rental-reminder-rules"><b>Aturan:</b> 1 hari = 28 jam · pengingat customer mulai H-4 jam · denda keterlambatan = 10% dari seluruh harga sewa.</div><div id="rentalReminderList" class="rental-reminder-list">${cards || '<div class="notice">Belum ada order rental yang bisa dipantau.</div>'}</div></section>`;
+          content.querySelector("#refreshRentalReminders")?.addEventListener("click", renderRentalRemindersTab);
+          content.querySelector("#clearRentalReminderArea")?.addEventListener("click", () => {
+            const list = content.querySelector("#rentalReminderList");
+            if (!list) return;
+            const cards = [...list.querySelectorAll(".rental-reminder-card")];
+            if (!cards.length) return;
+            window.aocReminderConfirm({
+              icon: "🧹",
+              title: "Clear Area Pengingat?",
+              message: "Semua pengingat yang sedang tampil akan disembunyikan dan <b>tetap tersembunyi setelah refresh</b>. Data pesanan/database tidak dihapus.",
+              confirmText: "Ya, Clear Permanen",
+              danger: true
+            }).then((confirmed) => {
+              if (!confirmed) return;
+              const ids = cards.map(card => card.dataset.monitorOrder).filter(Boolean);
+              if (!clearRentalRemindersPermanently(ids)) {
+                window.aocReminderConfirm({ icon: "⚠️", title: "Gagal Menyimpan", message: "Browser tidak mengizinkan penyimpanan daftar pengingat. Silakan coba lagi.", confirmText: "OK" });
+                return;
+              }
+              list.innerHTML = '<div class="notice rental-reminder-cleared">🧹 Semua pengingat di area ini sudah disembunyikan secara permanen pada perangkat ini. Gunakan <b>↺ Pulihkan</b> jika ingin menampilkannya kembali.</div>';
+              if (window.__aocRentalReminderTimer) { clearInterval(window.__aocRentalReminderTimer); window.__aocRentalReminderTimer = null; }
+            });
+          });
+          content.querySelector("#restoreRentalReminders")?.addEventListener("click", () => {
+            window.aocReminderConfirm({
+              icon: "↺",
+              title: "Pulihkan Pengingat?",
+              message: "Semua pengingat yang sebelumnya dihapus/di-clear akan ditampilkan kembali. Data pesanan tidak berubah.",
+              confirmText: "Ya, Pulihkan",
+              danger: false
+            }).then((confirmed) => {
+              if (!confirmed) return;
+              if (!restoreRentalReminders()) return;
+              renderRentalRemindersTab();
+            });
+          });
+          content.querySelectorAll(".rental-reminder-delete")?.forEach(btn => btn.addEventListener("click", () => {
+            const card = btn.closest(".rental-reminder-card");
+            if (!card) return;
+            const code = card.dataset.orderCode || "order ini";
+            window.aocReminderConfirm({
+              icon: "🗑️",
+              title: "Hapus Pengingat?",
+              message: `Pengingat <b>${esc(code)}</b> akan disembunyikan <b>secara permanen dari daftar pengingat pada perangkat ini</b>. Data pesanan tetap aman dan tidak akan dihapus.`,
+              confirmText: "Ya, Hapus Permanen",
+              danger: true
+            }).then((confirmed) => {
+              if (!confirmed) return;
+              if (!hideRentalReminderPermanently(card.dataset.monitorOrder)) {
+                window.aocReminderConfirm({ icon: "⚠️", title: "Gagal Menyimpan", message: "Pengingat tidak dapat disimpan sebagai terhapus pada browser ini. Silakan coba lagi.", confirmText: "OK" });
+                return;
+              }
+              card.remove();
+              const list = content.querySelector("#rentalReminderList");
+              if (list && !list.querySelector(".rental-reminder-card")) list.innerHTML = '<div class="notice rental-reminder-cleared">🗑️ Pengingat sudah dihapus dan tidak akan muncul lagi setelah refresh. Gunakan <b>↺ Pulihkan</b> untuk menampilkannya kembali.</div>';
+            });
+          }));
+          startLiveRentalReminderClock();
+        } catch (error) {
+          content.innerHTML=`<section class="card"><div class="notice error"><b>Monitor Pengingat Customer belum dapat dimuat.</b><br>${esc(error?.message || "Gagal memuat data.")}<br><small>Pastikan PATCH-RENTAL-REMINDER-28H-4H-FEE10.sql sudah dijalankan di Supabase.</small></div></section>`;
+        }
+      }
+
+      function startLiveRentalReminderClock() {
+        if (window.__aocRentalReminderTimer) clearInterval(window.__aocRentalReminderTimer);
+        const tick = () => {
+          const cards = document.querySelectorAll("#adminContent .rental-reminder-card[data-due-ms]");
+          const now = Date.now();
+          cards.forEach(card => {
+            const due = Number(card.dataset.dueMs);
+            if (!Number.isFinite(due)) return;
+            const diff = due - now;
+            const countdownEl = card.querySelector("[data-countdown]");
+            const badgeEl = card.querySelector(".reminder-live-badge");
+            const statusEl = card.querySelector(".reminder-status");
+            const feeEl = card.querySelector(".reminder-fee");
+            if (diff <= 0) {
+              const mins = Math.floor(Math.abs(diff) / 60000);
+              if (countdownEl) countdownEl.textContent = `Terlambat ${Math.floor(mins / 60)}j ${mins % 60}m`;
+              if (badgeEl) badgeEl.textContent = "🔴 TERLAMBAT";
+              if (statusEl) statusEl.textContent = "Denda keterlambatan 10% aktif";
+              if (feeEl) feeEl.style.display = "block";
+            } else {
+              const totalSeconds = Math.floor(diff / 1000);
+              const days = Math.floor(totalSeconds / 86400);
+              const hours = Math.floor((totalSeconds % 86400) / 3600);
+              const minutes = Math.floor((totalSeconds % 3600) / 60);
+              const seconds = totalSeconds % 60;
+              const text = days > 0 ? `${days}h ${hours}j ${minutes}m ${seconds}d tersisa` : `${hours}j ${minutes}m ${seconds}d tersisa`;
+              if (countdownEl) countdownEl.textContent = text;
+              if (badgeEl) badgeEl.textContent = diff <= 4 * 3600000 ? "⚠️ SEGERA KEMBALI" : "🟢 MONITOR";
+              if (statusEl) statusEl.textContent = diff <= 4 * 3600000 ? "Pengingat H-4 jam aktif" : "Belum masuk H-4 jam";
+              if (feeEl) feeEl.style.display = "none";
+            }
+          });
+        };
+        tick();
+        window.__aocRentalReminderTimer = setInterval(tick, 1000);
       }
 
       function renderRentalTab() {
@@ -3953,6 +4350,10 @@
         ordersLoadPromise = null;
         try {
           await loadOrdersData();
+          if (activeTab === "rental") renderRentalTab();
+          if (activeTab === "rental_orders") renderRentalOrdersTab();
+          if (activeTab === "rental_returns") renderRentalReturnsTab();
+          if (activeTab === "rental_reminders") renderRentalRemindersTab();
           if (activeTab === "orders") renderOrdersTab();
           if (activeTab === "schedule") renderRentalScheduleTab();
           showAdminMessage("Daftar pesanan dimuat ulang.", "success");
@@ -4635,6 +5036,39 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
+      window.aocReminderConfirm = function({ icon = "🔔", title = "Konfirmasi", message = "", confirmText = "Lanjutkan", danger = false } = {}) {
+        return new Promise((resolve) => {
+          const modal = document.getElementById("aocReminderConfirmModal");
+          if (!modal) return resolve(window.confirm(String(message).replace(/<[^>]*>/g, "")));
+          const iconEl = modal.querySelector("[data-confirm-icon]");
+          const titleEl = modal.querySelector("[data-confirm-title]");
+          const messageEl = modal.querySelector("[data-confirm-message]");
+          const okBtn = modal.querySelector("[data-confirm-ok]");
+          const cancelBtn = modal.querySelector("[data-confirm-cancel]");
+          iconEl.textContent = icon;
+          titleEl.textContent = title;
+          messageEl.innerHTML = message;
+          okBtn.textContent = confirmText;
+          okBtn.classList.toggle("aoc-confirm-danger", !!danger);
+          modal.hidden = false;
+          document.body.classList.add("aoc-modal-open");
+          requestAnimationFrame(() => modal.classList.add("is-open"));
+          const finish = (value) => {
+            modal.classList.remove("is-open");
+            document.body.classList.remove("aoc-modal-open");
+            setTimeout(() => { modal.hidden = true; resolve(value); }, 160);
+          };
+          okBtn.onclick = () => finish(true);
+          cancelBtn.onclick = () => finish(false);
+          modal.querySelector("[data-confirm-close]").onclick = () => finish(false);
+          modal.onkeydown = (event) => {
+            if (event.key === "Escape") finish(false);
+            if (event.key === "Enter") finish(true);
+          };
+          setTimeout(() => cancelBtn.focus(), 30);
+        });
+      };
+
       async function initialize() {
         try {
           const allowed = await verifyAdmin();
@@ -4671,8 +5105,43 @@
         }
       }
 
-      initialize();
+      Promise.race([
+        initialize(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Admin Panel timeout. Koneksi/auth Supabase tidak merespons dalam 10 detik.")), 10000),
+        ),
+      ]).catch((error) => {
+        console.error("Admin initialize watchdog:", error);
+        const root = document.getElementById("adminRoot");
+        if (root && /Memeriksa akses admin/i.test(root.textContent || "")) {
+          root.innerHTML = `
+            <section class="container section">
+              <div class="notice error">
+                <b>Admin Panel tidak mendapat respons.</b><br><br>
+                Pemeriksaan login/database terlalu lama. Ini biasanya terjadi karena sesi Supabase macet atau koneksi ke database tidak merespons.<br><br>
+                <button class="btn primary" type="button" onclick="location.reload()">↻ Coba Lagi</button>
+                <a class="btn" href="login.html?next=admin.html">Login Ulang</a>
+              </div>
+            </section>`;
+        }
+      });
     </script>
+<div id="aocReminderConfirmModal" class="aoc-reminder-modal" hidden role="dialog" aria-modal="true" aria-labelledby="aocReminderConfirmTitle" tabindex="-1">
+  <div class="aoc-reminder-backdrop" data-confirm-close></div>
+  <div class="aoc-reminder-dialog">
+    <button class="aoc-reminder-close" type="button" data-confirm-close aria-label="Tutup">×</button>
+    <div class="aoc-reminder-icon" data-confirm-icon>🔔</div>
+    <div class="aoc-reminder-dialog-body">
+      <span class="aoc-reminder-dialog-label">PENGINGAT CUSTOMER</span>
+      <h3 id="aocReminderConfirmTitle" data-confirm-title>Konfirmasi</h3>
+      <p data-confirm-message></p>
+    </div>
+    <div class="aoc-reminder-dialog-actions">
+      <button class="btn secondary" type="button" data-confirm-cancel>Batal</button>
+      <button class="btn primary" type="button" data-confirm-ok>Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
 <a aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp" class="customer-service-float" href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan." rel="noopener noreferrer" target="_blank" title="Hubungi CS: +62 895-0934-9428">
 <span aria-hidden="true" class="customer-service-icon">
 <svg viewbox="0 0 24 24">

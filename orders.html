@@ -121,6 +121,7 @@
         confirmed: "Dikonfirmasi",
         paid: "Dibayar",
         completed: "Selesai",
+        returned: "Dikembalikan",
         cancelled: "Dibatalkan",
       };
 
@@ -230,6 +231,7 @@
               <span>Total pesanan</span>
               <b>${rupiah(order.total)}</b>
             </div>
+            ${renderTimeline(order)}
 
             ${
               order.admin_notes
@@ -244,6 +246,25 @@
           </div>
         </details>
       `;
+      }
+
+
+      function renderTimeline(order) {
+        const history = Array.isArray(order.order_status_history) ? order.order_status_history : [];
+        const notifications = Array.isArray(order.customer_notifications) ? order.customer_notifications : [];
+        const events = history.map(h => ({
+          at: h.created_at,
+          title: labels[h.new_status] || h.new_status || "Pembaruan",
+          note: h.note || "Status pesanan diperbarui.",
+          kind: "status"
+        })).concat(notifications.map(n => ({
+          at: n.created_at || n.scheduled_for,
+          title: n.title,
+          note: n.message,
+          kind: "notification"
+        }))).sort((a,b) => new Date(b.at) - new Date(a.at));
+        if (!events.length) return "";
+        return `<section class="order-timeline" aria-label="Riwayat pesanan"><h4>Riwayat pesanan</h4><ol>${events.slice(0,12).map(e => `<li><span class="timeline-dot" aria-hidden="true"></span><div><b>${esc(e.title)}</b><small>${new Date(e.at).toLocaleString("id-ID")}</small><p>${esc(e.note)}</p></div></li>`).join("")}</ol></section>`;
       }
 
       async function load() {
@@ -267,6 +288,14 @@
         }
 
         const orders = data || [];
+        await Promise.all(orders.map(async (order) => {
+          const [{ data: history }, { data: notifications }] = await Promise.all([
+            supabase.from("order_status_history").select("*").eq("order_id", order.id).order("created_at", { ascending: false }).limit(20),
+            supabase.from("customer_notifications").select("*").eq("order_id", order.id).order("created_at", { ascending: false }).limit(20),
+          ]);
+          order.order_status_history = history || [];
+          order.customer_notifications = notifications || [];
+        }));
         const count = document.getElementById("orderCount");
 
         if (orders.length) {

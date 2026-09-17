@@ -8217,3 +8217,125 @@ img, svg, video, canvas { max-width: 100%; }
   .aoc-stock-thumb{width:40px;height:40px;flex-basis:40px}
   .aoc-stock-category{max-width:72px;font-size:7px;padding:3px 5px}
 }
+
+
+/* FINAL: order tracking timeline */
+.order-timeline{margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(127,127,127,.18)}
+.order-timeline h4{margin:0 0 .75rem;font-size:.95rem}
+.order-timeline ol{list-style:none;margin:0;padding:0 0 0 .15rem;display:grid;gap:.7rem}
+.order-timeline li{display:grid;grid-template-columns:12px 1fr;gap:.65rem;position:relative}
+.order-timeline li:not(:last-child)::before{content:"";position:absolute;left:5px;top:12px;bottom:-12px;width:1px;background:currentColor;opacity:.18}
+.timeline-dot{width:10px;height:10px;border:2px solid currentColor;border-radius:50%;margin-top:.28rem;position:relative;z-index:1;background:var(--bg,#050d17)}
+.order-timeline b{display:block;font-size:.88rem}
+.order-timeline small{display:block;opacity:.65;margin-top:.1rem}
+.order-timeline p{margin:.2rem 0 0;opacity:.8;font-size:.84rem}
+
+/* AOC Rental Operations: Checkout -> Sewa -> Return Inspection */
+.rental-incoming-section{margin-bottom:18px;padding:18px}
+.rental-workflow-note{padding:11px 14px;border:1px solid var(--line,#243244);border-radius:12px;margin:12px 0;font-size:13px}
+.rental-incoming-list{display:grid;gap:12px}
+.rental-incoming-card{overflow:hidden}
+.rental-incoming-card>summary{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:15px;cursor:pointer}
+.rental-incoming-summary{display:grid;gap:4px;min-width:0}
+.rental-order-code{font-size:17px;letter-spacing:.02em}
+.rental-incoming-summary small{color:var(--muted,#8d9aaa)}
+.rental-incoming-body{padding:0 15px 15px;border-top:1px solid var(--line,#243244)}
+.rental-order-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.rental-order-meta>div{padding:10px;border-radius:10px;background:rgba(255,255,255,.03);display:grid;gap:4px}
+.rental-order-meta b{font-size:11px;text-transform:uppercase;opacity:.65}
+.rental-order-meta strong{font-size:13px;word-break:break-word}
+.rental-inspection-box{border:1px solid var(--line,#243244);border-radius:14px;padding:14px}
+.rental-inspection-box h4{margin:3px 0}
+.rental-check-list{display:grid;gap:10px;margin-top:12px}
+.rental-check-line{border:1px solid var(--line,#243244);border-radius:12px;padding:12px}
+.rental-check-main{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.rental-check-main>div{display:grid;gap:4px}
+.rental-check-main small{display:block;color:var(--muted,#8d9aaa)}
+.rental-check-controls{display:grid;grid-template-columns:100px 180px minmax(180px,1fr) 150px auto;gap:8px;align-items:end;margin-top:10px}
+.rental-check-controls .field{margin:0}
+.rental-check-controls .field>span{font-size:11px}
+.rental-note-field{min-width:0}
+.rental-condition-readonly{margin-top:9px;padding:9px;border-radius:9px;background:rgba(255,255,255,.03)}
+.rental-complete-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line,#243244)}
+.rental-complete-ok{font-weight:700}
+.rental-order-actions{margin-top:12px}
+.rental-inventory-heading{margin-bottom:14px}
+@media(max-width:900px){.rental-order-meta{grid-template-columns:repeat(2,minmax(0,1fr))}.rental-check-controls{grid-template-columns:1fr 1fr}.rental-note-field{grid-column:1/-1}.rental-check-controls button{grid-column:1/-1}}
+@media(max-width:600px){.rental-incoming-card>summary{grid-template-columns:1fr}.rental-order-meta{grid-template-columns:1fr}.rental-complete-bar{align-items:flex-start;flex-direction:column}}
+
+/* AOC FINAL - batch rental inspection */
+.rental-complete-bar .btn.primary{min-height:44px;font-weight:800}.rental-check-controls input[readonly]{opacity:.8;cursor:not-allowed}.rental-inspection-box{overflow:hidden}
+
+/* Rental reminder must remain visible as its own admin feature. */
+.admin-reminder-shortcut { margin: 0 0 18px; display: flex; }
+.admin-reminder-shortcut .admin-reminder-open { width: 100%; }
+.admin-reminder-tab { display: inline-flex !important; align-items: center; justify-content: center; }
+@media (max-width: 560px) { .admin-reminder-shortcut { display: grid; } }
+
+/* AOC UI UPGRADE - Customer Reminder Monitor */
+.admin-reminder-shortcut{margin:0 0 22px;padding:14px;border:1px solid rgba(90,232,154,.18);border-radius:18px;background:linear-gradient(135deg,rgba(90,232,154,.08),rgba(255,255,255,.025));box-shadow:0 14px 35px rgba(0,0,0,.12)}
+.admin-reminder-shortcut .admin-reminder-open{width:auto;min-width:240px;min-height:44px;border-radius:12px;font-weight:900}
+.rental-reminder-rules{margin:16px 0;padding:13px 16px;border:1px solid rgba(90,232,154,.16);border-radius:14px;background:rgba(90,232,154,.055);color:var(--muted);font-size:13px;line-height:1.55}
+.rental-reminder-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}
+.rental-reminder-card{position:relative;overflow:hidden;padding:0!important;border:1px solid var(--line);border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));box-shadow:0 12px 30px rgba(0,0,0,.12);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.rental-reminder-card:hover{transform:translateY(-3px);border-color:rgba(90,232,154,.32);box-shadow:0 18px 42px rgba(0,0,0,.18)}
+.rental-reminder-card:before{content:"";display:block;height:4px;background:var(--brand);opacity:.8}
+.rental-reminder-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:18px 18px 14px}
+.rental-reminder-head h3{margin:9px 0 5px;font-size:18px;letter-spacing:.01em}
+.rental-reminder-head p{margin:0;color:var(--muted);font-size:13px}
+.rental-reminder-head>strong{font-size:16px;white-space:nowrap}
+.reminder-live-badge{font-size:10px!important;letter-spacing:.06em;border-radius:999px!important;padding:6px 9px!important}
+.rental-reminder-time{display:grid;grid-template-columns:1.1fr 1fr .95fr;gap:9px;padding:0 18px 16px}
+.rental-reminder-time>div{min-width:0;padding:12px;border:1px solid var(--line);border-radius:13px;background:rgba(0,0,0,.08)}
+.rental-reminder-time small{display:block;margin-bottom:5px;color:var(--muted);font-size:9px;font-weight:900;letter-spacing:.08em}
+.rental-reminder-time b{display:block;line-height:1.35;font-size:12px;word-break:break-word}
+.rental-reminder-time [data-countdown]{font-size:17px;letter-spacing:.01em}
+.rental-reminder-items{margin:0 18px 14px;border:1px solid var(--line);border-radius:15px;overflow:hidden;background:rgba(0,0,0,.07)}
+.rental-reminder-items-title{padding:11px 13px;border-bottom:1px solid var(--line);font-size:12px;font-weight:900}
+.rental-reminder-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 13px;border-bottom:1px solid rgba(127,127,127,.12)}
+.rental-reminder-item:last-child{border-bottom:0}
+.rental-reminder-item strong{display:block;font-size:13px;line-height:1.35}
+.rental-reminder-item small{display:block;margin-top:3px;color:var(--muted);font-size:11px}
+.rental-reminder-item>span{min-width:34px;text-align:center;padding:6px 8px;border-radius:9px;background:rgba(90,232,154,.1);font-weight:900;font-size:12px}
+.rental-reminder-card>.muted{margin:0 18px 13px;font-size:11px}
+.rental-reminder-card .reminder-fee{margin:0 18px 13px;border-radius:12px;padding:11px 13px!important;font-size:12px}
+.rental-reminder-card .actions{display:flex;gap:9px;padding:0 18px 18px;margin:0!important}
+.rental-reminder-card .actions .btn{flex:1;justify-content:center;min-height:42px;border-radius:12px;font-weight:900}
+.rental-reminder-card[data-due-ms] .reminder-countdown{font-variant-numeric:tabular-nums}
+@media(max-width:950px){.rental-reminder-list{grid-template-columns:1fr}}
+@media(max-width:620px){.admin-page{width:min(100% - 20px,1260px)}.admin-reminder-shortcut .admin-reminder-open{width:100%}.rental-reminder-head{padding:15px;gap:10px}.rental-reminder-head>strong{font-size:14px}.rental-reminder-time{grid-template-columns:1fr;padding:0 15px 14px}.rental-reminder-items{margin-left:15px;margin-right:15px}.rental-reminder-card>.muted,.rental-reminder-card .reminder-fee{margin-left:15px;margin-right:15px}.rental-reminder-card .actions{padding-left:15px;padding-right:15px;padding-bottom:15px}.rental-reminder-time [data-countdown]{font-size:20px}}
+
+/* AOC - Pengingat Customer: tombol Hapus & Clear Area */
+.rental-reminder-heading{align-items:flex-start}
+.rental-reminder-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.rental-reminder-toolbar .btn{min-height:40px;border-radius:11px;font-weight:800}
+.rental-reminder-card .actions .rental-reminder-delete{flex:0 0 auto;min-width:110px}
+.rental-reminder-cleared{grid-column:1/-1;text-align:center;padding:22px!important;border:1px dashed var(--line,#243244);border-radius:14px}
+@media(max-width:620px){
+  .rental-reminder-heading{display:flex;flex-direction:column;gap:12px}
+  .rental-reminder-toolbar{width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .rental-reminder-toolbar .btn{width:100%}
+  .rental-reminder-card .actions{flex-wrap:wrap}
+  .rental-reminder-card .actions .rental-reminder-delete{flex:1 1 100%;min-width:0}
+}
+
+/* AOC - Modern confirmation notification for Customer Reminder */
+body.aoc-modal-open{overflow:hidden}
+.aoc-reminder-modal{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px}
+.aoc-reminder-modal[hidden]{display:none}
+.aoc-reminder-backdrop{position:absolute;inset:0;background:rgba(2,7,13,.76);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);opacity:0;transition:opacity .16s ease}
+.aoc-reminder-dialog{position:relative;width:min(100%,430px);border:1px solid rgba(255,255,255,.11);border-radius:24px;background:linear-gradient(145deg,#111b27,#071019);box-shadow:0 28px 80px rgba(0,0,0,.55);padding:25px;transform:translateY(12px) scale(.97);opacity:0;transition:transform .16s ease,opacity .16s ease;overflow:hidden}
+.aoc-reminder-modal.is-open .aoc-reminder-backdrop{opacity:1}
+.aoc-reminder-modal.is-open .aoc-reminder-dialog{transform:translateY(0) scale(1);opacity:1}
+.aoc-reminder-dialog:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--brand,#5ae89a)}
+.aoc-reminder-close{position:absolute;right:14px;top:12px;width:34px;height:34px;border:0;border-radius:50%;background:rgba(255,255,255,.06);color:var(--text,#fff);font-size:24px;line-height:1;cursor:pointer}
+.aoc-reminder-close:hover{background:rgba(255,255,255,.11)}
+.aoc-reminder-icon{width:64px;height:64px;display:grid;place-items:center;border-radius:20px;background:rgba(90,232,154,.1);border:1px solid rgba(90,232,154,.18);font-size:30px;margin-bottom:16px;box-shadow:0 10px 30px rgba(90,232,154,.08)}
+.aoc-reminder-dialog-body{padding-right:22px}
+.aoc-reminder-dialog-label{font-size:9px;font-weight:900;letter-spacing:.14em;color:var(--brand,#5ae89a)}
+.aoc-reminder-dialog h3{margin:6px 0 8px;font-size:22px;line-height:1.2}
+.aoc-reminder-dialog p{margin:0;color:var(--muted,#9ba8b6);font-size:13px;line-height:1.65}
+.aoc-reminder-dialog-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:10px;margin-top:22px}
+.aoc-reminder-dialog-actions .btn{min-height:46px;border-radius:13px;font-weight:900;justify-content:center}
+.aoc-reminder-dialog-actions .aoc-confirm-danger{background:#e85a64!important;border-color:#e85a64!important;color:#fff!important;box-shadow:0 8px 20px rgba(232,90,100,.18)}
+@media(max-width:480px){.aoc-reminder-modal{padding:12px;align-items:end}.aoc-reminder-dialog{border-radius:22px;padding:22px 18px calc(18px + env(safe-area-inset-bottom))}.aoc-reminder-icon{width:56px;height:56px;font-size:27px;border-radius:17px}.aoc-reminder-dialog h3{font-size:20px}.aoc-reminder-dialog-actions{grid-template-columns:1fr 1fr}}
