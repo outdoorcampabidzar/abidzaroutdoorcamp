@@ -1,0 +1,2 @@
+const { chromium } = require('playwright');
+(async()=>{const browser=await chromium.launch({headless:true, executablePath:'/usr/bin/chromium', args:['--no-sandbox']}); const page=await browser.newPage(); page.on('console', m=>console.log('CONSOLE',m.type(),m.text())); page.on('pageerror', e=>console.log('PAGEERROR',e.message)); page.on('requestfailed', r=>console.log('REQFAIL',r.url(),r.failure()?.errorText)); await page.goto('file:///mnt/data/inspect_latest/admin.html'); await page.waitForTimeout(3000); await browser.close();})();

@@ -28,8 +28,21 @@ const authCodeDisplay = document.getElementById("authCodeDisplay");
 const authCodeInput = document.getElementById("authCodeInput");
 const authCodeVerify = document.getElementById("authCodeVerify");
 const authCodeNew = document.getElementById("authCodeNew");
+const authLockOverlay = document.getElementById("authLockOverlay");
+
+function setAuthLock(locked) {
+  document.body.classList.toggle("auth-locked", locked);
+  authLockOverlay.classList.toggle("hidden", !locked);
+  authLockOverlay.setAttribute("aria-hidden", String(!locked));
+  page.inert = locked;
+  document.querySelectorAll("body > nav, body > .customer-service-float").forEach(el => {
+    if (locked) el.setAttribute("inert", "");
+    else el.removeAttribute("inert");
+  });
+}
 
 function hideCodePanel() {
+  setAuthLock(false);
   authCodePanel.classList.add("hidden");
   authCodeDisplay.textContent = "------";
   authCodeInput.value = "";
@@ -46,6 +59,7 @@ function showCodePanel(type, code) {
     : "Akun dibuat. Masukkan kode 6 digit yang tampil untuk mengaktifkan akun.";
   authCodeDisplay.textContent = pendingCode || "------";
   authCodePanel.classList.remove("hidden");
+  setAuthLock(true);
   authCodeInput.value = "";
   requestAnimationFrame(() => authCodeInput.focus());
 }
@@ -374,6 +388,17 @@ document.querySelectorAll("[data-password-toggle]").forEach(button => {
       willShow ? "Sembunyikan password" : "Tampilkan password"
     );
   });
+});
+
+document.addEventListener("keydown", event => {
+  if (!authLockOverlay.classList.contains("hidden") && event.key === "Escape") {
+    event.preventDefault();
+    authCodeInput.focus();
+  }
+});
+
+window.addEventListener("beforeunload", () => {
+  // Do not persist a successful verification flag in localStorage/sessionStorage.
 });
 
 const { data: { user } } = await supabase.auth.getUser();

@@ -8339,3 +8339,72 @@ body.aoc-modal-open{overflow:hidden}
 .aoc-reminder-dialog-actions .btn{min-height:46px;border-radius:13px;font-weight:900;justify-content:center}
 .aoc-reminder-dialog-actions .aoc-confirm-danger{background:#e85a64!important;border-color:#e85a64!important;color:#fff!important;box-shadow:0 8px 20px rgba(232,90,100,.18)}
 @media(max-width:480px){.aoc-reminder-modal{padding:12px;align-items:end}.aoc-reminder-dialog{border-radius:22px;padding:22px 18px calc(18px + env(safe-area-inset-bottom))}.aoc-reminder-icon{width:56px;height:56px;font-size:27px;border-radius:17px}.aoc-reminder-dialog h3{font-size:20px}.aoc-reminder-dialog-actions{grid-template-columns:1fr 1fr}}
+
+/* AOC - nama toko pada Pengingat Customer */
+.rental-reminder-location{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:.82rem;color:var(--muted,#8f9aa8);flex-wrap:wrap}
+.rental-reminder-location span{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.rental-reminder-location b{color:var(--text,#fff);font-size:.86rem}
+
+
+/* AOC STORE CATEGORY FILTER */
+.aoc-store-category-wrap{margin:12px 0 16px;padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.025)}
+.aoc-store-category-title{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin:0 0 9px}
+.aoc-store-category-bar{display:flex;gap:8px;flex-wrap:wrap}
+.aoc-store-category{appearance:none;border:1px solid rgba(255,255,255,.12);background:#10161b;color:inherit;border-radius:999px;padding:9px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:.18s ease}
+.aoc-store-category:hover{transform:translateY(-1px);border-color:rgba(102,230,168,.45)}
+.aoc-store-category.active{background:#63e2a5;color:#07110d;border-color:#63e2a5;box-shadow:0 5px 18px rgba(99,226,165,.14)}
+@media(max-width:620px){.aoc-store-category-bar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.aoc-store-category{width:100%;padding:10px 8px}.aoc-store-category:first-child{grid-column:1/-1}}
+
+
+/* AOC AUTH LOCK — blokir seluruh akses sampai kode random diverifikasi */
+.auth-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow: auto;
+}
+.auth-lock-overlay.hidden { display: none !important; }
+.auth-lock-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 7, 12, .86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.auth-lock-card {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: clamp(20px, 5vw, 34px);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 24px;
+  box-shadow: 0 30px 90px rgba(0,0,0,.5);
+}
+.auth-lock-icon {
+  width: 52px; height: 52px;
+  display: grid; place-items: center;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  background: rgba(83, 224, 160, .12);
+  font-size: 25px;
+}
+.auth-lock-card h2 { margin: 10px 0 6px; }
+.auth-lock-card > .muted { margin-bottom: 14px; }
+.auth-lock-card .auth-code-panel {
+  margin-top: 14px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.auth-lock-card .auth-code-head { display: none; }
+body.auth-locked { overflow: hidden !important; }
+@media (max-width: 620px) {
+  .auth-lock-overlay { padding: 10px; }
+  .auth-lock-card { max-height: calc(100vh - 20px); border-radius: 20px; }
+  .auth-lock-card .auth-code-display { font-size: 2.25rem; }
+}
