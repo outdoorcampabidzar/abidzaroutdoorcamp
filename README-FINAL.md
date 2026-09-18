@@ -9,11 +9,11 @@ MENU ADMIN:
 ATURAN RENTAL:
 - 1 hari = 28 jam.
 - Pengingat H-4 jam.
-- Denda terlambat = 10% dari total harga sewa, diterapkan sekali oleh database.
+- Denda terlambat = 100% dari total harga sewa, diterapkan sekali oleh database.
 
 WAJIB:
 1. Jalankan SQL utama sesuai kebutuhan.
-2. Jalankan PATCH-RENTAL-REMINDER-28H-4H-FEE10.sql.
+2. Jalankan PATCH-RENTAL-REMINDER-28H-4H-FEE100.sql.
 3. Jika memakai pg_cron, jadwalkan aoc_process_rental_reminders() setiap menit.
 4. Refresh Admin Panel.
 

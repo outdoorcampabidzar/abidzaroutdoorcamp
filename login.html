@@ -226,6 +226,7 @@
         </button>
 </form>
 <div class="notice hidden" id="authMessage"></div>
+<span id="authCodePanelPlaceholder" aria-hidden="true"></span>
 <section aria-live="polite" class="auth-code-panel hidden" id="authCodePanel">
 <div class="auth-code-head">
 <span class="badge">Kode Keamanan</span>
@@ -253,6 +254,18 @@
       </p>
 </section>
 </main>
+
+<!-- Full-page lock: seluruh halaman terkunci sampai kode keamanan diverifikasi. -->
+<div class="auth-lock-overlay hidden" id="authLockOverlay" aria-hidden="true">
+  <div class="auth-lock-backdrop" aria-hidden="true"></div>
+  <div class="card auth-lock-card" role="dialog" aria-modal="true" aria-labelledby="authLockTitle">
+    <div class="auth-lock-icon" aria-hidden="true">🔐</div>
+    <span class="badge">VERIFIKASI WAJIB</span>
+    <h2 id="authLockTitle">Verifikasi Kode Keamanan</h2>
+    <p class="muted">Akses halaman dikunci sampai kode 6 digit berhasil diverifikasi.</p>
+    <div id="authLockPanelHost"></div>
+  </div>
+</div>
 <script src="auth.js" type="module"></script>
 <a aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp" class="customer-service-float" href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan." rel="noopener noreferrer" target="_blank" title="Hubungi CS: +62 895-0934-9428">
 <span aria-hidden="true" class="customer-service-icon">

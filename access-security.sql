@@ -129,7 +129,7 @@ create policy "catalog images catalog insert" on storage.objects for insert with
 create policy "catalog images catalog update" on storage.objects for update using(bucket_id='catalog' and (public.has_permission('catalog.manage') or public.has_permission('*'))) with check(bucket_id='catalog' and (public.has_permission('catalog.manage') or public.has_permission('*')));
 create policy "catalog images catalog delete" on storage.objects for delete using(bucket_id='catalog' and (public.has_permission('catalog.manage') or public.has_permission('*')));
 
-revoke update on public.profiles from authenticated;grant update(full_name,phone,address,city,postal_code) on public.profiles to authenticated;
+revoke update on public.profiles from authenticated;grant update(full_name,phone,address,city,postal_code,avatar_url) on public.profiles to authenticated;
 grant update on public.site_settings to authenticated;
 grant select on public.admin_activity_logs to authenticated;
 notify pgrst,'reload schema';

@@ -147,6 +147,40 @@
 
         currentAdminUserId = user.id;
 
+        // Verifikasi kode login harus tercatat di server sebelum Admin Panel dibuka.
+        // Frontend/localStorage tidak dianggap sebagai bukti keamanan.
+        try {
+          const securityResult = await withTimeout(
+            supabase.rpc("admin_security_check"),
+            2500,
+            "Pemeriksaan verifikasi keamanan admin",
+          );
+          if (securityResult?.error) throw securityResult.error;
+          if (securityResult?.data !== true) {
+            root.innerHTML = `
+              <section class="container section">
+                <div class="notice error">
+                  <b>🔐 Verifikasi keamanan admin diperlukan.</b><br><br>
+                  Sesi login ditemukan, tetapi kode 6 digit belum diverifikasi atau sudah kedaluwarsa.
+                  Silakan login ulang untuk mendapatkan kode baru.<br><br>
+                  <a class="btn primary" href="login.html?next=admin.html">Login + Verifikasi Kode</a>
+                </div>
+              </section>`;
+            return false;
+          }
+        } catch (error) {
+          console.warn("Verifikasi keamanan admin gagal:", error);
+          root.innerHTML = `
+            <section class="container section">
+              <div class="notice error">
+                <b>🔐 Keamanan Admin belum dapat diverifikasi.</b><br><br>
+                Jalankan patch <b>PATCH-AUTH-LOGIN-DAN-AKTIVASI-KODE-6-DIGIT.sql</b>, lalu login ulang.<br><br>
+                <small>${esc(error?.message || "RPC admin_security_check tidak tersedia.")}</small>
+              </div>
+            </section>`;
+          return false;
+        }
+
         // access-security.sql menggunakan role super_admin, bukan lagi "admin".
         // Cek profile dengan timeout pendek, lalu fallback ke RPC permission.
         let profileRole = "user";
@@ -1131,7 +1165,7 @@
                 <div><span class="badge">Coin Shop</span><h3>${editingShopReward ? "Edit Hadiah" : "Tambah Hadiah"}</h3></div>
                 ${editingShopReward ? '<button id="cancelShopEdit" class="btn secondary small" type="button">Batal</button>' : ""}
               </div>
-              <p class="muted">Hadiah berupa <b>Voucher Gacha</b>. Setiap voucher memiliki <b>rarity + bobot probabilitas</b> sendiri. Contoh awal: Common 60%, Uncommon 25%, Rare 10%, Epic 4%, Legendary 1%. Nilai ini dapat diubah pada menu Voucher.</p>
+              <p class="muted">Hadiah berupa <b>Voucher Gacha</b>. Setiap voucher memiliki <b>rarity + bobot probabilitas</b> sendiri. Contoh awal: Common 60%, Uncommon 25%, Rare 100%, Epic 4%, Legendary 1%. Nilai ini dapat diubah pada menu Voucher.</p>
               <form id="shopRewardForm" class="form">
                 <label class="field"><span>Nama hadiah *</span><input class="input" name="title" required maxlength="100" value="${esc(reward.title)}" placeholder="Voucher Random Hemat"></label>
                 <label class="field"><span>Deskripsi</span><textarea class="input" name="description" rows="3" placeholder="Tukar coin untuk mendapatkan voucher acak">${esc(reward.description || "")}</textarea></label>
@@ -1170,7 +1204,7 @@
                 <label class="field"><span>Persentase minimum (%)</span><input id="coinMinPercent" class="input" type="number" min="0" max="100" step="1" value="${Number(setting?.coin_min_percent ?? 10)}"></label>
                 <label class="field"><span>Persentase maksimum (%)</span><input id="coinMaxPercent" class="input" type="number" min="0" max="100" step="1" value="${Number(setting?.coin_max_percent ?? 100)}"></label>
               </div>
-              <p class="muted">Contoh default <b>10%–100%</b>: transaksi Rp100.000 dapat menghasilkan reward acak Rp10.000–Rp100.000, yaitu sekitar <b>10–100 coin</b>. Hasil random dibuat di database.</p></div></div>
+              <p class="muted">Contoh default <b>100%–100%</b>: transaksi Rp100.000 dapat menghasilkan reward acak Rp10.000–Rp100.000, yaitu sekitar <b>10–100 coin</b>. Hasil random dibuat di database.</p></div></div>
             <div class="notice">🪙 <b>1 coin = Rp1.000</b> · Reward acak: <b>${Number(setting?.coin_min_percent ?? 10)}%–${Number(setting?.coin_max_percent ?? 100)}%</b></div>
             <div style="margin-top:12px"><button id="saveCoinSettings" class="btn" type="button">Simpan Pengaturan Coin</button></div>
           </section>`;
@@ -2155,10 +2189,10 @@
             const customerName = order.customer_name || "Customer";
             const phone = order.phone || "";
             const total = Number(order.rental_total ?? order.total ?? order.subtotal ?? 0) || 0;
-            const fee = Number(order.late_fee || 0) || (overdueNow ? Math.round(total * 0.10) : 0);
+            const fee = Number(order.late_fee || 0) || (overdueNow ? Math.round(total * 1.00) : 0);
             const digits = String(phone).replace(/\D/g, "").replace(/^0/, "62");
             const msg = overdueNow
-              ? `Halo ${customerName}, pengingat pesanan ${order.order_number}. Waktu pengembalian sudah lewat. Mohon segera mengembalikan seluruh barang rental. Denda keterlambatan 10% dari total sewa akan dikenakan.`
+              ? `Halo ${customerName}, pengingat pesanan ${order.order_number}. Waktu pengembalian sudah lewat. Mohon segera mengembalikan seluruh barang rental. Denda keterlambatan 100% dari total sewa akan dikenakan.`
               : `Halo ${customerName}, ini pengingat untuk pesanan ${order.order_number}. Waktu sewa akan berakhir ${validDue ? due.toLocaleString("id-ID") : "sesuai jadwal sewa"}. Mohon segera mempersiapkan pengembalian seluruh barang.`;
             let countdown = "Waktu belum tersedia";
             if (overdueNow) {
@@ -2170,12 +2204,12 @@
             }
             const badge = overdueNow ? "🔴 TERLAMBAT" : within4h ? "⚠️ SEGERA KEMBALI" : "🟢 MONITOR";
             const reminderState = reminderByOrder.get(String(order.id));
-            const reminderText = reminderState?.reminder_type === "overdue_fee" ? "Denda otomatis 10% aktif" : reminderState?.reminder_type === "4h_before_due" ? "Pengingat H-4 jam aktif" : "Belum masuk H-4 jam";
+            const reminderText = reminderState?.reminder_type === "overdue_fee" ? "Denda otomatis 100% aktif" : reminderState?.reminder_type === "4h_before_due" ? "Pengingat H-4 jam aktif" : "Belum masuk H-4 jam";
             const itemRows = lines.map(line => `<div class="rental-reminder-item"><div><strong>${esc(line.title_snapshot || "Item rental")}${line.variant_name_snapshot ? ` · ${esc(line.variant_name_snapshot)}` : ""}</strong><small>Jumlah: <b>${Number(line.quantity || 0)} unit</b> · ${rupiah(line.line_total || 0)}</small></div><span>${Number(line.quantity || 0)}×</span></div>`).join("");
-            return `<article class="card rental-reminder-card" data-monitor-order="${esc(order.id)}" data-order-code="${esc(order.order_number || "-")}" data-due-ms="${validDue ? dueMs : ""}"><div class="rental-reminder-head"><div><span class="badge reminder-live-badge">${badge}</span><h3>${esc(order.order_number || "-")}</h3><p><b>${esc(customerName)}</b> · ${esc(phone || "No. HP belum ada")}</p><div class="rental-reminder-location">📍 <span>Lokasi Toko</span> <b>${esc(order.location_name || "Belum dipilih")}</b></div></div><strong>${rupiah(total)}</strong></div><div class="rental-reminder-time"><div><small>BATAS WAKTU</small><b>${validDue ? due.toLocaleString("id-ID") : "Waktu belum tersedia"}</b></div><div><small>WAKTU TERSISA</small><b class="reminder-countdown" data-countdown>${esc(countdown)}</b></div><div><small>STATUS</small><b class="reminder-status">${esc(reminderText)}</b></div></div><div class="rental-reminder-items"><div class="rental-reminder-items-title">📦 Semua barang di-checkout (${lines.length} jenis / ${lines.reduce((n,l)=>n+Number(l.quantity||0),0)} unit)</div>${itemRows}</div><p class="muted">Periode: ${esc(formatRentalDate(order.rental_start))} → ${esc(formatRentalDate(order.rental_end))} · ${days} hari · 1 hari = 28 jam</p><div class="notice error reminder-fee" style="display:${overdueNow ? "block" : "none"}">🔴 Denda keterlambatan 10%: <b>${rupiah(fee || Math.round(total * 0.10))}</b></div><div class="actions">${digits ? `<a class="btn primary small" target="_blank" rel="noopener" href="https://wa.me/${digits}?text=${encodeURIComponent(msg)}">🔔 Ingatkan Customer</a>` : `<span class="muted">Nomor customer belum tersedia</span>`}<button class="btn danger small rental-reminder-delete" type="button">🗑️ Hapus</button></div></article>`;
+            return `<article class="card rental-reminder-card" data-monitor-order="${esc(order.id)}" data-order-code="${esc(order.order_number || "-")}" data-due-ms="${validDue ? dueMs : ""}"><div class="rental-reminder-head"><div><span class="badge reminder-live-badge">${badge}</span><h3>${esc(order.order_number || "-")}</h3><p><b>${esc(customerName)}</b> · ${esc(phone || "No. HP belum ada")}</p><div class="rental-reminder-location">📍 <span>Lokasi Toko</span> <b>${esc(order.location_name || "Belum dipilih")}</b></div></div><strong>${rupiah(total)}</strong></div><div class="rental-reminder-time"><div><small>BATAS WAKTU</small><b>${validDue ? due.toLocaleString("id-ID") : "Waktu belum tersedia"}</b></div><div><small>WAKTU TERSISA</small><b class="reminder-countdown" data-countdown>${esc(countdown)}</b></div><div><small>STATUS</small><b class="reminder-status">${esc(reminderText)}</b></div></div><div class="rental-reminder-items"><div class="rental-reminder-items-title">📦 Semua barang di-checkout (${lines.length} jenis / ${lines.reduce((n,l)=>n+Number(l.quantity||0),0)} unit)</div>${itemRows}</div><p class="muted">Periode: ${esc(formatRentalDate(order.rental_start))} → ${esc(formatRentalDate(order.rental_end))} · ${days} hari · 1 hari = 28 jam</p><div class="notice error reminder-fee" style="display:${overdueNow ? "block" : "none"}">🔴 Denda keterlambatan 100%: <b>${rupiah(fee || Math.round(total * 1.00))}</b></div><div class="actions">${digits ? `<a class="btn primary small" target="_blank" rel="noopener" href="https://wa.me/${digits}?text=${encodeURIComponent(msg)}">🔔 Ingatkan Customer</a>` : `<span class="muted">Nomor customer belum tersedia</span>`}<button class="btn danger small rental-reminder-delete" type="button">🗑️ Hapus</button></div></article>`;
           }).join("");
 
-          content.innerHTML = `<section class="card"><div class="admin-list-heading rental-reminder-heading"><div><span class="badge">CUSTOMER REMINDER MONITOR</span><h3>🔔 Pengingat Customer</h3><p class="muted">${rentalOrders.length} order rental dipantau · ${dueSoonCount} segera berakhir · ${overdueCount} terlambat.</p></div><div class="rental-reminder-toolbar"><button id="clearRentalReminderArea" class="btn danger small" type="button">🧹 Clear Area</button><button id="restoreRentalReminders" class="btn secondary small" type="button">↺ Pulihkan</button><button id="refreshRentalReminders" class="btn secondary small" type="button">↻ Muat Ulang</button></div></div>${renderStoreCategoryBar()}<div class="rental-reminder-rules"><b>Aturan:</b> 1 hari = 28 jam · pengingat customer mulai H-4 jam · denda keterlambatan = 10% dari seluruh harga sewa.</div><div id="rentalReminderList" class="rental-reminder-list">${cards || '<div class="notice">Belum ada order rental yang bisa dipantau.</div>'}</div></section>`;
+          content.innerHTML = `<section class="card"><div class="admin-list-heading rental-reminder-heading"><div><span class="badge">CUSTOMER REMINDER MONITOR</span><h3>🔔 Pengingat Customer</h3><p class="muted">${rentalOrders.length} order rental dipantau · ${dueSoonCount} segera berakhir · ${overdueCount} terlambat.</p></div><div class="rental-reminder-toolbar"><button id="clearRentalReminderArea" class="btn danger small" type="button">🧹 Clear Area</button><button id="restoreRentalReminders" class="btn secondary small" type="button">↺ Pulihkan</button><button id="refreshRentalReminders" class="btn secondary small" type="button">↻ Muat Ulang</button></div></div>${renderStoreCategoryBar()}<div class="rental-reminder-rules"><b>Aturan:</b> 1 hari = 28 jam · pengingat customer mulai H-4 jam · denda keterlambatan = 100% dari seluruh harga sewa.</div><div id="rentalReminderList" class="rental-reminder-list">${cards || '<div class="notice">Belum ada order rental yang bisa dipantau.</div>'}</div></section>`;
           content.querySelector("#refreshRentalReminders")?.addEventListener("click", renderRentalRemindersTab);
           bindStoreCategoryBar(content);
           content.querySelector("#clearRentalReminderArea")?.addEventListener("click", () => {
@@ -2236,7 +2270,7 @@
           }));
           startLiveRentalReminderClock();
         } catch (error) {
-          content.innerHTML=`<section class="card"><div class="notice error"><b>Monitor Pengingat Customer belum dapat dimuat.</b><br>${esc(error?.message || "Gagal memuat data.")}<br><small>Pastikan PATCH-RENTAL-REMINDER-28H-4H-FEE10.sql sudah dijalankan di Supabase.</small></div></section>`;
+          content.innerHTML=`<section class="card"><div class="notice error"><b>Monitor Pengingat Customer belum dapat dimuat.</b><br>${esc(error?.message || "Gagal memuat data.")}<br><small>Pastikan PATCH-RENTAL-REMINDER-28H-4H-FEE100.sql sudah dijalankan di Supabase.</small></div></section>`;
         }
       }
 
@@ -2257,7 +2291,7 @@
               const mins = Math.floor(Math.abs(diff) / 60000);
               if (countdownEl) countdownEl.textContent = `Terlambat ${Math.floor(mins / 60)}j ${mins % 60}m`;
               if (badgeEl) badgeEl.textContent = "🔴 TERLAMBAT";
-              if (statusEl) statusEl.textContent = "Denda keterlambatan 10% aktif";
+              if (statusEl) statusEl.textContent = "Denda keterlambatan 100% aktif";
               if (feeEl) feeEl.style.display = "block";
             } else {
               const totalSeconds = Math.floor(diff / 1000);
@@ -4481,7 +4515,7 @@
         }
         if (action === "late_fee")
           amount = Number(
-            prompt("Nominal denda keterlambatan:", order.late_fee || 0) || 0,
+            Math.round(Number(order.late_fee_base || order.subtotal || order.total || 0) * 1.00),
           );
         if (action === "deposit_received")
           amount = Number(
@@ -5038,6 +5072,28 @@
         });
       };
 
+      let adminSecurityHeartbeat = null;
+
+      function startAdminSecurityHeartbeat() {
+        if (adminSecurityHeartbeat) clearInterval(adminSecurityHeartbeat);
+        const check = async () => {
+          try {
+            const result = await supabase.rpc("admin_security_check");
+            if (result?.error || result?.data !== true) {
+              clearInterval(adminSecurityHeartbeat);
+              adminSecurityHeartbeat = null;
+              location.href = "login.html?next=admin.html";
+            }
+          } catch (_) {
+            // Jangan mengeluarkan admin hanya karena jaringan sesaat putus.
+          }
+        };
+        adminSecurityHeartbeat = setInterval(check, 5 * 60 * 1000);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") check();
+        }, { passive: true });
+      }
+
       async function initialize() {
         try {
           const allowed = await verifyAdmin();
@@ -5054,6 +5110,7 @@
 
           // Tampilkan shell admin segera. Data berat dimuat setelah menu dibuka.
           renderShell();
+          startAdminSecurityHeartbeat();
         } catch (error) {
           const rawMessage = String(error?.message || "Admin panel gagal dimuat.");
           const needsSaleRentalMigration =

@@ -29,12 +29,16 @@ const authCodeInput = document.getElementById("authCodeInput");
 const authCodeVerify = document.getElementById("authCodeVerify");
 const authCodeNew = document.getElementById("authCodeNew");
 const authLockOverlay = document.getElementById("authLockOverlay");
+const authLockPanelHost = document.getElementById("authLockPanelHost");
+const authCodePanelPlaceholder = document.getElementById("authCodePanelPlaceholder");
 
 function setAuthLock(locked) {
   document.body.classList.toggle("auth-locked", locked);
-  authLockOverlay.classList.toggle("hidden", !locked);
-  authLockOverlay.setAttribute("aria-hidden", String(!locked));
-  page.inert = locked;
+  if (authLockOverlay) {
+    authLockOverlay.classList.toggle("hidden", !locked);
+    authLockOverlay.setAttribute("aria-hidden", String(!locked));
+  }
+  if (page) page.inert = locked;
   document.querySelectorAll("body > nav, body > .customer-service-float").forEach(el => {
     if (locked) el.setAttribute("inert", "");
     else el.removeAttribute("inert");
@@ -44,6 +48,9 @@ function setAuthLock(locked) {
 function hideCodePanel() {
   setAuthLock(false);
   authCodePanel.classList.add("hidden");
+  if (authCodePanelPlaceholder?.parentNode) {
+    authCodePanelPlaceholder.parentNode.insertBefore(authCodePanel, authCodePanelPlaceholder.nextSibling);
+  }
   authCodeDisplay.textContent = "------";
   authCodeInput.value = "";
   pendingCodeType = null;
@@ -58,6 +65,7 @@ function showCodePanel(type, code) {
     ? "Setiap login menghasilkan kode 6 digit acak. Masukkan kode yang tampil untuk melanjutkan."
     : "Akun dibuat. Masukkan kode 6 digit yang tampil untuk mengaktifkan akun.";
   authCodeDisplay.textContent = pendingCode || "------";
+  if (authLockPanelHost) authLockPanelHost.appendChild(authCodePanel);
   authCodePanel.classList.remove("hidden");
   setAuthLock(true);
   authCodeInput.value = "";
@@ -391,7 +399,7 @@ document.querySelectorAll("[data-password-toggle]").forEach(button => {
 });
 
 document.addEventListener("keydown", event => {
-  if (!authLockOverlay.classList.contains("hidden") && event.key === "Escape") {
+  if (authLockOverlay && !authLockOverlay.classList.contains("hidden") && event.key === "Escape") {
     event.preventDefault();
     authCodeInput.focus();
   }

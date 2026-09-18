@@ -8,7 +8,7 @@ INSTALASI RINGKAS
    - rental-calendar.sql
    - PATCH-BULK-RETURN-INSPECTION.sql
    - PATCH-RENTAL-ADMIN-WORKFLOW.sql
-   - PATCH-RENTAL-REMINDER-28H-4H-FEE10.sql
+   - PATCH-RENTAL-REMINDER-28H-4H-FEE100.sql
    - access-security.sql
 4. Untuk otomatis setiap menit, aktifkan pg_cron dan schedule fungsi reminder sesuai patch.
 5. Login sebagai admin lalu refresh.

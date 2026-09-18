@@ -9,4 +9,4 @@ Perbaikan utama:
 - Filter order cancelled/completed diperbaiki.
 - Sorting dan deteksi overdue memakai field waktu yang benar.
 
-SQL database tidak perlu diganti untuk bug JavaScript ini. Jika patch reminder belum dijalankan, jalankan `PATCH-RENTAL-REMINDER-28H-4H-FEE10.sql`.
+SQL database tidak perlu diganti untuk bug JavaScript ini. Jika patch reminder belum dijalankan, jalankan `PATCH-RENTAL-REMINDER-28H-4H-FEE100.sql`.
