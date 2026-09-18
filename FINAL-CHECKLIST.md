@@ -32,3 +32,16 @@
 3. Logout/login ulang.
 4. Hard refresh browser.
 5. Tes satu item Sewa + Jual pada dua toko.
+
+### PATCH FINALISASI TANPA VOUCHER
+Jalankan `PATCH-FINALISASI-TANPA-VOUCHER.sql` setelah patch workflow/inspection. Finalisasi `Dikembalikan → Selesai` tidak memakai, menambah, atau mengurangi voucher.
+
+## ULTIMATE FINAL
+- [ ] Jalankan `AOC-ULTIMATE-FINAL.sql` paling akhir.
+- [ ] Tes Jual di Toko 1/Toko 2.
+- [ ] Tes rental overlap per toko.
+- [ ] Tes return + inspection seluruh item.
+- [ ] Tes Finalisasi dua kali.
+- [ ] Pastikan voucher tidak berubah saat finalisasi.
+- [ ] Pastikan denda keterlambatan 100%.
+- [ ] Pastikan Pesanan Selesai masuk kategori sendiri.

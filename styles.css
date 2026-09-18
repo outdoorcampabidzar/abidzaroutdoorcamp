@@ -8408,3 +8408,21 @@ body.auth-locked { overflow: hidden !important; }
   .auth-lock-card { max-height: calc(100vh - 20px); border-radius: 20px; }
   .auth-lock-card .auth-code-display { font-size: 2.25rem; }
 }
+
+/* AOC: aksi pesanan selesai */
+.rental-complete-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* AOC - Modern delete-order confirmation */
+.aoc-delete-order-summary{margin-top:16px;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.035);padding:5px 14px}
+.aoc-delete-order-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.aoc-delete-order-row:last-child{border-bottom:0}
+.aoc-delete-order-row span{font-size:11px;color:var(--muted,#9ba8b6);font-weight:700}
+.aoc-delete-order-row strong{font-size:13px;text-align:right;overflow-wrap:anywhere}
+.aoc-delete-status{display:inline-flex;align-items:center;border-radius:999px;padding:5px 10px;background:rgba(251,113,133,.14);border:1px solid rgba(251,113,133,.28);color:#ff8798;font-size:11px}
+.aoc-delete-warning{display:grid;grid-template-columns:auto 1fr;gap:10px;margin-top:14px;padding:13px 14px;border-radius:15px;border:1px solid rgba(245,158,11,.34);background:rgba(245,158,11,.075);color:#f8cf83;font-size:12px;line-height:1.55}
+.aoc-delete-warning strong{color:#ffd166;white-space:nowrap}
+.aoc-delete-warning span{color:#e8c985}
+.aoc-delete-question{margin-top:13px;font-size:12px;color:var(--muted,#9ba8b6);line-height:1.55}
+.aoc-reminder-dialog .aoc-confirm-danger{background:linear-gradient(135deg,#ff5968,#e32645)!important;border-color:#ff5968!important;color:#fff!important;box-shadow:0 10px 28px rgba(239,68,68,.24)}
+.aoc-reminder-dialog .aoc-confirm-danger:hover{filter:brightness(1.05);transform:translateY(-1px)}
+@media(max-width:480px){.aoc-delete-order-row{align-items:flex-start;flex-direction:column;gap:4px}.aoc-delete-order-row strong{text-align:left}.aoc-delete-warning{grid-template-columns:1fr}.aoc-delete-warning strong{white-space:normal}}

@@ -1940,11 +1940,14 @@
       function conditionLabel(value) {
         return ({good:"Baik",dirty:"Kotor / perlu dicuci",damaged:"Rusak",lost:"Hilang"}[value] || value || "Belum diperiksa");
       }
+      let rentalReturnCategory = "operational";
       function renderRentalIncomingOrders() {
-        const rentalOrders = filterOrdersByStore(orders
+        const allRentalOrders = filterOrdersByStore(orders
           .filter(o => o.status !== "cancelled" && rentalOrderLines(o).length)
           .sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))));
-        const active = rentalOrders.filter(o => o.status !== "completed");
+        const active = allRentalOrders.filter(o => o.status !== "completed");
+        const completed = allRentalOrders.filter(o => o.status === "completed");
+        const rentalOrders = rentalReturnCategory === "completed" ? completed : rentalReturnCategory === "all" ? allRentalOrders : active;
         const card = (order) => {
           const lines = rentalOrderLines(order), complete = rentalOrderIsComplete(order);
           const canInspect = ["paid","returned"].includes(order.status) && !complete;
@@ -1971,16 +1974,17 @@
                     </div>`;
                   }).join("")}
                 </div>
-                <div class="rental-complete-bar"><span>${complete?"✅ Semua barang sudah dikembalikan dan tercatat.":"⏳ Semua barang wajib diperiksa sebelum pesanan selesai."}</span>${canInspect?`<button class="btn primary" data-rental-bulk-return="${esc(order.id)}" type="button">Simpan Semua Pengembalian</button>`:""}${order.status === "returned" && complete?`<button class="btn primary small" data-finalize-rental="${esc(order.id)}" type="button">Finalisasi → Selesai</button>`:""}${order.status === "completed"?`<span class="rental-complete-ok">✓ Selesai & dikembalikan</span>`:""}</div>
+                <div class="rental-complete-bar"><span>${complete?"✅ Semua barang sudah dikembalikan dan tercatat.":"⏳ Semua barang wajib diperiksa sebelum pesanan selesai."}</span>${canInspect?`<button class="btn primary" data-rental-bulk-return="${esc(order.id)}" type="button">Simpan Semua Pengembalian</button>`:""}${order.status === "returned" && complete?`<button class="btn primary small" data-finalize-rental="${esc(order.id)}" type="button">Finalisasi → Selesai</button>`:""}${order.status === "completed"?`<div class="rental-complete-actions"><span class="rental-complete-ok">✓ Selesai & dikembalikan</span><button class="btn danger small" data-delete-rental-order="${esc(order.id)}" type="button">🗑️ Hapus</button></div>`:`<div class="rental-delete-actions"><button class="btn danger small" data-delete-rental-order="${esc(order.id)}" type="button">🗑️ Hapus Pesanan</button></div>`}</div>
               </section>
             </div>
           </details>`;
         };
-        return `<section class="card rental-incoming-section"><div class="admin-list-heading"><div><span class="badge">CHECKOUT → SEWA</span><h3>Pesanan Sewa Masuk</h3><p class="muted">${active.length} pesanan operasional · ${rentalOrders.length-active.length} selesai.</p></div><button id="refreshRentalOrders" class="btn secondary small" type="button">Muat Ulang</button></div><div class="rental-workflow-note"><b>Alur:</b> Checkout → Dibayar → Sewa → Barang kembali → <b>Checklist semua barang</b> → Dikembalikan → <b>Selesai</b></div><div class="rental-incoming-list">${rentalOrders.map(card).join("") || '<div class="notice">Belum ada pesanan sewa dari checkout.</div>'}</div></section>`;
+        return `<section class="card rental-incoming-section"><div class="admin-list-heading"><div><span class="badge">CHECKOUT → SEWA</span><h3>Pesanan Sewa Masuk</h3><p class="muted">${active.length} operasional · ${completed.length} selesai · ${allRentalOrders.length} total.</p></div><button id="refreshRentalOrders" class="btn secondary small" type="button">Muat Ulang</button></div><div class="rental-return-tabs" role="tablist"><button class="btn small ${rentalReturnCategory === "operational" ? "primary" : "secondary"}" data-rental-return-category="operational" type="button">🟡 Operasional (${active.length})</button><button class="btn small ${rentalReturnCategory === "completed" ? "primary" : "secondary"}" data-rental-return-category="completed" type="button">✅ Pesanan Selesai (${completed.length})</button><button class="btn small ${rentalReturnCategory === "all" ? "primary" : "secondary"}" data-rental-return-category="all" type="button">📋 Semua (${allRentalOrders.length})</button></div><div class="rental-workflow-note"><b>Alur:</b> Checkout → Dibayar → Sewa → Barang kembali → <b>Checklist semua barang</b> → Dikembalikan → <b>Selesai</b></div><div class="rental-incoming-list">${rentalOrders.map(card).join("") || '<div class="notice">Tidak ada pesanan pada kategori ini.</div>'}</div></section>`;
       }
       function bindRentalIncomingEvents() {
         const content=document.getElementById("adminContent");
         content.querySelector("#refreshRentalOrders")?.addEventListener("click", refreshOrders);
+        content.querySelectorAll("[data-rental-return-category]").forEach(btn => btn.addEventListener("click", () => { rentalReturnCategory = btn.dataset.rentalReturnCategory || "operational"; renderRentalReturnsTab(); }));
         bindStoreCategoryBar(content);
         content.querySelectorAll("[data-rental-bulk-return]").forEach(btn=>btn.addEventListener("click",async()=>{
           const order=orders.find(o=>String(o.id)===String(btn.dataset.rentalBulkReturn));
@@ -2006,7 +2010,38 @@
           if(error){btn.disabled=false;btn.textContent="Simpan Semua Pengembalian";return showAdminMessage(`${error.message}. Jalankan PATCH-BULK-RETURN-INSPECTION.sql.`,"error");}
           await refreshOrders();showAdminMessage(`${order.order_number}: semua kondisi barang berhasil disimpan dalam satu transaksi dan pesanan dikembalikan.`,"success");
         }));
-        content.querySelectorAll("[data-finalize-rental]").forEach(btn=>btn.addEventListener("click",async()=>{const order=orders.find(o=>String(o.id)===String(btn.dataset.finalizeRental));if(!order||order.status!=="returned"||!rentalOrderIsComplete(order))return showAdminMessage("Checklist pengembalian belum lengkap.","error");if(!confirm(`Finalisasi ${order.order_number} menjadi Selesai?`))return;btn.disabled=true;const {error}=await supabase.rpc("secure_admin_update_order_status",{a:order.id,b:"completed",c:"Semua barang dikembalikan dan diperiksa."});if(error){btn.disabled=false;return showAdminMessage(error.message,"error");}await refreshOrders();showAdminMessage(`${order.order_number} selesai dan dikembalikan.` ,"success");}));
+        content.querySelectorAll("[data-finalize-rental]").forEach(btn=>btn.addEventListener("click",async()=>{const order=orders.find(o=>String(o.id)===String(btn.dataset.finalizeRental));if(!order||order.status!=="returned"||!rentalOrderIsComplete(order))return showAdminMessage("Checklist pengembalian belum lengkap.","error");if(!confirm(`Finalisasi ${order.order_number} menjadi Selesai?`))return;btn.disabled=true;const {data,error}=await supabase.rpc("secure_admin_finalize_rental",{p_order_id:order.id,p_admin_notes:"Semua barang dikembalikan dan diperiksa."});if(error){btn.disabled=false;return showAdminMessage(error.message,"error");}await refreshOrders();showAdminMessage(`${order.order_number} selesai. Denda keterlambatan 100% dihitung server-side dan finalisasi tidak memakai voucher.` ,"success");}));
+        content.querySelectorAll("[data-delete-rental-order]").forEach(btn=>btn.addEventListener("click",async()=>{
+          const order=orders.find(o=>String(o.id)===String(btn.dataset.deleteRentalOrder));
+          if(!order) return showAdminMessage("Pesanan tidak ditemukan.","error");
+
+          const statusText = statusLabels[order.status] || order.status || "-";
+          const confirmed = await window.aocReminderConfirm({
+            icon: "🗑️",
+            title: "Hapus Pesanan Permanen?",
+            confirmText: "Hapus Pesanan",
+            danger: true,
+            message: `
+              <div class="aoc-delete-order-summary">
+                <div class="aoc-delete-order-row"><span>Kode Order</span><strong>${esc(order.order_number)}</strong></div>
+                <div class="aoc-delete-order-row"><span>Customer</span><strong>${esc(order.customer_name || "-")}</strong></div>
+                <div class="aoc-delete-order-row"><span>Status</span><b class="aoc-delete-status">${esc(statusText)}</b></div>
+              </div>
+              <div class="aoc-delete-warning">
+                <strong>⚠️ Perhatian</strong>
+                <span>Semua data pesanan terkait akan dihapus permanen dan tidak dapat dibatalkan. Stok/kuota yang masih tercatat terpakai akan dikembalikan oleh server.</span>
+              </div>
+              <div class="aoc-delete-question">Pastikan Anda benar-benar ingin menghapus pesanan ini.</div>
+            `
+          });
+          if(!confirmed) return;
+
+          const oldText=btn.innerHTML;btn.disabled=true;btn.innerHTML="⏳ Menghapus...";
+          const {data,error}=await supabase.rpc("admin_delete_order",{p_order_id:order.id});
+          if(error){btn.disabled=false;btn.innerHTML=oldText;console.error("admin_delete_rental_order",error);return showAdminMessage(error.message||"Gagal menghapus pesanan.","error");}
+          await refreshOrders();
+          showAdminMessage(data?.message || `${order.order_number} berhasil dihapus permanen.`,"success");
+        }));
       }
 
       let aocSelectedStoreCategory = "all";
@@ -2409,7 +2444,7 @@
               </div>
 
               <label class="field catalog-upload-field">
-                <span>Upload gambar utama *</span>
+                <span>Upload gambar utama</span>
                 <input
                   id="rentalImageUrl"
                   name="image_url"
@@ -2425,7 +2460,7 @@
                 <small id="catalogPrimaryUploadStatus" class="muted">${
                   item.image_url
                     ? "Gambar utama tersimpan. Pilih file baru untuk menggantinya."
-                    : "Pilih JPG, PNG, WEBP, atau GIF. Maksimal 8 MB."
+                    : "Opsional. Pilih JPG, PNG, WEBP, atau GIF. Maksimal 8 MB."
                 }</small>
               </label>
 
@@ -3354,10 +3389,12 @@
         const values = Object.fromEntries(new FormData(form));
         const formData = new FormData(form);
         const button = document.getElementById("saveRentalButton");
+        const wasEditing = Boolean(editingItem);
 
-        let categoryId;
+        if (button.disabled) return;
+
+        // Validasi dilakukan sebelum INSERT agar tidak membuat data setengah jadi.
         try {
-          categoryId = await resolveCategoryId(values.category_name);
           parseCatalogLines(values.variants, 3);
           parseCatalogLines(values.inventory_units, 3);
           parseCatalogLines(values.price_tiers, 4);
@@ -3366,12 +3403,22 @@
           return;
         }
 
+        let categoryId = null;
+        try {
+          // Untuk item baru, kategori dibuat di server dalam transaksi yang sama.
+          // Ini menghindari kegagalan INSERT hanya karena kategori baru belum ada.
+          if (wasEditing) categoryId = await resolveCategoryId(values.category_name);
+        } catch (error) {
+          showAdminMessage(`Kategori gagal disimpan: ${error.message}`, "error");
+          return;
+        }
+
         const payload = {
           title: String(values.title || "").trim(),
-          slug: slugify(values.slug),
+          slug: slugify(values.slug || values.title),
           type: "product",
           description: String(values.description || "").trim(),
-          image_url: String(values.image_url || "").trim(),
+          image_url: String(values.image_url || "").trim() || null,
           price: Number(values.price || 0),
           sale_price: Number(values.sale_price || 0),
           stock: Number(values.stock || 0),
@@ -3389,76 +3436,113 @@
           is_active: formData.has("is_active"),
         };
 
-        if (!payload.image_url) {
-          showAdminMessage(
-            "Upload gambar utama terlebih dahulu sampai prosesnya berhasil.",
-            "error",
-          );
+        if (!payload.title) {
+          showAdminMessage("Nama item wajib diisi.", "error");
           return;
         }
-
         if (!payload.slug) {
           showAdminMessage("Slug item tidak valid.", "error");
           return;
         }
+        if (!payload.description) {
+          showAdminMessage("Deskripsi wajib diisi.", "error");
+          return;
+        }
+        if (payload.price < 0 || payload.sale_price < 0 || payload.stock < 0 || payload.deposit < 0) {
+          showAdminMessage("Harga, stok, dan deposit tidak boleh bernilai negatif.", "error");
+          return;
+        }
 
         button.disabled = true;
-        button.textContent = "Menyimpan...";
+        button.textContent = wasEditing ? "Menyimpan perubahan..." : "Menambahkan item...";
 
-        const query = editingItem
-          ? supabase
+        try {
+          let savedItem;
+
+          if (!wasEditing) {
+            // CREATE BARU: gunakan RPC transaksional.
+            // Semua tabel item + kategori + varian + inventaris + harga paket
+            // disimpan dalam satu transaksi PostgreSQL. Jika satu bagian gagal,
+            // seluruh INSERT di-rollback otomatis.
+            const variants = parseCatalogLines(values.variants, 3).map(([name, capacity, stock]) => ({
+              name,
+              capacity: capacity || null,
+              stock: Math.max(0, Number(stock || 0)),
+            }));
+            const inventory = parseCatalogLines(values.inventory_units, 3).map(([number, condition, status, notes]) => ({
+              inventory_number: number,
+              condition,
+              status,
+              notes: notes || null,
+            }));
+            const priceTiers = parseCatalogLines(values.price_tiers, 4).map(([variantName, label, days, price]) => ({
+              variant_name: variantName,
+              label,
+              duration_days: Math.max(1, Number(days || 1)),
+              price: Math.max(0, Number(price || 0)),
+            }));
+            const gallery = String(values.gallery_urls || "")
+              .split(/\r?\n/)
+              .map((url) => url.trim())
+              .filter(Boolean);
+
+            const { data, error } = await supabase.rpc("secure_admin_create_rental_item", {
+              p_payload: payload,
+              p_category_name: String(values.category_name || "").trim() || null,
+              p_gallery_urls: gallery,
+              p_variants: variants,
+              p_inventory_units: inventory,
+              p_price_tiers: priceTiers,
+            });
+
+            if (error) throw error;
+            const id = data?.id || data?.item_id || data;
+            if (!id) throw new Error("Server tidak mengembalikan ID item baru.");
+            savedItem = { id };
+          } else {
+            const { data, error } = await supabase
               .from("items")
               .update(payload)
               .eq("id", editingItem.id)
               .eq("type", "product")
               .select("id")
-              .single()
-          : supabase.from("items").insert(payload).select("id").single();
+              .single();
+            if (error) throw error;
+            savedItem = data;
 
-        const { data: savedItem, error } = await query;
+            await syncRentalRelations(
+              savedItem.id,
+              values,
+              payload.image_url,
+              payload.title,
+            );
+          }
 
-        button.disabled = false;
-        button.textContent = editingItem
-          ? "Simpan Perubahan"
-          : "Tambah Item";
+          editingItem = null;
+          await refreshItems();
+          renderShell();
 
-        if (error) {
           showAdminMessage(
-            error.code === "23505"
-              ? "Slug sudah digunakan. Gunakan slug lain."
-              : error.message,
+            wasEditing
+              ? "Item sewa berhasil diperbarui."
+              : "Item sewa berhasil ditambahkan dan seluruh data berhasil disimpan.",
+            "success",
+          );
+        } catch (error) {
+          console.error("saveRental error:", error);
+          const message = error?.message || String(error);
+          showAdminMessage(
+            message.includes("catalog.manage") || message.includes("Izin")
+              ? `Tidak memiliki izin katalog: ${message}`
+              : message.includes("23505") || message.toLowerCase().includes("duplicate") || message.toLowerCase().includes("unique")
+                ? "Data duplikat. Periksa slug, nomor inventaris, atau kombinasi harga paket."
+                : `Gagal menambahkan item: ${message}`,
             "error",
           );
-          return;
-        }
-
-        try {
-          await syncRentalRelations(
-            savedItem.id,
-            values,
-            payload.image_url,
-            payload.title,
-          );
-        } catch (relationError) {
+        } finally {
           button.disabled = false;
-          showAdminMessage(
-            `Item tersimpan, tetapi data lanjutan gagal: ${relationError.message}`,
-            "error",
-          );
-          return;
+          button.textContent = wasEditing ? "Simpan Perubahan" : "Tambah Item";
         }
-
-        const wasEditing = Boolean(editingItem);
-        editingItem = null;
-        await refreshItems();
-        renderShell();
-
-        showAdminMessage(
-          wasEditing
-            ? "Item sewa berhasil diperbarui."
-            : "Item sewa berhasil ditambahkan.",
-          "success",
-        );
       }
 
       function renderTripTab() {
@@ -3596,13 +3680,13 @@
               </label>
 
               <label class="field catalog-upload-field">
-                <span>Upload gambar utama *</span>
+                <span>Upload gambar utama</span>
                 <input id="tripImageUrl" name="image_url" type="hidden" value="${esc(item.image_url || "")}">
                 <input id="tripPrimaryUpload" class="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
                 <small id="tripPrimaryUploadStatus" class="muted">${
                   item.image_url
                     ? "Gambar utama tersimpan. Pilih file baru untuk menggantinya."
-                    : "Pilih JPG, PNG, WEBP, atau GIF. Maksimal 8 MB."
+                    : "Opsional. Pilih JPG, PNG, WEBP, atau GIF. Maksimal 8 MB."
                 }</small>
               </label>
               <div id="tripPreviewWrap" class="admin-image-preview ${item.image_url ? "" : "hidden"}">
@@ -4152,6 +4236,9 @@
             saveOrderStatus(button.dataset.saveOrder);
           });
         });
+        document.querySelectorAll("[data-delete-order]").forEach((button) => {
+          button.addEventListener("click", () => deleteOrderPermanently(button.dataset.deleteOrder));
+        });
         document
           .querySelectorAll("[data-payment-action]")
           .forEach((button) =>
@@ -4286,7 +4373,7 @@
                 )}?text=${encodeURIComponent(`Halo ${order.customer_name}, kami menghubungi terkait pesanan ${order.order_number}.`)}">Hubungi Pelanggan</a>
               <button class="btn secondary small" data-print-order="${order.id}" type="button">Cetak Invoice</button>
               <button class="btn secondary small" data-print-order="${order.id}" type="button">Unduh PDF</button>
-              ${can("orders.manage") ? `<button class="btn danger small" data-order-operation="cancel" data-order-id="${order.id}" type="button">Batalkan</button>` : ""}
+              ${can("*") ? `<button class="btn danger small" data-delete-order="${order.id}" type="button">🗑️ Hapus</button>` : ""}${can("orders.manage") ? `<button class="btn danger small" data-order-operation="cancel" data-order-id="${order.id}" type="button">Batalkan</button>` : ""}
               ${can("finance.manage") ? `<button class="btn secondary small" data-order-operation="refund" data-order-id="${order.id}" type="button">Refund</button>` : ""}
               ${can("orders.manage") || can("warehouse.manage") ? `<button class="btn secondary small" data-order-operation="late_fee" data-order-id="${order.id}" type="button">Denda</button>` : ""}
               ${can("finance.manage") || can("warehouse.manage") ? `<button class="btn secondary small" data-order-operation="deposit_received" data-order-id="${order.id}" type="button">Deposit Diterima</button><button class="btn secondary small" data-order-operation="deposit_returned" data-order-id="${order.id}" type="button">Deposit Dikembalikan</button>` : ""}
@@ -4363,6 +4450,54 @@
         } catch (error) {
           showAdminMessage(error?.message || "Gagal memuat pesanan.", "error");
         }
+      }
+
+      async function deleteOrderPermanently(orderId) {
+        const order = orders.find((entry) => String(entry.id) === String(orderId));
+        if (!order) {
+          showAdminMessage("Pesanan tidak ditemukan.", "error");
+          return;
+        }
+        if (!can("*")) {
+          showAdminMessage("Hanya Super Admin yang dapat menghapus pesanan.", "error");
+          return;
+        }
+
+        const statusText = statusLabels[order.status] || order.status || "-";
+        const confirmed = await window.aocReminderConfirm({
+          icon: "🗑️",
+          title: "Hapus Pesanan Permanen?",
+          confirmText: "Hapus Pesanan",
+          danger: true,
+          message: `
+            <div class="aoc-delete-order-summary">
+              <div class="aoc-delete-order-row"><span>Kode Order</span><strong>${esc(order.order_number)}</strong></div>
+              <div class="aoc-delete-order-row"><span>Customer</span><strong>${esc(order.customer_name || "-")}</strong></div>
+              <div class="aoc-delete-order-row"><span>Status</span><b class="aoc-delete-status">${esc(statusText)}</b></div>
+            </div>
+            <div class="aoc-delete-warning">
+              <strong>⚠️ Perhatian</strong>
+              <span>Semua data pesanan terkait akan dihapus permanen dan tidak dapat dibatalkan. Stok/kuota yang masih tercatat terpakai akan dikembalikan oleh server.</span>
+            </div>
+            <div class="aoc-delete-question">Pastikan Anda benar-benar ingin menghapus pesanan ini.</div>
+          `
+        });
+        if (!confirmed) return;
+
+        const button = document.querySelector(`[data-delete-order="${orderId}"]`) || document.querySelector(`[data-delete-rental-order="${orderId}"]`);
+        const oldText = button?.innerHTML;
+        if (button) { button.disabled = true; button.innerHTML = "⏳ Menghapus..."; }
+
+        const { data, error } = await supabase.rpc("admin_delete_order", { p_order_id: order.id });
+        if (error) {
+          if (button) { button.disabled = false; button.innerHTML = oldText || "🗑️ Hapus"; }
+          console.error("admin_delete_order", error);
+          showAdminMessage(error.message || "Gagal menghapus pesanan.", "error");
+          return;
+        }
+
+        await refreshOrders();
+        showAdminMessage(data?.message || `${order.order_number} berhasil dihapus permanen.`, "success");
       }
 
       async function deleteAllOrders() {
@@ -5044,11 +5179,13 @@
           const modal = document.getElementById("aocReminderConfirmModal");
           if (!modal) return resolve(window.confirm(String(message).replace(/<[^>]*>/g, "")));
           const iconEl = modal.querySelector("[data-confirm-icon]");
+          const labelEl = modal.querySelector("[data-confirm-label]");
           const titleEl = modal.querySelector("[data-confirm-title]");
           const messageEl = modal.querySelector("[data-confirm-message]");
           const okBtn = modal.querySelector("[data-confirm-ok]");
           const cancelBtn = modal.querySelector("[data-confirm-cancel]");
           iconEl.textContent = icon;
+          if (labelEl) labelEl.textContent = danger ? "KONFIRMASI PENGHAPUSAN" : "KONFIRMASI";
           titleEl.textContent = title;
           messageEl.innerHTML = message;
           okBtn.textContent = confirmText;
