@@ -1,7 +1,7 @@
-import { supabase, rupiah, esc, message, addCart, getCart, updateCartBadge, cartStorageGet, cartStorageSet } from "./app.js";
+import { supabase, rupiah, esc, message, addCart, getCart, updateCartBadge } from "./app.js";
 
 let catalogLocations = [];
-let selectedCatalogLocationId = cartStorageGet("aoc_location_id") || "";
+let selectedCatalogLocationId = localStorage.getItem("aoc_location_id") || "";
 
 function locationStock(item, variantId = null) {
   const rows = item.item_location_stock || [];
@@ -27,7 +27,7 @@ async function loadCatalogLocations() {
   catalogLocations = data || [];
   if (!catalogLocations.some(x => String(x.id) === String(selectedCatalogLocationId))) {
     selectedCatalogLocationId = catalogLocations[0]?.id || "";
-    if (selectedCatalogLocationId) cartStorageSet("aoc_location_id", selectedCatalogLocationId);
+    if (selectedCatalogLocationId) localStorage.setItem("aoc_location_id", selectedCatalogLocationId);
   }
 }
 
@@ -61,7 +61,7 @@ async function setCatalogLocation(locationId) {
   // Change the UI state first. Never wait for Supabase before confirming the
   // store choice; this page must also work for guests.
   selectedCatalogLocationId = id;
-  cartStorageSet("aoc_location_id", id);
+  localStorage.setItem("aoc_location_id", id);
 
   // Keep the selector UI synchronized immediately.
   document.querySelectorAll(".aoc-location-option").forEach((option) => {
@@ -99,7 +99,7 @@ function renderLocationPicker() {
   const selected = catalogLocations.find(l => String(l.id) === String(selectedCatalogLocationId)) || catalogLocations[0];
   if (selected && !selectedCatalogLocationId) {
     selectedCatalogLocationId = String(selected.id);
-    cartStorageSet("aoc_location_id", selectedCatalogLocationId);
+    localStorage.setItem("aoc_location_id", selectedCatalogLocationId);
   }
 
   // Build the picker only once. The modal is portaled to <body> so it is not
@@ -314,7 +314,7 @@ function renderCard(item, mode = "rental") {
               <input class="input catalog-qty" type="number" min="1" max="${Math.max(1, maxQuantity)}" value="1" aria-label="Jumlah unit">
               <button type="button" class="catalog-qty-plus" aria-label="Tambah jumlah">+</button>
             </div>
-            <button type="button" class="btn catalog-add-btn" data-catalog-add ${unavailable || maxQuantity <= 0 ? "disabled" : ""}>
+            <button type="button" class="btn catalog-add-btn" ${unavailable || maxQuantity <= 0 ? "disabled" : ""}>
               ${unavailable || maxQuantity <= 0 ? "Stok Habis" : "+ Tambah"}
             </button>
           </div>
@@ -411,31 +411,20 @@ function bindCatalogEvents(items, grid, mode) {
     const qty = Math.min(max, Math.max(1, Number(qtyInput.value) || 1));
     if (max <= 0) return;
 
-    event.preventDefault();
-    event.stopPropagation();
-    try {
-      addCart(item, qty, false, variant, mode, selectedPrice(item, mode));
-      updateCartBadge();
-      renderQuickCart(mode);
+    addCart(item, qty, false, variant, mode, selectedPrice(item, mode));
+    updateCartBadge();
+    renderQuickCart(mode);
 
-      const note = card.querySelector(".catalog-added-note");
-      if (note) {
-        note.textContent = `✓ ${qty} ${variant ? variant.name : "unit"} ditambahkan. Silakan pilih item lain.`;
-        note.classList.add("show");
-        setTimeout(() => note.classList.remove("show"), 2200);
-      }
-      button.textContent = "✓ Ditambahkan";
-      setTimeout(() => {
-        if (!button.disabled) button.textContent = "+ Tambah";
-      }, 1200);
-    } catch (error) {
-      console.error("AOC cart add failed:", error);
-      const note = card.querySelector(".catalog-added-note");
-      if (note) {
-        note.textContent = "Gagal menambahkan ke keranjang. Silakan coba lagi.";
-        note.classList.add("show");
-      }
+    const note = card.querySelector(".catalog-added-note");
+    if (note) {
+      note.textContent = `✓ ${qty} ${variant ? variant.name : "unit"} ditambahkan. Silakan pilih item lain.`;
+      note.classList.add("show");
+      setTimeout(() => note.classList.remove("show"), 2200);
     }
+    button.textContent = "✓ Ditambahkan";
+    setTimeout(() => {
+      if (!button.disabled) button.textContent = "+ Tambah";
+    }, 1200);
   });
 
   grid.addEventListener("change", (event) => {

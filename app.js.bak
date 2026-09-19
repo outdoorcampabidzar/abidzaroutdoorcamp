@@ -162,16 +162,16 @@ const LEGACY_CART_KEYS = [
 
 // Penyimpanan cart aman: tetap bekerja jika localStorage dibatasi browser/privacy mode.
 const cartMemory = Object.create(null);
-export function cartStorageGet(key) {
+function cartStorageGet(key) {
   try { return window.localStorage.getItem(key); }
   catch { return Object.prototype.hasOwnProperty.call(cartMemory, key) ? cartMemory[key] : null; }
 }
-export function cartStorageSet(key, value) {
+function cartStorageSet(key, value) {
   try { window.localStorage.setItem(key, value); }
   catch { cartMemory[key] = value; }
 }
-export function cartStorageRemove(key) {
-  try { window.localStorage.removeItem(key); } catch {}
+function cartStorageRemove(key) {
+  try { window.cartStorageRemove(key); } catch {}
   delete cartMemory[key];
 }
 

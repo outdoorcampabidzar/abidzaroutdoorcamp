@@ -2615,6 +2615,8 @@
               </div>
 
               <div class="actions catalog-tools">
+                <button id="downloadCatalogTemplateCsv" class="btn secondary small" type="button">📥 Template CSV</button>
+                <button id="downloadCatalogTemplateExcel" class="btn secondary small" type="button">📥 Template Excel</button>
                 <button id="exportCatalogCsv" class="btn secondary small" type="button">Ekspor CSV</button>
                 <label class="btn secondary small catalog-import-label">Impor CSV<input id="importCatalogCsv" type="file" accept=".csv,text/csv" hidden></label>
                 <button id="viewArchivedCatalog" class="btn secondary small" type="button">Arsip</button>
@@ -2798,6 +2800,12 @@
             showAdminMessage("Daftar item sewa dimuat ulang.", "success");
           });
         document
+          .getElementById("downloadCatalogTemplateCsv")
+          .addEventListener("click", downloadCatalogTemplateCsv);
+        document
+          .getElementById("downloadCatalogTemplateExcel")
+          .addEventListener("click", downloadCatalogTemplateExcel);
+        document
           .getElementById("exportCatalogCsv")
           .addEventListener("click", exportCatalogCsv);
         document
@@ -2946,6 +2954,80 @@
             return `${variant?.name || "Semua Varian"}|${tier.label}|${tier.duration_days}|${tier.price}`;
           })
           .join(";");
+      }
+
+      function catalogTemplateRows() {
+        return [
+          [
+            "category", "title", "slug", "description", "image_url",
+            "gallery_urls", "price", "deposit", "stock", "is_featured",
+            "sort_order", "requires_guarantee", "guarantee_note", "is_active",
+            "variants", "inventory_units", "price_tiers",
+          ],
+          [
+            "Tenda", "Tenda Dome 2P", "tenda-dome-2p",
+            "Tenda kapasitas 2 orang", "", "", "25000", "0", "10",
+            "false", "0", "true", "KTP asli atau deposit Rp200.000", "true",
+            "", "", "Semua Varian|1 hari|1|25000;Semua Varian|2 hari|2|48000;Semua Varian|1 hari pelajar|1|20000",
+          ],
+        ];
+      }
+
+      function downloadBytes(filename, blob) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.rel = "noopener";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          link.remove();
+          URL.revokeObjectURL(url);
+        }, 1500);
+      }
+
+      function templateTimestamp() {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+      }
+
+      function downloadCatalogTemplateCsv() {
+        const rows = catalogTemplateRows();
+        const guide = [
+          ["PETUNJUK: title dan slug wajib diisi."],
+          ["variants: Nama Varian|Kapasitas|Stok;Nama Varian|Kapasitas|Stok"],
+          ["price_tiers: Nama Varian|Label|Durasi Hari|Harga;..."],
+          ["price dapat digunakan sebagai harga jual / harga utama item."],
+        ];
+        const csv = "\\ufeff" + [...rows, ...guide]
+          .map((row) => row.map(csvCell).join(","))
+          .join("\\r\\n");
+        downloadBytes(
+          `template-import-item-aoc-${templateTimestamp()}.csv`,
+          new Blob([csv], { type: "text/csv;charset=utf-8" }),
+        );
+        showAdminMessage("Template CSV berhasil diunduh.", "success");
+      }
+
+      function downloadCatalogTemplateExcel() {
+        const rows = catalogTemplateRows();
+        const escHtml = (value) => String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+        const table = rows.map((row) =>
+          `<tr>${row.map((cell) => `<td>${escHtml(cell)}</td>`).join("")}</tr>`
+        ).join("");
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><table>${table}</table></body></html>`;
+        downloadBytes(
+          `template-import-item-aoc-${templateTimestamp()}.xls`,
+          new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" }),
+        );
+        showAdminMessage("Template Excel berhasil diunduh.", "success");
       }
 
       function exportCatalogCsv() {

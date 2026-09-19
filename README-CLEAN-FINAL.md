@@ -30,3 +30,7 @@ Patch lama `PATCH-HAPUS-PESANAN-RENTAL.sql` sudah dihapus dari paket karena diga
 - README/patch dokumentasi historis yang hanya merujuk ke versi lama.
 
 File SQL fitur aktif lainnya tetap dipertahankan agar instalasi fitur AOC yang sudah ada tidak kehilangan dependensi.
+
+
+--- STOCK EDITOR SYNC FIX ---
+Stok pada form Edit Sewa Item kini disinkronkan ke stok lokasi melalui PATCH-STOCK-EDITOR-SYNC.sql.
