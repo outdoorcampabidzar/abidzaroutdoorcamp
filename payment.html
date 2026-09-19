@@ -20,7 +20,7 @@
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module">
-      import { supabase, rupiah, esc, loadSiteSettings } from "./app.js";
+      import { supabase, rupiah, esc, loadSiteSettings, aocConfirm } from "./app.js";
       const card = document.getElementById("paymentCard");
       const orderId = new URLSearchParams(location.search).get("order");
       let payment = null;
@@ -431,7 +431,7 @@
         }
       }
       async function cancel() {
-        if (!confirm("Batalkan pembayaran dan pesanan ini?")) return;
+        if (!(await aocConfirm("Batalkan pembayaran dan pesanan ini?", {title:"Batalkan pembayaran?", icon:"💳", confirmText:"Batalkan", danger:true}))) return;
         try {
           await invoke("cancel", {
             payment_id: payment.id,

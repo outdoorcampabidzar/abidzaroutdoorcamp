@@ -216,6 +216,27 @@
 </div>
 </section>
 </main>
+
+<div class="aoc-pin-modal hidden" id="transactionPinModal" aria-hidden="true">
+  <div class="aoc-pin-backdrop"></div>
+  <section class="aoc-pin-card" role="dialog" aria-modal="true" aria-labelledby="transactionPinTitle">
+    <div class="aoc-pin-icon" aria-hidden="true">🔐</div>
+    <span class="badge">KEAMANAN TRANSAKSI</span>
+    <h3 id="transactionPinTitle">Konfirmasi dengan PIN</h3>
+    <p class="muted">Masukkan PIN transaksi 6 digit untuk melanjutkan pembuatan pesanan.</p>
+    <div class="aoc-pin-total"><span>Total transaksi</span><strong id="transactionPinTotal">Rp0</strong></div>
+    <label class="field">
+      <span>PIN Transaksi</span>
+      <input class="input aoc-pin-input" id="transactionPinCheckout" inputmode="numeric" maxlength="6" minlength="6" autocomplete="off" pattern="[0-9]{6}" placeholder="••••••" type="password"/>
+    </label>
+    <div class="notice hidden aoc-pin-error" id="transactionPinError"></div>
+    <div class="aoc-pin-actions">
+      <button class="btn secondary" id="transactionPinCancel" type="button">Batal</button>
+      <button class="btn" id="transactionPinConfirm" type="button">Konfirmasi Transaksi</button>
+    </div>
+  </section>
+</div>
+
 <script type="module">
       import {
         supabase,
@@ -390,6 +411,68 @@
             0,
           ),
         total = () => Math.max(0, subtotal() - discount);
+
+      function requestTransactionPin() {
+        const modal = document.getElementById("transactionPinModal");
+        const input = document.getElementById("transactionPinCheckout");
+        const errorBox = document.getElementById("transactionPinError");
+        const confirmButton = document.getElementById("transactionPinConfirm");
+        const cancelButton = document.getElementById("transactionPinCancel");
+        const totalBox = document.getElementById("transactionPinTotal");
+        if (!modal || !input || !confirmButton || !cancelButton) return Promise.reject(new Error("Dialog PIN tidak tersedia."));
+
+        totalBox.textContent = rupiah(total());
+        errorBox.classList.add("hidden");
+        errorBox.textContent = "";
+        input.value = "";
+        modal.classList.remove("hidden");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("auth-locked");
+
+        return new Promise((resolve) => {
+          let finished = false;
+          const cleanup = (result) => {
+            if (finished) return;
+            finished = true;
+            modal.classList.add("hidden");
+            modal.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("auth-locked");
+            confirmButton.disabled = false;
+            input.value = "";
+            cancelButton.onclick = null;
+            confirmButton.onclick = null;
+            resolve(result);
+          };
+
+          cancelButton.onclick = () => cleanup(false);
+          input.oninput = () => { input.value = input.value.replace(/\D/g, "").slice(0, 6); };
+          confirmButton.onclick = async () => {
+            const pin = String(input.value || "");
+            if (!/^\d{6}$/.test(pin)) {
+              message(errorBox, "Masukkan tepat 6 digit PIN transaksi.", "error");
+              return;
+            }
+            confirmButton.disabled = true;
+            errorBox.classList.add("hidden");
+            try {
+              const { data, error } = await supabase.rpc("verify_transaction_pin", { p_pin: pin });
+              if (error) throw error;
+              if (!data?.success) {
+                message(errorBox, data?.message || "PIN transaksi tidak valid.", "error");
+                confirmButton.disabled = false;
+                input.select();
+                return;
+              }
+              cleanup(true);
+            } catch (error) {
+              message(errorBox, error.message || "Verifikasi PIN gagal.", "error");
+              confirmButton.disabled = false;
+            }
+          };
+          requestAnimationFrame(() => input.focus());
+        });
+      }
+
       function render() {
         document
           .getElementById("empty")
@@ -756,6 +839,9 @@
             );
           }
         }
+
+        const pinVerified = await requestTransactionPin();
+        if (!pinVerified) return;
 
         // Sinkronkan toko yang dipilih ke akun SEBELUM validasi stok/order.
         // Jika gagal, checkout dihentikan agar stok/order tidak masuk ke toko lain.

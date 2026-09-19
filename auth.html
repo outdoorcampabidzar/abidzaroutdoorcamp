@@ -206,6 +206,23 @@
 </div>
 </label>
 </div>
+<div class="two auth-pin-grid">
+<label aria-hidden="true" class="field hidden" id="transactionPinField">
+<span>PIN transaksi *</span>
+<div class="password-input">
+<input autocomplete="new-password" class="input" data-register-required="" id="transactionPin" inputmode="numeric" maxlength="6" minlength="6" name="transaction_pin" pattern="[0-9]{6}" placeholder="6 digit" type="password"/>
+<button aria-label="Tampilkan PIN transaksi" class="password-toggle" data-password-toggle="transactionPin" type="button">Lihat</button>
+</div>
+<small class="muted">PIN ini digunakan untuk mengonfirmasi transaksi checkout.</small>
+</label>
+<label aria-hidden="true" class="field hidden" id="confirmTransactionPinField">
+<span>Konfirmasi PIN *</span>
+<div class="password-input">
+<input autocomplete="new-password" class="input" data-register-required="" id="confirmTransactionPin" inputmode="numeric" maxlength="6" minlength="6" name="confirm_transaction_pin" pattern="[0-9]{6}" placeholder="Ulangi PIN" type="password"/>
+<button aria-label="Tampilkan konfirmasi PIN" class="password-toggle" data-password-toggle="confirmTransactionPin" type="button">Lihat</button>
+</div>
+</label>
+</div>
 <div aria-live="polite" class="password-strength hidden" id="passwordStrength">
 <div aria-hidden="true" class="password-strength-bars">
 <span></span><span></span><span></span><span></span>
@@ -234,7 +251,7 @@
         Belum punya akun? Daftar
       </button>
 <p class="auth-security-note">
-        🔒 Password dikelola oleh Supabase Auth. Setelah password benar, verifikasi kode 6 digit wajib diselesaikan sebelum akses dilanjutkan.
+        🔒 Password dikelola oleh Supabase Auth. PIN transaksi disimpan sebagai hash dan diverifikasi di server. Setelah password benar, verifikasi kode 6 digit wajib diselesaikan sebelum akses dilanjutkan.
       </p>
 </section>
 </main>

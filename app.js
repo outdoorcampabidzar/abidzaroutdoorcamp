@@ -153,6 +153,66 @@ export function applySiteSettings(settings) {
     new CustomEvent("site-settings-ready", { detail: value }),
   );
 }
+
+// Dialog UI global AOC: menggantikan alert/confirm/prompt bawaan browser.
+let aocDialogPromise = null;
+function ensureAocDialogStyles() {
+  if (document.getElementById('aocDialogStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'aocDialogStyles';
+  style.textContent = `
+    .aoc-dialog-backdrop{position:fixed;inset:0;z-index:99999;display:grid;place-items:end center;padding:18px;background:rgba(2,8,12,.72);backdrop-filter:blur(10px);opacity:0;transition:opacity .18s ease}
+    .aoc-dialog-backdrop.is-open{opacity:1}
+    .aoc-dialog{width:min(100%,520px);border:1px solid rgba(105,231,174,.2);border-radius:28px;background:linear-gradient(180deg,#111a20,#0a1116);box-shadow:0 24px 70px rgba(0,0,0,.5);transform:translateY(18px);transition:transform .2s ease;overflow:hidden;color:#f4f8f6}
+    .aoc-dialog-backdrop.is-open .aoc-dialog{transform:translateY(0)}
+    .aoc-dialog-head{display:flex;gap:14px;align-items:center;padding:22px 22px 10px}
+    .aoc-dialog-icon{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;background:rgba(91,224,169,.12);font-size:22px}
+    .aoc-dialog-kicker{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#65e0aa;font-weight:800}
+    .aoc-dialog-title{margin:3px 0 0;font-size:20px;font-weight:800}
+    .aoc-dialog-body{padding:8px 22px 20px;color:#aebdc4;font-size:14px;line-height:1.6;white-space:pre-wrap}
+    .aoc-dialog-input{width:100%;box-sizing:border-box;border:1px solid #263640;border-radius:15px;background:#091116;color:#fff;padding:14px 15px;outline:none;font:inherit;margin-top:8px}
+    .aoc-dialog-input:focus{border-color:#5ee1aa;box-shadow:0 0 0 3px rgba(94,225,170,.12)}
+    .aoc-dialog-actions{display:flex;gap:10px;padding:0 22px 22px}
+    .aoc-dialog-btn{flex:1;min-height:48px;border-radius:15px;border:1px solid #2a3b44;background:#111d24;color:#dce7e8;font-weight:800;font-size:14px}
+    .aoc-dialog-btn.primary{background:linear-gradient(135deg,#64e5ad,#3fcf94);border-color:#64e5ad;color:#06110d}
+    .aoc-dialog-btn.danger{background:#401a20;border-color:#d85b68;color:#ffd9dd}
+    .aoc-dialog-btn:active{transform:scale(.98)}
+    body.aoc-dialog-open{overflow:hidden}
+    @media(min-width:700px){.aoc-dialog-backdrop{place-items:center}}
+  `;
+  document.head.appendChild(style);
+}
+function openAocDialog({mode='confirm',title='Konfirmasi',message='',value='',placeholder='',confirmText='Lanjutkan',cancelText='Batal',danger=false,icon='🔔'}={}) {
+  ensureAocDialogStyles();
+  if (aocDialogPromise) return Promise.resolve(mode === 'prompt' ? null : false);
+  const wrap=document.createElement('div');
+  wrap.className='aoc-dialog-backdrop';
+  wrap.innerHTML=`<section class="aoc-dialog" role="dialog" aria-modal="true"><div class="aoc-dialog-head"><div class="aoc-dialog-icon">${icon}</div><div><div class="aoc-dialog-kicker">AbidzarOutdoorcamp</div><div class="aoc-dialog-title"></div></div></div><div class="aoc-dialog-body"></div><div class="aoc-dialog-actions"><button type="button" class="aoc-dialog-btn" data-cancel></button><button type="button" class="aoc-dialog-btn primary" data-ok></button></div></section>`;
+  document.body.appendChild(wrap);
+  const body=wrap.querySelector('.aoc-dialog-body');
+  wrap.querySelector('.aoc-dialog-title').textContent=title;
+  body.textContent=message;
+  const ok=wrap.querySelector('[data-ok]'); const cancel=wrap.querySelector('[data-cancel]');
+  cancel.textContent=cancelText; ok.textContent=confirmText; ok.classList.toggle('danger',danger);
+  let input=null;
+  if(mode==='prompt'){
+    input=document.createElement('input'); input.className='aoc-dialog-input'; input.value=value ?? ''; input.placeholder=placeholder || '';
+    input.autocomplete='off'; body.appendChild(input);
+  }
+  const finish=(result)=>{ if(!aocDialogPromise) return; const resolve=aocDialogPromise; aocDialogPromise=null; wrap.classList.remove('is-open'); document.body.classList.remove('aoc-dialog-open'); setTimeout(()=>wrap.remove(),180); resolve(result); };
+  aocDialogPromise=new Promise(resolve=>{ wrap._resolve=resolve; });
+  ok.onclick=()=>finish(mode==='prompt' ? input.value : true);
+  cancel.onclick=()=>finish(mode==='prompt' ? null : false);
+  wrap.onclick=(e)=>{if(e.target===wrap) finish(mode==='prompt'?null:false)};
+  wrap.addEventListener('keydown',(e)=>{if(e.key==='Escape') finish(mode==='prompt'?null:false); if(e.key==='Enter' && mode==='prompt') finish(input.value)});
+  requestAnimationFrame(()=>wrap.classList.add('is-open'));
+  setTimeout(()=>mode==='prompt' ? input.focus() : cancel.focus(),40);
+  return aocDialogPromise;
+}
+export const aocConfirm = (message, options={}) => openAocDialog({mode:'confirm', message:String(message||''), ...options});
+export const aocPrompt = (message, value='', options={}) => openAocDialog({mode:'prompt', message:String(message||''), value, ...options});
+export const aocAlert = (message, options={}) => openAocDialog({mode:'alert', message:String(message||''), cancelText:'Tutup', confirmText:'Mengerti', ...options});
+
 const CART_KEY = "tripkita_cart";
 const LEGACY_CART_KEYS = [
   "tripkita_cart_v3",

@@ -109,6 +109,24 @@
 </section>
 </main>
 <script type="module" src="./admin.js?v=202609181600"></script>
+<div id="aocRentalConditionModal" class="aoc-condition-modal" hidden role="dialog" aria-modal="true" aria-labelledby="aocRentalConditionTitle">
+  <div class="aoc-condition-backdrop" data-condition-close></div>
+  <div class="aoc-condition-sheet">
+    <div class="aoc-condition-handle"></div>
+    <div class="aoc-condition-head">
+      <div class="aoc-condition-head-icon">✓</div>
+      <div><span class="aoc-condition-kicker">CHECKLIST PENGEMBALIAN</span><h3 id="aocRentalConditionTitle" data-condition-modal-title>Pilih kondisi</h3><p>Pilih kondisi barang yang dikembalikan oleh penyewa.</p></div>
+      <button type="button" class="aoc-condition-close" data-condition-close aria-label="Tutup">×</button>
+    </div>
+    <div class="aoc-condition-options">
+      <button type="button" class="aoc-condition-option" data-condition-option="good" data-condition-label="Baik"><span class="aoc-condition-option-icon good">✓</span><span class="aoc-condition-option-copy"><b>Baik</b><small>Barang lengkap dan berfungsi normal.</small></span><span class="aoc-condition-radio" data-condition-radio></span></button>
+      <button type="button" class="aoc-condition-option" data-condition-option="dirty" data-condition-label="Kotor / perlu dicuci"><span class="aoc-condition-option-icon dirty">⌁</span><span class="aoc-condition-option-copy"><b>Kotor / perlu dicuci</b><small>Perlu dibersihkan sebelum disewakan kembali.</small></span><span class="aoc-condition-radio" data-condition-radio></span></button>
+      <button type="button" class="aoc-condition-option" data-condition-option="damaged" data-condition-label="Rusak"><span class="aoc-condition-option-icon damaged">⚒</span><span class="aoc-condition-option-copy"><b>Rusak</b><small>Ada kerusakan pada bagian tertentu.</small></span><span class="aoc-condition-radio" data-condition-radio></span></button>
+      <button type="button" class="aoc-condition-option" data-condition-option="lost" data-condition-label="Hilang"><span class="aoc-condition-option-icon lost">×</span><span class="aoc-condition-option-copy"><b>Hilang</b><small>Barang tidak ditemukan saat pengembalian.</small></span><span class="aoc-condition-radio" data-condition-radio></span></button>
+    </div>
+    <button type="button" class="aoc-condition-submit" data-condition-close>Pilih kondisi</button>
+  </div>
+</div>
 <div id="aocReminderConfirmModal" class="aoc-reminder-modal" hidden role="dialog" aria-modal="true" aria-labelledby="aocReminderConfirmTitle" tabindex="-1">
   <div class="aoc-reminder-backdrop" data-confirm-close></div>
   <div class="aoc-reminder-dialog">

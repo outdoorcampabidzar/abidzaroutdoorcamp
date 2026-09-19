@@ -4,6 +4,9 @@ const form = document.getElementById("profileForm");
 const saveButton = document.getElementById("profileSave");
 const resetButton = document.getElementById("passwordReset");
 const messageBox = document.getElementById("profileMessage");
+const transactionPinInput = document.getElementById("profileTransactionPin");
+const transactionPinConfirmInput = document.getElementById("profileTransactionPinConfirm");
+const saveTransactionPinButton = document.getElementById("saveTransactionPin");
 
 let currentUser = null;
 let currentAvatarUrl = "";
@@ -169,3 +172,41 @@ resetButton.addEventListener("click", async () => {
 });
 
 loadProfile();
+
+[transactionPinInput, transactionPinConfirmInput].forEach((input) => {
+  input?.addEventListener("input", () => {
+    input.value = input.value.replace(/\D/g, "").slice(0, 6);
+  });
+});
+
+saveTransactionPinButton?.addEventListener("click", async () => {
+  const pin = String(transactionPinInput?.value || "");
+  const confirm = String(transactionPinConfirmInput?.value || "");
+  if (!/^\d{6}$/.test(pin)) {
+    message(messageBox, "PIN transaksi harus tepat 6 digit.", "error");
+    return;
+  }
+  if (pin !== confirm) {
+    message(messageBox, "Konfirmasi PIN transaksi tidak sama.", "error");
+    return;
+  }
+  if (new Set(pin.split("")).size === 1) {
+    message(messageBox, "Jangan gunakan PIN yang semua angkanya sama.", "error");
+    return;
+  }
+  saveTransactionPinButton.disabled = true;
+  saveTransactionPinButton.textContent = "Menyimpan...";
+  try {
+    const { data, error } = await supabase.rpc("set_transaction_pin", { p_pin: pin });
+    if (error) throw error;
+    message(messageBox, data?.message || "PIN transaksi berhasil disimpan.", "success");
+    transactionPinInput.value = "";
+    transactionPinConfirmInput.value = "";
+  } catch (error) {
+    message(messageBox, error.message || "PIN transaksi gagal disimpan.", "error");
+  } finally {
+    saveTransactionPinButton.disabled = false;
+    saveTransactionPinButton.textContent = "Simpan PIN Transaksi";
+  }
+});
+

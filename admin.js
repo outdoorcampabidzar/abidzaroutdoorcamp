@@ -7,6 +7,8 @@
         DEFAULT_SITE_SETTINGS,
         loadSiteSettings,
         applySiteSettings,
+        aocConfirm,
+        aocPrompt,
       } from "./app.js?v=202609172030";
 
       const root = document.getElementById("adminRoot");
@@ -359,7 +361,7 @@
           await loadItemsData();
           return;
         }
-        if (["rental_orders", "rental_returns", "orders", "schedule"].includes(tab)) {
+        if (["rental_orders", "rental_returns", "orders", "schedule", "finance"].includes(tab)) {
           await loadOrdersData();
           return;
         }
@@ -428,6 +430,8 @@
             >
               🔔 Pengingat Customer
             </button>
+
+            <button class="admin-tab ${activeTab === "finance" ? "active" : ""} ${can("orders.view") || can("finance.manage") ? "" : "hidden"}" data-admin-tab="finance" type="button" title="Omzet, transaksi, refund dan performa toko">💰 Omzet & Keuangan</button>
 
             <button
               class="admin-tab ${activeTab === "locations" ? "active" : ""} ${can("catalog.manage") ? "" : "hidden"}"
@@ -733,11 +737,11 @@
           const id = btn.dataset.renameLocation;
           const loc = locationList.find(x => String(x.id) === String(id));
           if (!loc) return;
-          const name = window.prompt("Nama toko baru:", String(loc.name || ""));
+          const name = await aocPrompt("Nama toko baru:", String(loc.name || ""), {title:"Ubah nama toko", icon:"🏪", confirmText:"Simpan"});
           if (name === null) return;
           const cleanName = name.trim();
           if (!cleanName) { showAdminMessage("Nama toko tidak boleh kosong.", "error"); return; }
-          const address = window.prompt("Alamat toko (opsional):", String(loc.address || ""));
+          const address = await aocPrompt("Alamat toko (opsional):", String(loc.address || ""), {title:"Alamat toko", icon:"📍", confirmText:"Simpan"});
           if (address === null) return;
           btn.disabled = true;
           try {
@@ -838,6 +842,7 @@
           else if (tab === "rental_orders") renderRentalOrdersTab();
           else if (tab === "rental_returns") renderRentalReturnsTab();
           else if (tab === "rental_reminders") renderRentalRemindersTab();
+          else if (tab === "finance") renderFinanceTab();
           else if (tab === "trips") renderTripTab();
           else if (tab === "orders") renderOrdersTab();
           else if (tab === "vouchers") await renderVoucherTab();
@@ -1131,9 +1136,10 @@
 
       async function deleteVoucher(id) {
         if (
-          !confirm(
+          !(await aocConfirm(
             "Hapus voucher ini? Voucher yang sudah memiliki riwayat mungkin tidak dapat dihapus.",
-          )
+            {title:"Hapus voucher?", icon:"🗑️", confirmText:"Hapus", danger:true}
+          ))
         )
           return;
         const { error } = await supabase.from("vouchers").delete().eq("id", id);
@@ -1259,7 +1265,7 @@
           await renderShopTab();
         }));
         document.querySelectorAll("[data-shop-delete]").forEach(btn => btn.addEventListener("click", async () => {
-          if (!confirm("Hapus hadiah Coin Shop ini?")) return;
+          if (!(await aocConfirm("Hapus hadiah Coin Shop ini?", {title:"Hapus hadiah?", icon:"🗑️", confirmText:"Hapus", danger:true}))) return;
           const { error } = await supabase.from("shop_rewards").delete().eq("id", btn.dataset.shopDelete);
           if (error) return showAdminMessage(error.message, "error");
           await renderShopTab();
@@ -1625,11 +1631,12 @@
         document.getElementById("removeSiteLogo")?.addEventListener("click", removeSiteLogo);
         document
           .getElementById("resetSiteSettings")
-          .addEventListener("click", () => {
+          .addEventListener("click", async () => {
             if (
-              !confirm(
+              !(await aocConfirm(
                 "Kembalikan seluruh isian ke nilai bawaan? Perubahan belum disimpan sampai tombol Simpan ditekan.",
-              )
+                {title:"Kembalikan pengaturan?", icon:"↩️", confirmText:"Kembalikan", danger:true}
+              ))
             )
               return;
             siteSettings = { ...DEFAULT_SITE_SETTINGS };
@@ -1958,7 +1965,7 @@
             if (!prev || String(r.inspected_at) > String(prev.inspected_at)) lastByLine.set(key, r);
           });
           return `<details class="card rental-incoming-card" data-rental-order="${esc(order.id)}" ${order.status !== "completed" ? "open" : ""}>
-            <summary><div class="rental-incoming-summary"><span class="status">${esc(statusLabels[order.status] || order.status)}</span><strong class="rental-order-code">${esc(order.order_number)}</strong><small>${esc(order.customer_name || "-")} · ${esc(order.phone || "-")}</small><small>${esc(formatRentalDate(order.rental_start))} → ${esc(formatRentalDate(order.rental_end))} · ${Number(order.rental_days || 1)} hari</small></div><strong>${rupiah(order.total)}</strong><span>Lihat ▾</span></summary>
+            <summary><div class="rental-incoming-summary"><span class="status">${esc(statusLabels[order.status] || order.status)}</span><strong class="rental-order-code">${esc(order.order_number)}</strong><small>${esc(order.customer_name || "-")} · ${esc(order.phone || "-")}</small><small>${esc(formatRentalDate(order.rental_start))} → ${esc(formatRentalDate(order.rental_end))} · ${Number(order.rental_days || 1)} hari</small><span class="rental-location-badge">📍 ${esc(order.location_name || "Belum dipilih")}</span></div><strong>${rupiah(order.total)}</strong><span>Lihat ▾</span></summary>
             <div class="rental-incoming-body">
               <div class="rental-order-meta"><div><b>Kode Order</b><strong>${esc(order.order_number)}</strong></div><div><b>Barang</b><strong>${lines.length} jenis / ${lines.reduce((n,l)=>n+Number(l.quantity||0),0)} unit</strong></div><div><b>Lokasi Toko</b><strong>${esc(order.location_name || "Belum dipilih")}</strong></div><div><b>Pembayaran</b><strong>${esc(order.payment_status || "unpaid")}</strong></div></div>
               <section class="rental-inspection-box">
@@ -1970,7 +1977,7 @@
                     const last=lastByLine.get(String(line.id)) || lastByLine.get(`item:${line.item_id}`);
                     return `<div class="rental-check-line" data-rental-line="${esc(line.id)}">
                       <div class="rental-check-main"><div><strong>${esc(line.title_snapshot)}${line.variant_name_snapshot?` · ${esc(line.variant_name_snapshot)}`:""}</strong><small>Jumlah: ${total} · Sudah kembali: ${returned} · Sisa: ${remaining}</small>${last?`<small>Pemeriksaan terakhir: <b>${esc(conditionLabel(last.condition))}</b>${last.notes?` · ${esc(last.notes)}`:""}${last.fee?` · Biaya ${rupiah(last.fee)}`:""}</small>`:`<small>Belum diperiksa.</small>`}</div><b>${rupiah(line.line_total)}</b></div>
-                      ${canInspect ? `<div class="rental-check-controls"><label class="field"><span>Jumlah kembali</span><input class="input" type="number" min="${remaining}" max="${remaining}" value="${remaining}" data-return-qty="${esc(line.id)}" readonly></label><label class="field"><span>Kondisi *</span><select class="input" data-return-condition="${esc(line.id)}" required><option value="">Pilih kondisi</option><option value="good">Baik</option><option value="dirty">Kotor / perlu dicuci</option><option value="damaged">Rusak</option><option value="lost">Hilang</option></select></label><label class="field rental-note-field"><span>Catatan kondisi</span><input class="input" data-return-note="${esc(line.id)}" placeholder="Contoh: lengkap / resleting rusak"></label><label class="field"><span>Biaya</span><input class="input" type="number" min="0" step="1000" value="0" data-return-fee="${esc(line.id)}"></label></div>` : `<div class="rental-condition-readonly">Kondisi: <b>${esc(conditionLabel(last?.condition || (complete ? order.return_condition : "Belum diperiksa")))}</b></div>`}
+                      ${canInspect ? `<div class="rental-check-controls"><label class="field"><span>Jumlah kembali</span><input class="input" type="number" min="${remaining}" max="${remaining}" value="${remaining}" data-return-qty="${esc(line.id)}" readonly></label><label class="field"><span>Kondisi *</span><input type="hidden" data-return-condition="${esc(line.id)}" value=""><button type="button" class="input aoc-condition-trigger" data-return-condition-trigger="${esc(line.id)}" aria-haspopup="dialog"><span data-condition-label>Pilih kondisi</span><span aria-hidden="true">⌄</span></button></label><label class="field rental-note-field"><span>Catatan kondisi</span><input class="input" data-return-note="${esc(line.id)}" placeholder="Contoh: lengkap / resleting rusak"></label><label class="field"><span>Biaya</span><input class="input" type="number" min="0" step="1000" value="0" data-return-fee="${esc(line.id)}"></label></div>` : `<div class="rental-condition-readonly">Kondisi: <b>${esc(conditionLabel(last?.condition || (complete ? order.return_condition : "Belum diperiksa")))}</b></div>`}
                     </div>`;
                   }).join("")}
                 </div>
@@ -1979,12 +1986,56 @@
             </div>
           </details>`;
         };
-        return `<section class="card rental-incoming-section"><div class="admin-list-heading"><div><span class="badge">CHECKOUT → SEWA</span><h3>Pesanan Sewa Masuk</h3><p class="muted">${active.length} operasional · ${completed.length} selesai · ${allRentalOrders.length} total.</p></div><button id="refreshRentalOrders" class="btn secondary small" type="button">Muat Ulang</button></div><div class="rental-return-tabs" role="tablist"><button class="btn small ${rentalReturnCategory === "operational" ? "primary" : "secondary"}" data-rental-return-category="operational" type="button">🟡 Operasional (${active.length})</button><button class="btn small ${rentalReturnCategory === "completed" ? "primary" : "secondary"}" data-rental-return-category="completed" type="button">✅ Pesanan Selesai (${completed.length})</button><button class="btn small ${rentalReturnCategory === "all" ? "primary" : "secondary"}" data-rental-return-category="all" type="button">📋 Semua (${allRentalOrders.length})</button></div><div class="rental-workflow-note"><b>Alur:</b> Checkout → Dibayar → Sewa → Barang kembali → <b>Checklist semua barang</b> → Dikembalikan → <b>Selesai</b></div><div class="rental-incoming-list">${rentalOrders.map(card).join("") || '<div class="notice">Tidak ada pesanan pada kategori ini.</div>'}</div></section>`;
+        return `<section class="card rental-incoming-section"><div class="admin-list-heading"><div><span class="badge">CHECKOUT → SEWA</span><h3>Pesanan Sewa Masuk</h3><p class="muted">${active.length} operasional · ${completed.length} selesai · ${allRentalOrders.length} total.</p></div><button id="refreshRentalOrders" class="btn secondary small" type="button">Muat Ulang</button></div><div class="rental-return-tabs" role="tablist"><button class="btn small ${rentalReturnCategory === "operational" ? "primary" : "secondary"}" data-rental-return-category="operational" type="button">🟡 Operasional (${active.length})</button><button class="btn small ${rentalReturnCategory === "completed" ? "primary" : "secondary"}" data-rental-return-category="completed" type="button">✅ Pesanan Selesai (${completed.length})</button><button class="btn small ${rentalReturnCategory === "all" ? "primary" : "secondary"}" data-rental-return-category="all" type="button">📋 Semua (${allRentalOrders.length})</button></div>${renderStoreCategoryBar()}<div class="rental-workflow-note"><b>Alur:</b> Checkout → Dibayar → Sewa → Barang kembali → <b>Checklist semua barang</b> → Dikembalikan → <b>Selesai</b></div><div class="rental-incoming-list">${rentalOrders.map(card).join("") || '<div class="notice">Tidak ada pesanan pada kategori ini.</div>'}</div></section>`;
       }
+      function bindRentalConditionPicker(content) {
+        const modal = document.getElementById("aocRentalConditionModal");
+        if (!modal) return;
+        const title = modal.querySelector("[data-condition-modal-title]");
+        const options = modal.querySelectorAll("[data-condition-option]");
+        const close = () => { modal.classList.remove("is-open"); document.body.classList.remove("aoc-modal-open"); setTimeout(() => { modal.hidden = true; }, 160); };
+        const open = (trigger) => {
+          const id = trigger.dataset.returnConditionTrigger;
+          const line = trigger.closest("[data-rental-line]");
+          const itemName = line?.querySelector(".rental-check-main strong")?.textContent || "Barang";
+          const hidden = line?.querySelector(`[data-return-condition="${CSS.escape(id)}"]`);
+          if (!hidden) return;
+          modal.dataset.target = id;
+          modal.dataset.targetLine = id;
+          if (title) title.textContent = `Pilih kondisi · ${itemName}`;
+          options.forEach(option => {
+            const selected = option.dataset.conditionOption === hidden.value;
+            option.classList.toggle("is-selected", selected);
+            option.querySelector("[data-condition-radio]")?.classList.toggle("is-selected", selected);
+          });
+          modal.hidden = false;
+          requestAnimationFrame(() => modal.classList.add("is-open"));
+          document.body.classList.add("aoc-modal-open");
+        };
+        content.querySelectorAll("[data-return-condition-trigger]").forEach(btn => btn.addEventListener("click", () => open(btn)));
+        options.forEach(option => option.addEventListener("click", () => {
+          const id = modal.dataset.target;
+          const line = content.querySelector(`[data-rental-line="${CSS.escape(id)}"]`);
+          const hidden = line?.querySelector(`[data-return-condition="${CSS.escape(id)}"]`);
+          const trigger = line?.querySelector(`[data-return-condition-trigger="${CSS.escape(id)}"]`);
+          if (!hidden || !trigger) return;
+          hidden.value = option.dataset.conditionOption || "";
+          const label = option.dataset.conditionLabel || option.dataset.conditionOption || "Pilih kondisi";
+          const labelEl = trigger.querySelector("[data-condition-label]");
+          if (labelEl) labelEl.textContent = label;
+          trigger.classList.toggle("has-value", !!hidden.value);
+          options.forEach(o => { const selected = o === option; o.classList.toggle("is-selected", selected); o.querySelector("[data-condition-radio]")?.classList.toggle("is-selected", selected); });
+          close();
+        }));
+        modal.querySelectorAll("[data-condition-close]").forEach(el => el.addEventListener("click", close));
+      }
+
       function bindRentalIncomingEvents() {
         const content=document.getElementById("adminContent");
         content.querySelector("#refreshRentalOrders")?.addEventListener("click", refreshOrders);
         content.querySelectorAll("[data-rental-return-category]").forEach(btn => btn.addEventListener("click", () => { rentalReturnCategory = btn.dataset.rentalReturnCategory || "operational"; renderRentalReturnsTab(); }));
+        bindStoreCategoryBar(content);
+        bindRentalConditionPicker(content);
         bindStoreCategoryBar(content);
         content.querySelectorAll("[data-rental-bulk-return]").forEach(btn=>btn.addEventListener("click",async()=>{
           const order=orders.find(o=>String(o.id)===String(btn.dataset.rentalBulkReturn));
@@ -2004,13 +2055,19 @@
             if(!Number.isFinite(fee)||fee<0) return showAdminMessage(`Biaya ${line.title_snapshot} tidak valid.`,"error");
             inspections.push({order_item_id:line.id,item_id:line.item_id,quantity:qty,condition,notes:note,fee});
           }
-          if(!confirm(`Simpan checklist ${inspections.length} barang sekaligus untuk ${order.order_number}?`)) return;
+          const confirmed = await window.aocReminderConfirm({
+            icon: "📋",
+            title: "Simpan Checklist Pengembalian?",
+            confirmText: "Simpan Checklist",
+            message: `Checklist <strong>${inspections.length} barang</strong> akan disimpan sekaligus untuk pesanan <strong>${esc(order.order_number)}</strong>. Pastikan jumlah dan kondisi barang sudah benar.`
+          });
+          if(!confirmed) return;
           btn.disabled=true;btn.textContent="Menyimpan semua...";
           const {error}=await supabase.rpc("secure_admin_bulk_return_inspection",{p_order_id:order.id,p_items:inspections});
           if(error){btn.disabled=false;btn.textContent="Simpan Semua Pengembalian";return showAdminMessage(`${error.message}. Jalankan PATCH-BULK-RETURN-INSPECTION.sql.`,"error");}
           await refreshOrders();showAdminMessage(`${order.order_number}: semua kondisi barang berhasil disimpan dalam satu transaksi dan pesanan dikembalikan.`,"success");
         }));
-        content.querySelectorAll("[data-finalize-rental]").forEach(btn=>btn.addEventListener("click",async()=>{const order=orders.find(o=>String(o.id)===String(btn.dataset.finalizeRental));if(!order||order.status!=="returned"||!rentalOrderIsComplete(order))return showAdminMessage("Checklist pengembalian belum lengkap.","error");if(!confirm(`Finalisasi ${order.order_number} menjadi Selesai?`))return;btn.disabled=true;const {data,error}=await supabase.rpc("secure_admin_finalize_rental",{p_order_id:order.id,p_admin_notes:"Semua barang dikembalikan dan diperiksa."});if(error){btn.disabled=false;return showAdminMessage(error.message,"error");}await refreshOrders();showAdminMessage(`${order.order_number} selesai. Denda keterlambatan 100% dihitung server-side dan finalisasi tidak memakai voucher.` ,"success");}));
+        content.querySelectorAll("[data-finalize-rental]").forEach(btn=>btn.addEventListener("click",async()=>{const order=orders.find(o=>String(o.id)===String(btn.dataset.finalizeRental));if(!order||order.status!=="returned"||!rentalOrderIsComplete(order))return showAdminMessage("Checklist pengembalian belum lengkap.","error");const confirmed=await window.aocReminderConfirm({icon:"✅",title:"Finalisasi Pesanan?",confirmText:"Finalisasi",message:`Pesanan <strong>${esc(order.order_number)}</strong> akan diubah menjadi <strong>Selesai</strong>. Pastikan seluruh checklist pengembalian sudah benar.`});if(!confirmed)return;btn.disabled=true;const {data,error}=await supabase.rpc("secure_admin_finalize_rental",{p_order_id:order.id,p_admin_notes:"Semua barang dikembalikan dan diperiksa."});if(error){btn.disabled=false;return showAdminMessage(error.message,"error");}await refreshOrders();showAdminMessage(`${order.order_number} selesai. Denda keterlambatan 100% dihitung server-side dan finalisasi tidak memakai voucher.` ,"success");}));
         content.querySelectorAll("[data-delete-rental-order]").forEach(btn=>btn.addEventListener("click",async()=>{
           const order=orders.find(o=>String(o.id)===String(btn.dataset.deleteRentalOrder));
           if(!order) return showAdminMessage("Pesanan tidak ditemukan.","error");
@@ -2615,8 +2672,6 @@
               </div>
 
               <div class="actions catalog-tools">
-                <button id="downloadCatalogTemplateCsv" class="btn secondary small" type="button">📥 Template CSV</button>
-                <button id="downloadCatalogTemplateExcel" class="btn secondary small" type="button">📥 Template Excel</button>
                 <button id="exportCatalogCsv" class="btn secondary small" type="button">Ekspor CSV</button>
                 <label class="btn secondary small catalog-import-label">Impor CSV<input id="importCatalogCsv" type="file" accept=".csv,text/csv" hidden></label>
                 <button id="viewArchivedCatalog" class="btn secondary small" type="button">Arsip</button>
@@ -2800,12 +2855,6 @@
             showAdminMessage("Daftar item sewa dimuat ulang.", "success");
           });
         document
-          .getElementById("downloadCatalogTemplateCsv")
-          .addEventListener("click", downloadCatalogTemplateCsv);
-        document
-          .getElementById("downloadCatalogTemplateExcel")
-          .addEventListener("click", downloadCatalogTemplateExcel);
-        document
           .getElementById("exportCatalogCsv")
           .addEventListener("click", exportCatalogCsv);
         document
@@ -2954,80 +3003,6 @@
             return `${variant?.name || "Semua Varian"}|${tier.label}|${tier.duration_days}|${tier.price}`;
           })
           .join(";");
-      }
-
-      function catalogTemplateRows() {
-        return [
-          [
-            "category", "title", "slug", "description", "image_url",
-            "gallery_urls", "price", "deposit", "stock", "is_featured",
-            "sort_order", "requires_guarantee", "guarantee_note", "is_active",
-            "variants", "inventory_units", "price_tiers",
-          ],
-          [
-            "Tenda", "Tenda Dome 2P", "tenda-dome-2p",
-            "Tenda kapasitas 2 orang", "", "", "25000", "0", "10",
-            "false", "0", "true", "KTP asli atau deposit Rp200.000", "true",
-            "", "", "Semua Varian|1 hari|1|25000;Semua Varian|2 hari|2|48000;Semua Varian|1 hari pelajar|1|20000",
-          ],
-        ];
-      }
-
-      function downloadBytes(filename, blob) {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        link.rel = "noopener";
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          link.remove();
-          URL.revokeObjectURL(url);
-        }, 1500);
-      }
-
-      function templateTimestamp() {
-        const d = new Date();
-        const pad = (n) => String(n).padStart(2, "0");
-        return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-      }
-
-      function downloadCatalogTemplateCsv() {
-        const rows = catalogTemplateRows();
-        const guide = [
-          ["PETUNJUK: title dan slug wajib diisi."],
-          ["variants: Nama Varian|Kapasitas|Stok;Nama Varian|Kapasitas|Stok"],
-          ["price_tiers: Nama Varian|Label|Durasi Hari|Harga;..."],
-          ["price dapat digunakan sebagai harga jual / harga utama item."],
-        ];
-        const csv = "\\ufeff" + [...rows, ...guide]
-          .map((row) => row.map(csvCell).join(","))
-          .join("\\r\\n");
-        downloadBytes(
-          `template-import-item-aoc-${templateTimestamp()}.csv`,
-          new Blob([csv], { type: "text/csv;charset=utf-8" }),
-        );
-        showAdminMessage("Template CSV berhasil diunduh.", "success");
-      }
-
-      function downloadCatalogTemplateExcel() {
-        const rows = catalogTemplateRows();
-        const escHtml = (value) => String(value ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;");
-        const table = rows.map((row) =>
-          `<tr>${row.map((cell) => `<td>${escHtml(cell)}</td>`).join("")}</tr>`
-        ).join("");
-        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><table>${table}</table></body></html>`;
-        downloadBytes(
-          `template-import-item-aoc-${templateTimestamp()}.xls`,
-          new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" }),
-        );
-        showAdminMessage("Template Excel berhasil diunduh.", "success");
       }
 
       function exportCatalogCsv() {
@@ -4190,8 +4165,9 @@
 
         if (!item || item.type !== expectedDatabaseType) return;
 
-        const confirmed = confirm(
+        const confirmed = await aocConfirm(
           `Arsipkan "${item.title}"?\n\nProduk hilang dari katalog tetapi riwayat pesanan tetap aman.`,
+          {title:"Arsipkan item?", icon:"📦", confirmText:"Arsipkan", danger:true}
         );
 
         if (!confirmed) return;
@@ -4517,6 +4493,30 @@
         </details>`;
       }
 
+      let financeRange = "month";
+      let financeLocation = "all";
+      function financeOrderAmount(o){return Number(o?.total ?? o?.subtotal ?? 0)||0;}
+      function financeRefundAmount(o){return (o?.order_refunds||[]).reduce((s,r)=>s+(Number(r?.amount)||0),0);}
+      function financeIsRevenue(o){return ["paid","returned","completed"].includes(String(o?.status||"").toLowerCase());}
+      function financeLineType(o){const ls=o?.order_items||[]; if(ls.some(l=>l.fulfillment_type==="sale"||l.item_type==="sale"))return"sale"; if(ls.some(l=>l.fulfillment_type==="rental"||l.item_type==="product"))return"rental"; return"other";}
+      function financeRangeBounds(r){const n=new Date(),e=new Date(n),s=new Date(n);e.setHours(23,59,59,999);if(r==="today")s.setHours(0,0,0,0);else if(r==="7d"){s.setDate(s.getDate()-6);s.setHours(0,0,0,0)}else if(r==="30d"){s.setDate(s.getDate()-29);s.setHours(0,0,0,0)}else if(r==="month"){s.setDate(1);s.setHours(0,0,0,0)}else{s.setFullYear(2000,0,1);s.setHours(0,0,0,0)}return{s,e};}
+      function financeMoney(n){return rupiah(Math.max(0,Math.round(Number(n)||0)));}
+      function renderFinanceTab(){
+        const content=document.getElementById("adminContent");
+        if(!ordersLoaded){content.innerHTML='<div class="notice">Memuat laporan keuangan...</div>';loadOrdersData().then(renderFinanceTab).catch(e=>content.innerHTML=`<div class="notice error">${esc(e?.message||"Gagal memuat laporan keuangan.")}</div>`);return;}
+        const {s,e}=financeRangeBounds(financeRange);
+        const filtered=orders.filter(o=>financeIsRevenue(o)&&(financeLocation==="all"||String(o.location_id||"")===String(financeLocation))&&new Date(o.paid_at||o.created_at||0)>=s&&new Date(o.paid_at||o.created_at||0)<=e);
+        const selectedOrders=orders.filter(o=>financeLocation==="all"||String(o.location_id||"")===String(financeLocation));
+        const gross=filtered.reduce((x,o)=>x+financeOrderAmount(o),0),refunds=filtered.reduce((x,o)=>x+financeRefundAmount(o),0),late=filtered.reduce((x,o)=>x+(Number(o.late_fee)||0),0),net=gross-refunds,avg=filtered.length?net/filtered.length:0;
+        const rental=filtered.filter(o=>financeLineType(o)==="rental").reduce((x,o)=>x+financeOrderAmount(o),0),sale=filtered.filter(o=>financeLineType(o)==="sale").reduce((x,o)=>x+financeOrderAmount(o),0),pending=selectedOrders.filter(o=>["pending","confirmed"].includes(o.status)).reduce((x,o)=>x+financeOrderAmount(o),0);
+        const locations=[...new Map(orders.filter(o=>o.location_id).map(o=>[String(o.location_id),{id:o.location_id,name:o.location_name||"Lokasi"}])).values()];
+        const storeRows=locations.map(l=>{const rs=filtered.filter(o=>String(o.location_id)===String(l.id));return{name:l.name,value:rs.reduce((x,o)=>x+financeOrderAmount(o)-financeRefundAmount(o),0),count:rs.length};}).sort((a,b)=>b.value-a.value);
+        const dm=new Map();filtered.forEach(o=>{const d=new Date(o.paid_at||o.created_at),k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;dm.set(k,(dm.get(k)||0)+financeOrderAmount(o)-financeRefundAmount(o));});
+        const days=[]; if(financeRange==="all"){[...dm.keys()].sort().slice(-14).forEach(k=>days.push([k,dm.get(k)||0]));}else{const c=new Date(s),count=Math.min(31,Math.ceil((e-s)/86400000)+1);for(let i=0;i<count;i++){const d=new Date(c);d.setDate(c.getDate()+i);const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;days.push([k,dm.get(k)||0]);}}const maxDay=Math.max(1,...days.map(x=>x[1]));
+        content.innerHTML=`<section class="card aoc-finance-dashboard"><div class="aoc-finance-head"><div><span class="badge">LAPORAN KEUANGAN</span><h3>💰 Omzet & Keuangan</h3><p class="muted">Omzet dihitung dari pesanan yang sudah dibayar/direalisasikan. Refund dikurangkan dari omzet bersih.</p></div><button class="btn secondary small" id="refreshFinance">↻ Muat Ulang</button></div><div class="aoc-finance-toolbar"><div class="aoc-finance-range">${[["today","Hari ini"],["7d","7 Hari"],["month","Bulan ini"],["30d","30 Hari"],["all","Semua"]].map(([v,l])=>`<button type="button" class="btn small ${financeRange===v?"primary":"secondary"}" data-finance-range="${v}">${l}</button>`).join("")}</div><label class="aoc-finance-location"><span>📍 Toko</span><select id="financeLocation" class="input"><option value="all">Semua Toko</option>${locations.map(l=>`<option value="${esc(l.id)}" ${String(financeLocation)===String(l.id)?"selected":""}>${esc(l.name)}</option>`).join("")}</select></label></div><div class="aoc-finance-cards"><div class="aoc-finance-card main"><span>Omzet Bersih</span><strong>${financeMoney(net)}</strong><small>${filtered.length} transaksi</small></div><div class="aoc-finance-card"><span>Omzet Kotor</span><strong>${financeMoney(gross)}</strong><small>Sebelum refund</small></div><div class="aoc-finance-card"><span>Refund</span><strong>${financeMoney(refunds)}</strong><small>Pengembalian dana</small></div><div class="aoc-finance-card"><span>Denda</span><strong>${financeMoney(late)}</strong><small>Denda tercatat</small></div><div class="aoc-finance-card"><span>Rata-rata Order</span><strong>${financeMoney(avg)}</strong><small>Per transaksi</small></div><div class="aoc-finance-card"><span>Belum Dibayar</span><strong>${financeMoney(pending)}</strong><small>Pending + dikonfirmasi</small></div></div><div class="aoc-finance-split"><div class="aoc-finance-panel"><h4>📊 Sumber Pendapatan</h4><div class="aoc-finance-bar-row"><span>🏕️ Sewa</span><b>${financeMoney(rental)}</b></div><div class="aoc-finance-bar"><i style="width:${gross?Math.min(100,rental/gross*100):0}%"></i></div><div class="aoc-finance-bar-row"><span>🛒 Jual</span><b>${financeMoney(sale)}</b></div><div class="aoc-finance-bar"><i style="width:${gross?Math.min(100,sale/gross*100):0}%"></i></div></div><div class="aoc-finance-panel"><h4>🏪 Omzet per Toko</h4>${storeRows.length?storeRows.map(r=>`<div class="aoc-store-finance-row"><span><b>${esc(r.name)}</b><small>${r.count} transaksi</small></span><strong>${financeMoney(r.value)}</strong></div>`).join(""):'<p class="muted">Belum ada transaksi berlokasi.</p>'}</div></div><div class="aoc-finance-panel"><div class="aoc-finance-panel-head"><h4>📈 Omzet Harian</h4><small>${s.toLocaleDateString("id-ID")} – ${e.toLocaleDateString("id-ID")}</small></div><div class="aoc-finance-chart">${days.map(([k,v])=>`<div class="aoc-finance-day"><div class="aoc-finance-value">${v?financeMoney(v):"-"}</div><div class="aoc-finance-column" style="height:${Math.max(4,(v/maxDay)*150)}px"></div><small>${new Date(k+"T00:00:00").toLocaleDateString("id-ID",{day:"2-digit",month:"short"})}</small></div>`).join("")}</div></div><div class="aoc-finance-footer"><span>📌 Data mengikuti toko yang dipilih dan status transaksi yang sudah terealisasi.</span><button class="btn secondary small" id="exportFinanceCsv">⬇️ Export CSV</button></div></section>`;
+        content.querySelectorAll("[data-finance-range]").forEach(b=>b.addEventListener("click",()=>{financeRange=b.dataset.financeRange;renderFinanceTab();}));content.querySelector("#financeLocation")?.addEventListener("change",e=>{financeLocation=e.target.value;renderFinanceTab();});content.querySelector("#refreshFinance")?.addEventListener("click",async()=>{ordersLoaded=false;ordersLoadPromise=null;await loadOrdersData();renderFinanceTab();});content.querySelector("#exportFinanceCsv")?.addEventListener("click",()=>{const rows=[["Tanggal","Order","Toko","Status","Tipe","Total","Refund","Net"]];filtered.forEach(o=>rows.push([new Date(o.paid_at||o.created_at).toLocaleString("id-ID"),o.order_number||"",o.location_name||"Belum dipilih",o.status,financeLineType(o),financeOrderAmount(o),financeRefundAmount(o),financeOrderAmount(o)-financeRefundAmount(o)]));const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n"),blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`laporan-omzet-${financeRange}.csv`;a.click();URL.revokeObjectURL(url);});
+      }
+
       async function refreshOrders() {
         ordersLoaded = false;
         ordersLoadPromise = null;
@@ -4590,14 +4590,16 @@
         }
 
         if (
-          !confirm(
+          !(await aocConfirm(
             `SEMUA ${total} pesanan dari seluruh status akan dihapus permanen beserta transaksi dan riwayatnya. Lanjutkan?`,
-          )
+            {title:"Hapus semua pesanan?", icon:"⚠️", confirmText:"Lanjut hapus", danger:true}
+          ))
         )
           return;
 
-        const verification = prompt(
+        const verification = await aocPrompt(
           `Ketik HAPUS SEMUA ${total} untuk konfirmasi penghapusan permanen:`,
+          "", {title:"Konfirmasi penghapusan permanen", icon:"🔐", confirmText:"Verifikasi"}
         );
         if (verification !== `HAPUS SEMUA ${total}`) {
           showAdminMessage(
@@ -4723,12 +4725,12 @@
           condition = null,
           itemId = null,
           quantity = 1;
-        if (action === "cancel") reason = prompt("Alasan pembatalan:");
+        if (action === "cancel") reason = await aocPrompt("Alasan pembatalan:", "", {title:"Alasan pembatalan", icon:"📝", confirmText:"Simpan alasan"});
         if (action === "refund") {
           amount = Number(
-            prompt(`Nominal refund (maksimal ${order.total}):`) || 0,
+            await aocPrompt(`Nominal refund (maksimal ${order.total}):`, "", {title:"Nominal refund", icon:"💸", confirmText:"Lanjutkan"}) || 0,
           );
-          reason = prompt("Alasan refund:") || "Refund admin";
+          reason = (await aocPrompt("Alasan refund:", "", {title:"Alasan refund", icon:"📝", confirmText:"Simpan"})) || "Refund admin";
         }
         if (action === "late_fee")
           amount = Number(
@@ -4736,14 +4738,15 @@
           );
         if (action === "deposit_received")
           amount = Number(
-            prompt(
+            await aocPrompt(
               "Nominal deposit yang diterima:",
               order.deposit_amount || 0,
+              {title:"Deposit diterima", icon:"💰", confirmText:"Simpan"}
             ) || 0,
           );
         if (
           action === "deposit_returned" &&
-          !confirm("Tandai seluruh deposit sudah dikembalikan?")
+          !(await aocConfirm("Tandai seluruh deposit sudah dikembalikan?", {title:"Deposit dikembalikan?", icon:"💰", confirmText:"Ya, tandai"}))
         )
           return;
         if (action === "return") {
@@ -4755,9 +4758,9 @@
               "Pesanan tidak memiliki barang sewa.",
               "error",
             );
-          const selected = prompt(
+          const selected = await aocPrompt(
             `Pilih nomor item:\n${rentalLines.map((line, index) => `${index + 1}. ${line.title_snapshot}`).join("\n")}`,
-            "1",
+            "1", {title:"Pilih item pengembalian", icon:"📦", confirmText:"Pilih"}
           );
           const line = rentalLines[Number(selected) - 1];
           if (!line) return;
@@ -4772,9 +4775,9 @@
               "error",
             );
           quantity = Number(
-            prompt(
+            await aocPrompt(
               `Jumlah yang dikembalikan (maksimal ${remaining}):`,
-              remaining,
+              remaining, {title:"Jumlah pengembalian", icon:"↩️", confirmText:"Simpan"}
             ) || 0,
           );
           if (
@@ -4786,13 +4789,13 @@
               `Jumlah pengembalian harus antara 1 sampai ${remaining}.`,
               "error",
             );
-          condition = prompt(
+          condition = await aocPrompt(
             "Kondisi: good, dirty, damaged, atau lost",
-            "good",
+            "good", {title:"Kondisi barang", icon:"🧰", confirmText:"Simpan"}
           );
-          reason = prompt("Catatan pemeriksaan:") || null;
+          reason = (await aocPrompt("Catatan pemeriksaan:", "", {title:"Catatan pemeriksaan", icon:"📝", confirmText:"Simpan"})) || null;
           amount = Number(
-            prompt("Biaya kerusakan/kebersihan (0 jika tidak ada):", "0") || 0,
+            await aocPrompt("Biaya kerusakan/kebersihan (0 jika tidak ada):", "0", {title:"Biaya tambahan", icon:"💵", confirmText:"Simpan"}) || 0,
           );
         }
         if (action === "cancel" && !reason) return;
@@ -4823,7 +4826,7 @@
           refund_mark:
             "Tandai pembayaran sebagai refund? Pastikan pengembalian dana sudah dilakukan melalui kanal yang sesuai.",
         };
-        if (confirmations[action] && !confirm(confirmations[action])) return;
+        if (confirmations[action] && !(await aocConfirm(confirmations[action], {title:"Konfirmasi pembayaran", icon:"💳", confirmText:"Lanjutkan", danger:action==="cancel"}))) return;
         const body = { action, payment_id: paymentId, order_id: orderId };
         if (action === "refund_mark")
           body.reason = "Refund dicatat administrator";
@@ -5217,9 +5220,10 @@
 
         if (!administrator) return;
 
-        const confirmed = confirm(
+        const confirmed = await aocConfirm(
           `Cabut akses admin dari ${administrator.email}?\n\n` +
             "Akun pengguna tidak akan dihapus. Role-nya akan kembali menjadi user.",
+          {title:"Cabut akses administrator?", icon:"🛡️", confirmText:"Cabut akses", danger:true}
         );
 
         if (!confirmed) return;
@@ -5259,7 +5263,7 @@
       window.aocReminderConfirm = function({ icon = "🔔", title = "Konfirmasi", message = "", confirmText = "Lanjutkan", danger = false } = {}) {
         return new Promise((resolve) => {
           const modal = document.getElementById("aocReminderConfirmModal");
-          if (!modal) return resolve(window.confirm(String(message).replace(/<[^>]*>/g, "")));
+          if (!modal) return aocConfirm(String(message).replace(/<[^>]*>/g, ""), {title, icon, confirmText, danger});
           const iconEl = modal.querySelector("[data-confirm-icon]");
           const labelEl = modal.querySelector("[data-confirm-label]");
           const titleEl = modal.querySelector("[data-confirm-title]");

@@ -79,7 +79,7 @@
 </div>
 
 <script type="module">
-import { supabase, esc, message } from "./app.js";
+import { supabase, esc, message, aocConfirm } from "./app.js";
 const balanceEl=document.getElementById("coinBalance"), grid=document.getElementById("shopGrid"), historyEl=document.getElementById("history"), msg=document.getElementById("message");
 let user=null, balance=0;
 function show(text,type=""){message(msg,text,type);}
@@ -113,7 +113,7 @@ function renderHistory(rows){
     <div style="text-align:right"><b>${esc(r.voucher_code||"-")}</b><br><small>-${Number(r.coin_cost)} coin</small></div></div>`).join(""):'<div class="notice">Belum ada penukaran.</div>';
 }
 async function redeem(id,button){
-  if(!confirm("Mulai gacha dengan menukar coin untuk hadiah ini?")) return;
+  if(!(await aocConfirm("Mulai gacha dengan menukar coin untuk hadiah ini?", {title:"Mulai penukaran?", icon:"🎁", confirmText:"Mulai"}))) return;
   button.disabled=true; button.textContent="Memutar...";
   const modal=document.getElementById("gachaModal"), wheel=document.getElementById("gachaWheel"), status=document.getElementById("gachaStatus"), result=document.getElementById("gachaResult"), close=document.getElementById("gachaClose");
   modal.classList.remove("hidden"); modal.setAttribute("aria-hidden","false"); result.classList.add("hidden"); close.disabled=true;

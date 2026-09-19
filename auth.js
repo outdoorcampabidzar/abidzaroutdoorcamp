@@ -15,6 +15,10 @@ const toggleButton = document.getElementById("authToggle");
 const messageBox = document.getElementById("authMessage");
 const passwordInput = document.getElementById("authPassword");
 const confirmPasswordInput = document.getElementById("confirmPassword");
+const transactionPinField = document.getElementById("transactionPinField");
+const confirmTransactionPinField = document.getElementById("confirmTransactionPinField");
+const transactionPinInput = document.getElementById("transactionPin");
+const confirmTransactionPinInput = document.getElementById("confirmTransactionPin");
 
 let mode = "login";
 let isSubmitting = false;
@@ -197,6 +201,10 @@ function setMode(nextMode) {
   confirmPasswordField.classList.toggle("hidden", !isRegister);
   termsField.classList.toggle("hidden", !isRegister);
   strengthBox.classList.toggle("hidden", !isRegister);
+  transactionPinField.classList.toggle("hidden", !isRegister);
+  confirmTransactionPinField.classList.toggle("hidden", !isRegister);
+  transactionPinField.setAttribute("aria-hidden", String(!isRegister));
+  confirmTransactionPinField.setAttribute("aria-hidden", String(!isRegister));
 
   registerFields.setAttribute("aria-hidden", String(!isRegister));
   confirmPasswordField.setAttribute("aria-hidden", String(!isRegister));
@@ -220,6 +228,8 @@ function setMode(nextMode) {
 
   if (!isRegister) {
     confirmPasswordInput.value = "";
+    transactionPinInput.value = "";
+    confirmTransactionPinInput.value = "";
     form.elements.terms.checked = false;
   }
 
@@ -238,6 +248,8 @@ function validateRegistration(values) {
   const address = String(values.address || "").trim();
   const password = String(values.password || "");
   const confirmation = String(values.confirm_password || "");
+  const transactionPin = String(values.transaction_pin || "").replace(/\D/g, "");
+  const confirmTransactionPin = String(values.confirm_transaction_pin || "").replace(/\D/g, "");
 
   if (fullName.length < 3) {
     return "Nama lengkap minimal 3 karakter.";
@@ -267,6 +279,18 @@ function validateRegistration(values) {
     return "Konfirmasi password tidak sama.";
   }
 
+  if (!/^\d{6}$/.test(transactionPin)) {
+    return "PIN transaksi harus tepat 6 digit.";
+  }
+
+  if (transactionPin !== confirmTransactionPin) {
+    return "Konfirmasi PIN transaksi tidak sama.";
+  }
+
+  if (new Set(transactionPin.split("")).size === 1) {
+    return "Jangan gunakan PIN yang semua angkanya sama.";
+  }
+
   if (!form.elements.terms.checked) {
     return "Setujui penggunaan data profil untuk melanjutkan.";
   }
@@ -293,6 +317,7 @@ async function register(values) {
     address: String(values.address || "").trim(),
     postal_code: String(values.postal_code || "").trim() || null
   };
+  const transactionPin = String(values.transaction_pin || "").replace(/\D/g, "");
 
   const { data, error } = await supabase.auth.signUp({
     email: String(values.email || "").trim().toLowerCase(),
@@ -306,6 +331,8 @@ async function register(values) {
 
   if (data.session && data.user) {
     await saveImmediateProfile(data.user.id, profile);
+    const { error: pinError } = await supabase.rpc("set_transaction_pin", { p_pin: transactionPin });
+    if (pinError) throw pinError;
     await issueCode("register");
     message(messageBox, "Akun berhasil dibuat. Masukkan kode aktivasi 6 digit.", "success");
     return;
@@ -374,6 +401,12 @@ passwordInput.addEventListener("input", updatePasswordStrength);
 
 authCodeInput.addEventListener("input", () => {
   authCodeInput.value = authCodeInput.value.replace(/\D/g, "").slice(0, 6);
+});
+
+[transactionPinInput, confirmTransactionPinInput].forEach((input) => {
+  input?.addEventListener("input", () => {
+    input.value = input.value.replace(/\D/g, "").slice(0, 6);
+  });
 });
 authCodeVerify.addEventListener("click", verifyCode);
 authCodeNew.addEventListener("click", async () => {
