@@ -9,7 +9,7 @@
         applySiteSettings,
         aocConfirm,
         aocPrompt,
-      } from "./app.js?v=202609210800";
+      } from "./aoc-app-core-20260921.js?v=202609210935";
 
       const root = document.getElementById("adminRoot");
 

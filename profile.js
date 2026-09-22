@@ -26,7 +26,8 @@ function normalizePhone(value) {
 
 function updateSummary(profile) {
   const name = profile?.full_name?.trim() || currentUser?.email?.split("@")[0] || "Pengguna";
-  const role = String(profile?.role || "user").toLowerCase() === "admin"
+  const normalizedRole = String(profile?.role || "user").trim().toLowerCase();
+  const role = ["admin", "super_admin", "superadmin", "order_admin", "catalog_admin", "finance_admin", "warehouse_staff"].includes(normalizedRole)
     ? "Administrator"
     : "Pengguna";
 

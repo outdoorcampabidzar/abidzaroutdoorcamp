@@ -113,6 +113,29 @@
 </div>
 </nav>
 <main>
+<!-- Announcement banner: always visible when an active announcement exists -->
+<section class="announcement-banner-wrap" id="announcementBannerWrap" aria-live="polite">
+  <div class="container">
+    <div class="announcement-banner hidden" id="announcementBanner"></div>
+  </div>
+</section>
+<section class="container membership-card-section hidden" id="membershipCardSection">
+<div class="membership-card" data-membership-tier="Bronze" id="membershipCard">
+<div class="membership-card-top">
+<span class="membership-card-brand">AbidzarOutdoorcamp</span>
+<span class="membership-card-tier" id="membershipCardTier">Bronze</span>
+</div>
+<div class="membership-card-body">
+<div class="membership-card-info">
+<small>Nama Anggota</small>
+<strong id="membershipCardName">-</strong>
+<small class="membership-card-number" id="membershipCardNumber">-</small>
+</div>
+<div class="membership-card-qr" id="membershipCardQr" title="Tunjukkan QR ini ke kasir untuk verifikasi cepat"></div>
+</div>
+<div class="membership-card-hint">Tunjukkan QR di atas ke admin toko untuk verifikasi cepat saat transaksi.</div>
+</div>
+</section>
 <section class="container hero catalog-home-hero">
 <div>
 <div class="hero-eyebrow" id="site-hero-eyebrow">
@@ -175,6 +198,17 @@
 <span class="category-choice-action">Buka katalog →</span>
 </a>
 </div>
+</section>
+<section class="container section announcement-section" id="announcements">
+<div class="announcement-heading">
+  <div>
+    <div class="announcement-heading-top"><span class="badge">📢 Informasi</span><span class="announcement-heading-live"><span class="announcement-live-dot"></span>LIVE UPDATE</span></div>
+    <h2>Pengumuman terbaru</h2>
+    <p class="muted">Promo, event, informasi layanan, dan kabar terbaru AbidzarOutdoorcamp.</p>
+  </div>
+  <div class="announcement-heading-mark" aria-hidden="true">✦</div>
+</div>
+<div class="announcement-grid" id="announcementList"><div class="notice">Memuat pengumuman...</div></div>
 </section>
 <section class="container section">
 <div class="row catalog-section-heading">
@@ -260,9 +294,12 @@
     </button>
 </div>
 </section>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
     import { mountCatalog } from "./catalog.js";
     import { mountWebsiteRating } from "./website-rating.js?v=20260723-5";
+    import { mountMembershipCard } from "./app.js?v=202609210800";
+    import { mountAnnouncements } from "./announcements.js?v=20260921-popup-banner-v2";
 
     mountCatalog({
       type: "product",
@@ -279,6 +316,8 @@
     });
 
     mountWebsiteRating();
+    mountMembershipCard();
+    mountAnnouncements();
   </script>
 <a aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp" class="customer-service-float" href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan." rel="noopener noreferrer" target="_blank" title="Hubungi CS: +62 895-0934-9428">
 <span aria-hidden="true" class="customer-service-icon">

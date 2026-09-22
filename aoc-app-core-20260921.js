@@ -1,5 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { CONFIG } from "./config.js";
+import { CONFIG } from "./aoc-config-core-20260921.js?v=202609210935";
 
 export const supabase = createClient(
   CONFIG.SUPABASE_URL,

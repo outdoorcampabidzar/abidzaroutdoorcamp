@@ -5,6 +5,9 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#050d17" name="theme-color"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <title>Admin Panel — AbidzarOutdoorcamp</title>
 <link href="styles.css" rel="stylesheet"/>
 </head>
@@ -102,13 +105,38 @@
 </div>
 </div>
 </nav>
-<!-- AOC ADMIN BUILD 2026-09-17 20:30 WIB: syntax/cache-safe category toko build -->
+<!-- AOC ADMIN BUILD 2026-09-21: recovery build -->
+<script>
+(function () {
+  try {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        return Promise.all(regs.map(function (r) { return r.unregister(); }));
+      }).catch(function () {});
+    }
+    if (window.caches && caches.keys) {
+      caches.keys().then(function (keys) {
+        return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+      }).catch(function () {});
+    }
+  } catch (_) {}
+  window.__AOC_ADMIN_BUILD__ = '20260921-0935-recovery';
+  window.addEventListener('error', function (event) {
+    var msg = event && event.error && event.error.message ? event.error.message : (event.message || 'JavaScript error');
+    if (/SyntaxError|Unexpected token/i.test(msg)) {
+      var root = document.getElementById('adminRoot');
+      if (root) root.innerHTML = '<section class="container section"><div class="notice error"><b>Admin Panel gagal memuat JavaScript.</b><br><br><code>' + String(msg).replace(/</g,'&lt;') + '</code><br><br><small>Build: 2026-09-21 recovery</small></div></section>';
+    }
+  });
+})();
+</script>
+<div class="container section" style="padding-bottom:0"><a class="btn secondary" href="admin-announcements.html">📢 Pengumuman</a></div>
 <main id="adminRoot">
 <section class="container section">
 <div class="notice">Memeriksa akses admin...</div>
 </section>
 </main>
-<script type="module" src="./admin.js?v=202609181600"></script>
+<script type="module" src="./admin-core-member-scan-20260921.js?v=202609211200-member-scan-fixed"></script>
 <div id="aocRentalConditionModal" class="aoc-condition-modal" hidden role="dialog" aria-modal="true" aria-labelledby="aocRentalConditionTitle">
   <div class="aoc-condition-backdrop" data-condition-close></div>
   <div class="aoc-condition-sheet">
@@ -155,5 +183,7 @@
 <small>WhatsApp</small>
 </span>
 </a>
+<script src="./member-camera-standalone.js?v=20260921-camera-real"></script>
+<script src="./aoc-ultimate-operations-20260921.js?v=20260921-ultimate"></script>
 </body>
 </html>

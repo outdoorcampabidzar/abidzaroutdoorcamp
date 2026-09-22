@@ -4949,7 +4949,6 @@
             if (match && q) el.open = true;
           });
         });
-        document.querySelectorAll("[data-issue-membership]").forEach(
           (button) =>
             (button.onclick = async () => {
               const id = button.dataset.issueMembership;
