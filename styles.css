@@ -8545,3 +8545,104 @@ body.auth-locked { overflow: hidden !important; }
 .announcement-action{display:inline-flex;align-items:center;gap:8px;padding:10px 13px;border-radius:12px;background:#6ee7b7!important;color:#062e22!important;border:0!important;font-size:.75rem;font-weight:900;text-decoration:none;box-shadow:0 9px 22px rgba(16,185,129,.16);transition:transform .18s ease,background .18s ease}
 .announcement-action:hover{background:#a7f3d0!important;color:#052e20!important;transform:translateY(-2px)}
 @media(max-width:700px){.announcement-heading{align-items:flex-start}.announcement-heading-mark{display:none}.announcement-card-media{height:175px}.announcement-body{padding:19px!important}.announcement-card-footer{align-items:flex-start;flex-direction:column}.announcement-action{width:100%;justify-content:center}.announcement-body p{min-height:0}}
+
+/* =========================================================
+   SOCIAL LOGIN — GOOGLE / FACEBOOK / X
+   ========================================================= */
+.auth-social-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.auth-social {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  color: var(--text);
+  background: rgba(255,255,255,.035);
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.auth-social:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(74,222,128,.35);
+  background: rgba(255,255,255,.065);
+  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+}
+.auth-social:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.auth-social:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+.auth-social-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 950;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+}
+.auth-social-facebook .auth-social-icon {
+  color: #fff;
+  background: #1877f2;
+  font-family: Arial, sans-serif;
+  font-size: 22px;
+}
+.auth-social-x .auth-social-icon {
+  color: #fff;
+  background: #050505;
+  border: 1px solid rgba(255,255,255,.16);
+  font-size: 16px;
+}
+.auth-social > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.auth-social strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.auth-social small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 9px;
+}
+.auth-social.is-loading .auth-social-icon {
+  animation: authSocialPulse 1s ease-in-out infinite;
+}
+@keyframes authSocialPulse {
+  50% { transform: scale(.88); opacity: .55; }
+}
+
+@media (max-width: 620px) {
+  .auth-social-grid {
+    grid-template-columns: 1fr;
+  }
+  .auth-social {
+    min-height: 54px;
+    grid-template-columns: 38px minmax(0,1fr);
+  }
+  .auth-social-icon {
+    width: 38px;
+    height: 38px;
+  }
+}

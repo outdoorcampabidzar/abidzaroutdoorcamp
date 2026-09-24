@@ -12,6 +12,7 @@ const subtitle = document.getElementById("authSubtitle");
 const badge = document.getElementById("authBadge");
 const submitButton = document.getElementById("authSubmit");
 const toggleButton = document.getElementById("authToggle");
+const socialButtons = [...document.querySelectorAll("[data-oauth-provider]")];
 const messageBox = document.getElementById("authMessage");
 const passwordInput = document.getElementById("authPassword");
 const confirmPasswordInput = document.getElementById("confirmPassword");
@@ -352,6 +353,42 @@ async function login(values) {
   await issueCode("login");
   message(messageBox, "Password benar. Masukkan kode login 6 digit untuk melanjutkan.", "success");
 }
+
+function oauthRedirectUrl() {
+  // OAuth Google harus kembali langsung ke halaman utama AOC.
+  // Menggunakan URL relatif menjaga path /src/ saat AOC dipasang di GitHub Pages.
+  return new URL("index.html", window.location.href).toString();
+}
+
+async function signInWithSocial(provider, button) {
+  socialButtons.forEach(item => { item.disabled = true; });
+  const original = button.innerHTML;
+  button.classList.add("is-loading");
+  button.querySelector("small")?.replaceChildren(document.createTextNode("Membuka login..."));
+
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: oauthRedirectUrl(),
+        queryParams: provider === "google" ? { access_type: "offline", prompt: "select_account" } : undefined
+      }
+    });
+    if (error) throw error;
+  } catch (error) {
+    message(messageBox, error.message || `Login ${provider} gagal.`, "error");
+    button.innerHTML = original;
+    button.classList.remove("is-loading");
+    socialButtons.forEach(item => { item.disabled = false; });
+  }
+}
+
+socialButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    if (mode !== "login") setMode("login");
+    signInWithSocial(button.dataset.oauthProvider, button);
+  });
+});
 
 form.addEventListener("submit", async event => {
   event.preventDefault();
