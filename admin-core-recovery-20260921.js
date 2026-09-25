@@ -2789,7 +2789,7 @@
             <div class="admin-rental-summary">
               <strong>Sewa ${rupiah(item.price)}</strong>
               <span>${Number(item.stock || 0)} stok</span>
-              ${item.sale_enabled ? `<span>Jual ${rupiah(item.sale_price || 0)}</span>` : ""}
+              ${item.sale_enabled ? `<span>Jual ${rupiah(Number(item.sale_price) > 0 ? item.sale_price : item.price)}</span>` : ""}
             </div>
 
             <div class="inventory-status-pills">

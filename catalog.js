@@ -236,7 +236,10 @@ function availableQuantity(item) {
 }
 
 function selectedPrice(item, mode) {
-  return Number(item.type === "trip" || mode !== "sale" ? item.price : item.sale_price) || 0;
+  if (item.type === "trip" || mode !== "sale") return Number(item.price) || 0;
+  const sale = Number(item.sale_price);
+  const base = Number(item.price);
+  return sale > 0 ? sale : base > 0 ? base : 0;
 }
 
 function catalogLabel(item, mode = "rental") {

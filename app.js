@@ -320,7 +320,7 @@ export function addCart(
     priceOverride !== null && Number.isFinite(Number(priceOverride))
       ? Number(priceOverride)
       : mode === "sale"
-        ? Number(item.sale_price || 0)
+        ? (Number(item.sale_price) > 0 ? Number(item.sale_price) : Number(item.price || 0))
         : Number(item.price || 0);
   const max = Math.max(
     1,
@@ -332,7 +332,7 @@ export function addCart(
     item_id: item.id,
     title: item.title,
     price: unitPrice,
-    sale_price: Number(item.sale_price || 0),
+    sale_price: Number(item.sale_price) > 0 ? Number(item.sale_price) : (mode === "sale" ? Number(item.price || 0) : 0),
     rental_price: mode === "rental" ? unitPrice : Number(item.price || 0),
     image_url: item.image_url,
     type: item.type,
