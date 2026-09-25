@@ -5071,10 +5071,14 @@
         const tierIcon = { Bronze: "🥉", Silver: "🥈", Gold: "🥇", Platinum: "💎" };
         const cardNo = String(card.card_number);
         const W = 1011, H = 638, GAP = 48, PAD = 48;
+        // Export 600 DPI equivalent: 2x the previous 300-DPI canvas.
+        // Keep the drawing coordinates in logical card pixels, then scale the canvas.
+        const HD = 2;
         const sheet = document.createElement("canvas");
-        sheet.width = W * 2 + GAP;
-        sheet.height = H;
-        const ctx = sheet.getContext("2d");
+        sheet.width = (W * 2 + GAP) * HD;
+        sheet.height = H * HD;
+        const ctx = sheet.getContext("2d", { alpha: false });
+        ctx.scale(HD, HD);
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, sheet.width, sheet.height);
 
@@ -5168,7 +5172,7 @@
         const qrBox = document.createElement("div");
         qrBox.style.cssText="position:fixed;left:-99999px;top:-99999px;width:180px;height:180px;background:#fff;padding:10px;";
         document.body.appendChild(qrBox);
-        new window.QRCode(qrBox,{text:cardNo,width:160,height:160,colorDark:"#0b1120",colorLight:"#ffffff",correctLevel:window.QRCode.CorrectLevel.M});
+        new window.QRCode(qrBox,{text:cardNo,width:320,height:320,colorDark:"#0b1120",colorLight:"#ffffff",correctLevel:window.QRCode.CorrectLevel.H});
         await new Promise(r=>setTimeout(r,80));
         const qrCanvas=qrBox.querySelector("canvas");
         if (qrCanvas) {
