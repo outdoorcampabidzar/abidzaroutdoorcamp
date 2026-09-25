@@ -296,6 +296,8 @@
 </section>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
+    import { requireHomeSecurity } from "./home-security.js";
+    requireHomeSecurity();
     import { mountCatalog } from "./catalog.js";
     import { mountWebsiteRating } from "./website-rating.js?v=20260723-5";
     import { mountMembershipCard } from "./app.js?v=202609210800";
