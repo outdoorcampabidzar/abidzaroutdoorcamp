@@ -3,6 +3,9 @@
 -- Existing PIN can only be changed after verifying the old PIN.
 -- Admins cannot read or set a customer's PIN through these functions.
 
+-- Remove legacy overloaded signature to prevent PostgREST RPC ambiguity.
+drop function if exists public.set_transaction_pin(text,text);
+
 create or replace function public.set_transaction_pin(p_pin text)
 returns jsonb
 language plpgsql
