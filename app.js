@@ -95,16 +95,13 @@ export function applySiteSettings(settings) {
     if (logoUrl) {
       const img = document.createElement("img");
       img.className = "brand-logo";
-      img.src = logoUrl;
       img.alt = siteName;
       img.loading = "eager";
       img.decoding = "async";
       img.referrerPolicy = "no-referrer";
-      img.onerror = () => {
-        element.classList.remove("has-custom-logo");
-        img.remove();
-      };
+      img.onerror = () => { element.classList.remove("has-custom-logo"); img.remove(); };
       element.append(img);
+      normalizeLogoUrl(logoUrl).then((normalized) => { if (img.isConnected) img.src = normalized; });
     }
     element.append(textWrap);
   });
@@ -408,16 +405,13 @@ export async function mountMembershipCard(sectionId = "membershipCardSection") {
     const siteSettings = await loadSiteSettings();
     const logoUrl = String(siteSettings?.site_logo_url || "").trim();
     const siteName = String(siteSettings?.site_name || DEFAULT_SITE_SETTINGS.site_name).trim();
-    const logoMarkup = logoUrl
-      ? `<img src="${logoUrl.replace(/&/g, "&amp;").replace(/\"/g, "&quot;")}" alt="" loading="eager" decoding="async">`
-      : "";
-    if (membershipLogo) {
-      membershipLogo.innerHTML = logoMarkup;
-      membershipLogo.classList.toggle("has-logo", Boolean(logoUrl));
-    }
-    if (membershipBackLogo) {
-      membershipBackLogo.innerHTML = logoMarkup;
-      membershipBackLogo.classList.toggle("has-logo", Boolean(logoUrl));
+    if (membershipLogo) membershipLogo.classList.toggle("has-logo", Boolean(logoUrl));
+    if (membershipBackLogo) membershipBackLogo.classList.toggle("has-logo", Boolean(logoUrl));
+    if (logoUrl) {
+      const normalized = await normalizeLogoUrl(logoUrl);
+      const logoMarkup = `<img src="${normalized.replace(/&/g, "&amp;").replace(/\"/g, "&quot;")}" alt="" loading="eager" decoding="async">`;
+      if (membershipLogo) membershipLogo.innerHTML = logoMarkup;
+      if (membershipBackLogo) membershipBackLogo.innerHTML = logoMarkup;
     }
     const splitAt = siteName.toLowerCase().indexOf("outdoor");
     if (membershipBrand) {

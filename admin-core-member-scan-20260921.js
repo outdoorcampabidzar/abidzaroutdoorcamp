@@ -7,6 +7,7 @@
         DEFAULT_SITE_SETTINGS,
         loadSiteSettings,
         applySiteSettings,
+        normalizeLogoUrl,
         aocConfirm,
         aocPrompt,
       } from "./app.js?v=202609210800";
@@ -5114,36 +5115,12 @@
         async function loadLogoForCanvas(url) {
           if (!url) return null;
           try {
-            // Prefer Supabase Storage download so the image becomes a local Blob/data URL.
-            // This avoids the old cross-origin canvas failure that caused the PNG to fall
-            // back to the hard-coded AOC logo even though Admin Panel had a custom logo.
-            const u = new URL(url, window.location.href);
-            const match = u.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
-            let blob = null;
-            if (match) {
-              const bucket = decodeURIComponent(match[1]);
-              const path = decodeURIComponent(match[2]);
-              const result = await supabase.storage.from(bucket).download(path);
-              if (!result.error) blob = result.data;
-            }
-            if (!blob) {
-              const response = await fetch(url, { mode: "cors", cache: "no-store" });
-              if (!response.ok) throw new Error(`Logo HTTP ${response.status}`);
-              blob = await response.blob();
-            }
-            const dataUrl = await new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
+            const normalized = await normalizeLogoUrl(url);
             const img = new Image();
-            await new Promise((resolve, reject) => {
-              img.onload = resolve; img.onerror = reject; img.src = dataUrl;
-            });
+            await new Promise((resolve, reject) => { img.onload=resolve; img.onerror=reject; img.src=normalized; });
             return img;
           } catch (error) {
-            console.warn("Member card PNG: custom logo could not be loaded", error);
+            console.warn("Member card PNG: logo load failed", error);
             return null;
           }
         }
@@ -5158,9 +5135,9 @@
           ctx.restore();
         };
         const brand = String(siteSettings.site_name || "AbidzarOutdoorcamp");
-        drawLogo(PAD, 42, 64);
-        ctx.fillStyle="#fff"; ctx.font="900 25px Arial"; ctx.textAlign="left"; ctx.fillText(brand, PAD+82, 68);
-        ctx.fillStyle="#62e5ae"; ctx.font="800 15px Arial"; ctx.fillText("RENTAL OUTDOOR EQUIPMENT", PAD+82, 94);
+        drawLogo(PAD, 34, 92);
+        ctx.fillStyle="#fff"; ctx.font="900 25px Arial"; ctx.textAlign="left"; ctx.fillText(brand, PAD+112, 68);
+        ctx.fillStyle="#62e5ae"; ctx.font="800 15px Arial"; ctx.fillText("RENTAL OUTDOOR EQUIPMENT", PAD+112, 94);
         ctx.fillStyle="rgba(255,255,255,.15)"; roundRect(W-190,42,142,44,22); ctx.fill();
         ctx.fillStyle="#fff"; ctx.font="800 18px Arial"; ctx.textAlign="center"; ctx.fillText(`${tierIcon[tier]||"🎫"} ${tier}`, W-119,71);
         ctx.textAlign="left"; ctx.fillStyle="rgba(255,255,255,.58)"; ctx.font="700 13px Arial"; ctx.fillText("NAMA ANGGOTA", PAD, 390);
@@ -5181,9 +5158,9 @@
         qrBox.remove();
 
         const bx=W+GAP;
-        drawLogo(bx+PAD, 42, 64);
-        ctx.fillStyle="#fff"; ctx.font="900 25px Arial"; ctx.textAlign="left"; ctx.fillText(brand,bx+PAD+82,68);
-        ctx.fillStyle="#62e5ae"; ctx.font="800 15px Arial"; ctx.fillText("MEMBERSHIP CARD",bx+PAD+82,94);
+        drawLogo(bx+PAD, 34, 92);
+        ctx.fillStyle="#fff"; ctx.font="900 25px Arial"; ctx.textAlign="left"; ctx.fillText(brand,bx+PAD+112,68);
+        ctx.fillStyle="#62e5ae"; ctx.font="800 15px Arial"; ctx.fillText("MEMBERSHIP CARD",bx+PAD+112,94);
         ctx.fillStyle="#fff"; ctx.font="900 27px Arial"; ctx.fillText("Benefit Member",bx+PAD,230);
         const benefits=["Harga khusus member sesuai program aktif","Prioritas layanan saat verifikasi","Kartu berlaku untuk pemilik akun terdaftar"];
         benefits.forEach((t,i)=>{ const y=285+i*62; ctx.fillStyle="#62e5ae"; ctx.beginPath(); ctx.arc(bx+PAD+10,y-6,9,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#fff"; ctx.font="700 17px Arial"; ctx.fillText(t,bx+PAD+32,y); });
