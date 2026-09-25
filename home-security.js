@@ -1,6 +1,7 @@
-// Beranda Security Challenge
-// Meminta kode 6 digit baru setiap kali halaman Beranda dibuka.
-// Ini adalah challenge UX, bukan pengganti RLS/auth/PIN transaksi server-side.
+// PIN KEAMANAN BERANDA
+// PIN 6 digit ini dibuat acak oleh sistem setiap kali Beranda dibuka.
+// PIN ini berbeda dari PIN USER/PIN TRANSAKSI yang dibuat oleh pengguna.
+// Ini adalah challenge akses halaman, bukan pengganti RLS/auth/PIN transaksi server-side.
 const KEY = "aoc_home_security_verified";
 
 function randomSixDigits() {
@@ -35,13 +36,13 @@ export function requireHomeSecurity() {
   wrap.className = "aoc-home-security-backdrop";
   wrap.innerHTML = `
     <div class="aoc-home-security-card" role="dialog" aria-modal="true" aria-labelledby="aocHomeSecurityTitle">
-      <h2 id="aocHomeSecurityTitle">🔐 Verifikasi Beranda</h2>
-      <p>Masukkan kode keamanan 6 digit yang tampil di bawah untuk membuka Beranda.</p>
-      <div class="aoc-home-security-code" aria-label="Kode keamanan">${code}</div>
-      <input class="aoc-home-security-input" id="aocHomeSecurityInput" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="••••••" aria-label="Masukkan kode keamanan">
-      <button class="aoc-home-security-btn" id="aocHomeSecurityBtn" type="button">Buka Beranda</button>
+      <h2 id="aocHomeSecurityTitle">🛡️ PIN Keamanan Beranda</h2>
+      <p>Masukkan PIN keamanan 6 digit yang dibuat sistem di bawah untuk membuka Beranda.</p>
+      <div class="aoc-home-security-code" aria-label="PIN keamanan sistem">${code}</div>
+      <input class="aoc-home-security-input" id="aocHomeSecurityInput" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="••••••" aria-label="Masukkan PIN keamanan">
+      <button class="aoc-home-security-btn" id="aocHomeSecurityBtn" type="button">Verifikasi & Buka Beranda</button>
       <div class="aoc-home-security-error" id="aocHomeSecurityError"></div>
-      <p class="aoc-home-security-note">Kode dibuat baru setiap kali Beranda dibuka.</p>
+      <p class="aoc-home-security-note">PIN keamanan dibuat acak baru setiap kali Beranda dibuka. PIN ini bukan PIN transaksi user.</p>
     </div>`;
   document.body.appendChild(wrap);
   const input = wrap.querySelector("#aocHomeSecurityInput");
@@ -51,7 +52,7 @@ export function requireHomeSecurity() {
     const value = input.value.replace(/\D/g, "").slice(0, 6);
     input.value = value;
     if (value !== code) {
-      error.textContent = "Kode keamanan salah. Masukkan 6 digit yang tampil di atas.";
+      error.textContent = "PIN keamanan salah. Masukkan 6 digit yang tampil di atas.";
       input.value = "";
       input.focus();
       return;
