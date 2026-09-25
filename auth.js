@@ -202,10 +202,10 @@ function setMode(nextMode) {
   confirmPasswordField.classList.toggle("hidden", !isRegister);
   termsField.classList.toggle("hidden", !isRegister);
   strengthBox.classList.toggle("hidden", !isRegister);
-  transactionPinField.classList.toggle("hidden", !isRegister);
-  confirmTransactionPinField.classList.toggle("hidden", !isRegister);
-  transactionPinField.setAttribute("aria-hidden", String(!isRegister));
-  confirmTransactionPinField.setAttribute("aria-hidden", String(!isRegister));
+  transactionPinField?.classList.toggle("hidden", !isRegister);
+  confirmTransactionPinField?.classList.toggle("hidden", !isRegister);
+  transactionPinField?.setAttribute("aria-hidden", String(!isRegister));
+  confirmTransactionPinField?.setAttribute("aria-hidden", String(!isRegister));
 
   registerFields.setAttribute("aria-hidden", String(!isRegister));
   confirmPasswordField.setAttribute("aria-hidden", String(!isRegister));
@@ -229,8 +229,8 @@ function setMode(nextMode) {
 
   if (!isRegister) {
     confirmPasswordInput.value = "";
-    transactionPinInput.value = "";
-    confirmTransactionPinInput.value = "";
+    if (transactionPinInput) transactionPinInput.value = "";
+    if (confirmTransactionPinInput) confirmTransactionPinInput.value = "";
     form.elements.terms.checked = false;
   }
 
