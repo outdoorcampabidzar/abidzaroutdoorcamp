@@ -8462,23 +8462,25 @@ body.auth-locked { overflow: hidden !important; }
 .aoc-finance-dashboard{overflow:hidden}.aoc-finance-head,.aoc-finance-panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.aoc-finance-head h3{margin:6px 0 5px}.aoc-finance-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0}.aoc-finance-range{display:flex;gap:7px;flex-wrap:wrap}.aoc-finance-location{display:flex;align-items:center;gap:8px}.aoc-finance-location span{font-size:12px;font-weight:800;color:var(--muted)}.aoc-finance-location .input{min-width:150px}.aoc-finance-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.aoc-finance-card{min-height:125px;padding:17px;border-radius:18px;border:1px solid rgba(255,255,255,.09);background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018));display:flex;flex-direction:column;justify-content:space-between}.aoc-finance-card.main{border-color:rgba(99,226,165,.3);background:linear-gradient(145deg,rgba(72,220,155,.13),rgba(255,255,255,.025))}.aoc-finance-card span{font-size:12px;color:var(--muted);font-weight:800}.aoc-finance-card strong{font-size:22px;line-height:1.1}.aoc-finance-card.main strong{font-size:27px;color:#63e2a5}.aoc-finance-card small{font-size:10px;color:#81939c}.aoc-finance-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.aoc-finance-panel{padding:18px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(255,255,255,.02);margin-top:12px}.aoc-finance-panel h4{margin:0 0 15px}.aoc-finance-bar-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;margin-top:12px}.aoc-finance-bar{height:8px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;margin-top:7px}.aoc-finance-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#42d99c,#75edb6)}.aoc-store-finance-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)}.aoc-store-finance-row:last-child{border-bottom:0}.aoc-store-finance-row span{display:grid;gap:3px}.aoc-store-finance-row small{font-size:10px;color:var(--muted)}.aoc-finance-chart{height:220px;display:flex;align-items:flex-end;gap:7px;overflow-x:auto;padding:20px 2px 2px}.aoc-finance-day{min-width:45px;height:190px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}.aoc-finance-column{width:28px;min-height:4px;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,#64e4ab,#287f5c);box-shadow:0 5px 18px rgba(50,210,145,.13)}.aoc-finance-day small{font-size:9px;color:var(--muted);white-space:nowrap}.aoc-finance-value{font-size:8px;color:#9cecc4;max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aoc-finance-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding-top:13px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:var(--muted)}@media(max-width:760px){.aoc-finance-cards{grid-template-columns:1fr 1fr}.aoc-finance-split{grid-template-columns:1fr}.aoc-finance-head{align-items:flex-start}.aoc-finance-toolbar{align-items:stretch}.aoc-finance-location{width:100%;justify-content:space-between}.aoc-finance-location .input{flex:1}.aoc-finance-footer{align-items:flex-start;flex-direction:column}}@media(max-width:450px){.aoc-finance-cards{grid-template-columns:1fr}.aoc-finance-range{display:grid;grid-template-columns:repeat(3,1fr);width:100%}.aoc-finance-range .btn{flex:1}.aoc-finance-chart{gap:5px}.aoc-finance-column{width:24px}}
 
 /* Kartu Membership pelanggan (beranda) */
-.membership-card-section{margin-top:22px}
-.membership-card{position:relative;overflow:hidden;border-radius:22px;padding:24px 26px;color:#fff;min-height:170px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 40px rgba(0,0,0,.35);background:linear-gradient(135deg,#7a5230,#3f2a16)}
-.membership-card::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 120% at 100% 0%,rgba(255,255,255,.16),transparent 55%)}
-.membership-card[data-membership-tier="Silver"]{background:linear-gradient(135deg,#8b95a3,#3c4451)}
-.membership-card[data-membership-tier="Gold"]{background:linear-gradient(135deg,#e8b84b,#8a5a12)}
-.membership-card[data-membership-tier="Platinum"]{background:linear-gradient(135deg,#7de3d6,#1c5c56)}
-.membership-card-top{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:800}
-.membership-card-brand{font-size:13px;letter-spacing:.02em;opacity:.9}
-.membership-card-tier{font-size:12px;background:rgba(255,255,255,.22);padding:5px 12px;border-radius:99px;backdrop-filter:blur(2px)}
-.membership-card-body{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:18px}
-.membership-card-info{display:grid;gap:4px}
-.membership-card-info small{opacity:.85;font-size:11px}
-.membership-card-info strong{font-size:19px}
-.membership-card-number{font-family:monospace;letter-spacing:.08em;font-size:13px!important}
-.membership-card-qr{background:#fff;padding:8px;border-radius:12px;line-height:0;flex-shrink:0}
-.membership-card-hint{position:relative;margin-top:16px;font-size:11px;opacity:.85}
-@media(max-width:600px){.membership-card{padding:20px}.membership-card-body{flex-direction:column;align-items:flex-start}.membership-card-qr{align-self:center}}
+.membership-card-section{margin-top:22px;perspective:1400px}
+.membership-card-stage{position:relative;max-width:760px;margin:0 auto;min-height:360px;display:grid;place-items:center;outline:none;touch-action:none}
+.membership-card-3d{position:relative;width:min(100%,720px);aspect-ratio:1.586/1;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.2,.75,.2,1);cursor:grab;will-change:transform}
+.membership-card-3d.is-dragging{transition:none;cursor:grabbing}
+.membership-card-3d.is-flipped{transform:rotateY(180deg)}
+.membership-card-face{position:absolute;inset:0;border-radius:26px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;color:#fff;box-shadow:0 30px 70px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.18);border:1px solid rgba(151,255,225,.22);background:linear-gradient(135deg,#071d20 0%,#0b2c2a 48%,#061116 100%)}
+.membership-card-face:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 82% 15%,rgba(99,235,190,.28),transparent 30%),radial-gradient(circle at 12% 92%,rgba(59,210,164,.22),transparent 32%);pointer-events:none}
+.membership-card-front{padding:28px 32px;display:flex;flex-direction:column;justify-content:space-between}
+.membership-card-back{transform:rotateY(180deg);padding:28px 32px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,#061518,#0a2525 55%,#071014)}
+.membership-card-top,.membership-card-front-main,.membership-card-bottom{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.membership-card-brand-wrap{display:flex;align-items:center;gap:12px}.membership-card-logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#67e8b1,#159f76);font-weight:900;font-size:21px;box-shadow:0 8px 20px rgba(54,220,161,.22);overflow:hidden}.membership-card-logo img{width:100%;height:100%;object-fit:contain;padding:5px;display:block}.membership-card-logo:not(.has-logo)::before{content:"A"}.membership-card-back-brand{display:flex;align-items:center;gap:10px}.membership-card-back-logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(98,229,174,.08);border:1px solid rgba(98,229,174,.25);overflow:hidden}.membership-card-back-logo img{width:100%;height:100%;object-fit:contain;padding:4px;display:block}.membership-card-back-logo:not(.has-logo)::before{content:"A";font-weight:900;color:#62e5ae}
+.membership-card-brand{font-weight:900;font-size:17px;letter-spacing:-.03em}.membership-card-brand>span,.membership-card-back-brand>span{color:#62e5ae}.membership-card-brand small{display:block;margin-top:3px;font-size:8px;letter-spacing:.2em;opacity:.6;font-weight:700}
+.membership-card-tier{font-size:12px;font-weight:800;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);padding:8px 12px;border-radius:999px;backdrop-filter:blur(10px)}
+.membership-card-front-main{margin-top:24px;align-items:flex-end}.membership-card-info{display:grid;gap:5px}.membership-card-info small{font-size:9px;letter-spacing:.16em;opacity:.62}.membership-card-info strong{font-size:25px;letter-spacing:-.035em}.membership-card-label{margin-top:9px}.membership-card-number{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.13em;font-size:13px}
+.membership-card-qr{background:#fff;padding:9px;border-radius:15px;line-height:0;flex-shrink:0;box-shadow:0 10px 28px rgba(0,0,0,.25)}.membership-card-qr img{display:none!important}.membership-card-qr canvas{display:block!important;width:108px!important;height:108px!important}
+.membership-card-bottom{font-size:10px;letter-spacing:.17em;font-weight:800;opacity:.8}.membership-card-bottom em{font-style:normal;font-size:9px;letter-spacing:.08em;opacity:.65}.membership-card-contour{position:absolute;inset:0;opacity:.22;background:repeating-radial-gradient(ellipse at 85% 15%,transparent 0 18px,rgba(98,229,174,.28) 19px 20px,transparent 21px 40px);transform:rotate(-12deg) scale(1.4)}
+.membership-card-back-brand{position:relative;z-index:2;font-size:18px;font-weight:900}.membership-benefits{position:relative;z-index:2;display:grid;gap:12px;margin:10px 0}.membership-benefits>div{display:flex;align-items:center;gap:12px}.membership-benefits b{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;border:1px solid rgba(98,229,174,.35);color:#62e5ae;background:rgba(98,229,174,.07)}.membership-benefits strong{display:block;font-size:13px}.membership-benefits small{display:block;margin-top:2px;color:rgba(255,255,255,.6);font-size:10px}.membership-terms{position:relative;z-index:2;border:1px solid rgba(98,229,174,.2);background:rgba(0,0,0,.15);border-radius:14px;padding:11px 13px;display:grid;gap:4px}.membership-terms strong{font-size:11px;color:#62e5ae}.membership-terms span{font-size:9px;color:rgba(255,255,255,.58)}.membership-card-back-footer{position:relative;z-index:2;display:flex;justify-content:space-between;gap:12px;font-size:10px;font-weight:800}.membership-card-back-footer span{font-size:9px;opacity:.55;font-weight:500;text-align:right}
+.membership-card-controls{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px}.membership-card-controls>span{font-size:11px;color:rgba(255,255,255,.55)}
+@media(max-width:600px){.membership-card-stage{min-height:250px}.membership-card-front,.membership-card-back{padding:20px;border-radius:21px}.membership-card-3d{width:calc(100% - 8px)}.membership-card-brand{font-size:13px}.membership-card-brand small{font-size:6px}.membership-card-logo{width:34px;height:34px}.membership-card-tier{font-size:10px;padding:6px 9px}.membership-card-info strong{font-size:18px}.membership-card-qr{padding:7px}.membership-card-qr canvas{width:82px!important;height:82px!important}.membership-card-qr img{display:none!important;width:0!important;height:0!important}.membership-card-bottom{font-size:8px}.membership-card-bottom em{display:none}.membership-benefits{gap:8px}.membership-benefits strong{font-size:11px}.membership-benefits small{font-size:8px}.membership-terms{padding:8px}.membership-card-controls{flex-direction:column;gap:7px}.membership-card-controls .btn{width:100%}}.membership-card-body{flex-direction:column;align-items:flex-start}.membership-card-qr{align-self:center}}
 
 
 /* =========================================================
@@ -8645,4 +8647,40 @@ body.auth-locked { overflow: hidden !important; }
     width: 38px;
     height: 38px;
   }
+}
+
+/* === HOMEPAGE ANNOUNCEMENT OPENING === */
+.announcement-opening{padding:18px 0 8px;position:relative}
+.announcement-opening-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.announcement-opening-head h2{margin:8px 0 4px;font-size:clamp(1.25rem,3vw,1.8rem);letter-spacing:-.02em}
+.announcement-opening-head p{margin:0;font-size:.84rem}
+.announcement-opening-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.announcement-manage-btn{white-space:nowrap;font-size:.75rem!important;padding:9px 11px!important}.announcement-opening-live{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid rgba(52,211,153,.2);border-radius:999px;background:rgba(52,211,153,.08);color:#6ee7b7;font-size:.68rem;font-weight:900;letter-spacing:.08em;white-space:nowrap}
+.announcement-opening .announcement-banner{display:block!important;margin-bottom:14px}
+.announcement-opening-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.announcement-opening-list .announcement-card{min-width:0}
+.announcement-empty{display:flex;align-items:center;gap:13px;padding:17px 18px;border:1px dashed rgba(52,211,153,.22);border-radius:18px;background:rgba(7,21,31,.72);color:#dbeafe}
+.announcement-empty>span{font-size:25px}.announcement-empty strong{display:block;color:#f8fafc}.announcement-empty p{margin:3px 0 0;color:#94a3b8;font-size:.8rem}
+@media(max-width:700px){.announcement-opening{padding:12px 0 4px}.announcement-opening-head{align-items:flex-start}.announcement-opening-head h2{font-size:1.18rem}.announcement-opening-head p{font-size:.75rem}.announcement-opening-live{font-size:.6rem;padding:7px 9px}.announcement-opening-list{grid-template-columns:1fr}}
+
+/* Announcement Beranda — minimal: hanya satu banner kecil */
+.announcement-opening{padding:10px 0 4px!important}
+.announcement-opening-head{align-items:center!important;margin-bottom:8px!important}
+.announcement-opening-head h2{font-size:1.05rem!important;margin:5px 0 2px!important}
+.announcement-opening-head p{font-size:.72rem!important}
+.announcement-opening-live{padding:6px 9px!important;font-size:.58rem!important}
+.announcement-manage-btn{font-size:.68rem!important;padding:7px 9px!important}
+.announcement-opening-list{display:none!important}
+.announcement-opening .announcement-banner{margin-bottom:0!important;border-radius:16px!important;box-shadow:0 8px 24px rgba(2,8,23,.16)!important}
+.announcement-banner .announcement-content{min-height:60px!important;padding:10px 12px!important;gap:10px!important}
+.announcement-banner-icon{width:38px!important;height:38px!important;border-radius:11px!important;font-size:19px!important}
+.announcement-banner-copy strong{font-size:.9rem!important;margin-bottom:2px!important}
+.announcement-banner-copy p{font-size:.72rem!important}
+.announcement-banner-action{font-size:.68rem!important;padding:8px 9px!important;border-radius:9px!important}
+@media(max-width:700px){
+  .announcement-opening-head{gap:8px!important}
+  .announcement-opening-head p{display:none}
+  .announcement-opening-actions{gap:5px!important}
+  .announcement-banner .announcement-content{padding:9px 10px!important}
+  .announcement-banner-right{gap:4px!important}
+  .announcement-banner-action{font-size:.62rem!important;padding:7px 8px!important}
 }

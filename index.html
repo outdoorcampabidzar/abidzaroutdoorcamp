@@ -113,28 +113,62 @@
 </div>
 </nav>
 <main>
-<!-- Announcement banner: always visible when an active announcement exists -->
-<section class="announcement-banner-wrap" id="announcementBannerWrap" aria-live="polite">
+<!-- PENGUMUMAN PEMBUKA BERANDA: selalu menjadi konten pertama setelah navigasi -->
+<section class="announcement-opening" id="announcementOpening" aria-live="polite">
   <div class="container">
-    <div class="announcement-banner hidden" id="announcementBanner"></div>
+    <div class="announcement-opening-head">
+      <div>
+        <span class="badge">📢 PENGUMUMAN</span>
+        <h2>Informasi Terbaru AbidzarOutdoorcamp</h2>
+        <p class="muted">Promo, event, perubahan layanan, dan informasi penting ditampilkan di sini.</p>
+      </div>
+      <div class="announcement-opening-actions">
+        <span class="announcement-opening-live"><span class="announcement-live-dot"></span> LIVE</span>
+        <a class="btn secondary announcement-manage-btn" href="admin-announcements.html">✏️ Edit Pengumuman</a>
+      </div>
+    </div>
+    <div class="announcement-banner" id="announcementBanner"></div>
+    <div class="announcement-opening-list" id="announcementList" aria-hidden="true"></div>
   </div>
 </section>
 <section class="container membership-card-section hidden" id="membershipCardSection">
-<div class="membership-card" data-membership-tier="Bronze" id="membershipCard">
-<div class="membership-card-top">
-<span class="membership-card-brand">AbidzarOutdoorcamp</span>
-<span class="membership-card-tier" id="membershipCardTier">Bronze</span>
-</div>
-<div class="membership-card-body">
-<div class="membership-card-info">
-<small>Nama Anggota</small>
-<strong id="membershipCardName">-</strong>
-<small class="membership-card-number" id="membershipCardNumber">-</small>
-</div>
-<div class="membership-card-qr" id="membershipCardQr" title="Tunjukkan QR ini ke kasir untuk verifikasi cepat"></div>
-</div>
-<div class="membership-card-hint">Tunjukkan QR di atas ke admin toko untuk verifikasi cepat saat transaksi.</div>
-</div>
+  <div class="membership-card-stage" id="membershipCardStage" tabindex="0" aria-label="Kartu member 3D. Ketuk untuk membalik kartu, geser untuk memutar.">
+    <div class="membership-card-3d" id="membershipCard" data-membership-tier="Bronze">
+      <article class="membership-card-face membership-card-front">
+        <div class="membership-card-top">
+          <div class="membership-card-brand-wrap">
+            <span class="membership-card-logo" id="membershipCardLogo" aria-hidden="true"></span>
+            <span class="membership-card-brand" id="membershipCardBrand">Abidzar<span>Outdoorcamp</span><small>RENTAL OUTDOOR EQUIPMENT</small></span>
+          </div>
+          <span class="membership-card-tier" id="membershipCardTier">🥉 Bronze</span>
+        </div>
+        <div class="membership-card-contour"></div>
+        <div class="membership-card-front-main">
+          <div class="membership-card-info">
+            <small>NAMA ANGGOTA</small>
+            <strong id="membershipCardName">-</strong>
+            <small class="membership-card-label">ID ANGGOTA</small>
+            <span class="membership-card-number" id="membershipCardNumber">-</span>
+          </div>
+          <div class="membership-card-qr" id="membershipCardQr" title="Tunjukkan QR ini ke admin toko untuk verifikasi cepat"></div>
+        </div>
+        <div class="membership-card-bottom">
+          <span>MEMBER CARD</span><em>GEAR FOR BETTER JOURNEY</em>
+        </div>
+      </article>
+      <article class="membership-card-face membership-card-back">
+        <div class="membership-card-back-brand"><span class="membership-card-back-logo" id="membershipCardBackLogo" aria-hidden="true"></span><span id="membershipCardBackBrand">Abidzar<span>Outdoorcamp</span></span></div>
+        <div class="membership-benefits">
+          <div><b>✦</b><span><strong>Harga Khusus Member</strong><small>Nikmati benefit member sesuai program aktif.</small></span></div>
+          <div><b>★</b><span><strong>Prioritas Layanan</strong><small>Verifikasi member lebih cepat saat transaksi.</small></span></div>
+          <div><b>✓</b><span><strong>Member Terverifikasi</strong><small>Jangan bagikan kartu atau QR kepada orang lain.</small></span></div>
+        </div>
+        <div class="membership-terms"><strong>Ketentuan</strong><span>Kartu hanya berlaku untuk pemilik akun AbidzarOutdoorcamp.</span><span>Gunakan QR saat transaksi untuk verifikasi.</span></div>
+        <div class="membership-card-back-footer">Sewa • Jelajah • Cerita <span>Terima kasih sudah menjadi bagian dari kami.</span></div>
+      </article>
+    </div>
+  </div>
+  <div class="membership-card-controls"><button type="button" class="btn secondary" id="membershipCardFlip">↻ Putar Kartu</button><span>Ketuk kartu atau geser untuk memutar 3D</span></div>
 </section>
 <section class="container hero catalog-home-hero">
 <div>
@@ -199,17 +233,7 @@
 </a>
 </div>
 </section>
-<section class="container section announcement-section" id="announcements">
-<div class="announcement-heading">
-  <div>
-    <div class="announcement-heading-top"><span class="badge">📢 Informasi</span><span class="announcement-heading-live"><span class="announcement-live-dot"></span>LIVE UPDATE</span></div>
-    <h2>Pengumuman terbaru</h2>
-    <p class="muted">Promo, event, informasi layanan, dan kabar terbaru AbidzarOutdoorcamp.</p>
-  </div>
-  <div class="announcement-heading-mark" aria-hidden="true">✦</div>
-</div>
-<div class="announcement-grid" id="announcementList"><div class="notice">Memuat pengumuman...</div></div>
-</section>
+
 <section class="container section">
 <div class="row catalog-section-heading">
 <div>
@@ -301,7 +325,7 @@
     import { mountCatalog } from "./catalog.js";
     import { mountWebsiteRating } from "./website-rating.js?v=20260723-5";
     import { mountMembershipCard } from "./app.js?v=202609210800";
-    import { mountAnnouncements } from "./announcements.js?v=20260921-popup-banner-v2";
+    import { mountAnnouncements } from "./announcements.js?v=20260925-opening-home-v3";
 
     mountCatalog({
       type: "product",

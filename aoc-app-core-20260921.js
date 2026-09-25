@@ -408,12 +408,17 @@ export async function mountMembershipCard(sectionId = "membershipCardSection") {
     if (qrEl && window.QRCode) {
       qrEl.innerHTML = "";
       new window.QRCode(qrEl, {
-        text: card.card_number,
+        text: String(card.card_number || ""),
         width: 108,
         height: 108,
         colorDark: "#0b1120",
         colorLight: "#ffffff",
+        correctLevel: window.QRCode.CorrectLevel.H,
       });
+      // qrcodejs membuat IMG + CANVAS. Gunakan canvas saja agar tidak muncul
+      // kotak putih kosong/QR dobel pada beberapa browser Android.
+      const qrImg = qrEl.querySelector("img");
+      if (qrImg) qrImg.style.display = "none";
     }
     section.classList.remove("hidden");
   } catch (e) {

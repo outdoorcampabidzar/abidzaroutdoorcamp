@@ -75,35 +75,26 @@ function renderBanner(rows){
   }
 }
 
-export async function mountAnnouncements({containerId="announcementList",sectionId="announcements"}={}){
+export async function mountAnnouncements({containerId="announcementList",sectionId="announcementOpening"}={}){
   const box=document.getElementById(containerId), section=document.getElementById(sectionId);
   try{
     const rows=await loadAnnouncements();
-    if(!rows.length){ section?.classList.add("hidden"); return; }
-    if(box) {
-      box.innerHTML=rows.map(a=>{
-        const image=safeUrl(a.image_url), url=safeUrl(a.action_url), label=LABELS[a.category]||"Pengumuman";
-        return `<article class="announcement-card">
-          <div class="announcement-card-shine"></div>
-          ${image?`<div class="announcement-card-media"><img src="${esc(image)}" alt="" loading="lazy"><span>${ICONS[a.category]||"📢"} ${esc(label)}</span></div>`:`<div class="announcement-card-media announcement-card-media-empty"><span class="announcement-card-icon">${ICONS[a.category]||"📢"}</span><span>${esc(label)}</span></div>`}
-          <div class="announcement-body">
-            <div class="announcement-card-kicker"><span class="announcement-live-dot"></span>${esc(label)}<span class="announcement-card-kicker-sep">•</span><span>Info terbaru</span></div>
-            <h3>${esc(a.title)}</h3><p>${esc(a.content)}</p>
-            <div class="announcement-card-footer"><span class="announcement-meta"><span>◷ ${fmt(a.starts_at)}</span></span>
-              ${url?`<a class="announcement-action" href="${esc(url)}">${esc(a.action_label||"Lihat Selengkapnya")} <span>↗</span></a>`:""}
-            </div>
-          </div></article>`;
-      }).join("");
-      box.querySelectorAll('.announcement-card-media img').forEach(img=>img.addEventListener('error',()=>{
-        const media=img.closest('.announcement-card-media');
-        if(!media) return;
-        const label=media.querySelector('span')?.textContent || '📢 Pengumuman';
-        media.classList.add('announcement-card-media-empty');
-        media.innerHTML=`<span class="announcement-card-icon">📢</span><span>${esc(label)}</span>`;
-      },{once:true}));
+    if(!rows.length){
+      if(box) box.innerHTML='';
+      const banner=document.getElementById("announcementBanner");
+      if(banner) banner.classList.add("hidden");
+      return;
     }
-    renderBanner(rows); showPopup(rows[0]);
-  }catch(e){ console.error("Announcement load:",e); section?.classList.add("hidden"); }
+    // Beranda hanya menampilkan SATU banner pengumuman yang ringkas.
+    // Daftar/card besar sengaja tidak dirender agar halaman tetap minimal.
+    if(box) box.innerHTML="";
+    renderBanner([rows[0]]);
+    showPopup(rows[0]);
+  }catch(e){
+    console.error("Announcement load:",e);
+    if(box) box.innerHTML="";
+    document.getElementById("announcementBanner")?.classList.add("hidden");
+  }
 }
 
 export async function listAllAnnouncements(){

@@ -73,7 +73,7 @@ begin
   foreach t in array array[
     'orders','order_items','order_returns','order_refunds','payment_transactions',
     'vouchers','voucher_items','voucher_usages','items','item_variants','item_price_tiers',
-    'inventory_units','aoc_locations','shop_rewards','coin_settings','site_announcements',
+    'inventory_units','aoc_locations','shop_rewards','coin_settings',
     'open_trips','trip_participants'
   ] loop
     if to_regclass('public.'||t) is not null then
@@ -95,3 +95,9 @@ revoke execute on function public.set_transaction_pin(text) from public, anon;
 -- PIN verification remains the only way to create a short-lived authorization session.
 -- Session lifetime is intentionally short and is server-checked by the trigger.
 notify pgrst, 'reload schema';
+
+
+-- PATCH: Admin announcement management must NOT require customer transaction PIN.
+-- Announcement access is protected by the existing admin permission/RLS policies.
+drop trigger if exists aoc_pin_gate_site_announcements on public.site_announcements;
+
