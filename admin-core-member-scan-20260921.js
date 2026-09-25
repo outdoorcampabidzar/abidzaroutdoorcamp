@@ -5107,12 +5107,43 @@
 
         const logoUrl = String(siteSettings.site_logo_url || "");
         let logoImg = null;
-        if (logoUrl) {
+        async function loadLogoForCanvas(url) {
+          if (!url) return null;
           try {
-            logoImg = new Image(); logoImg.crossOrigin = "anonymous";
-            await new Promise((resolve) => { logoImg.onload=resolve; logoImg.onerror=resolve; logoImg.src=logoUrl; setTimeout(resolve, 2500); });
-          } catch (_) { logoImg = null; }
+            // Prefer Supabase Storage download so the image becomes a local Blob/data URL.
+            // This avoids the old cross-origin canvas failure that caused the PNG to fall
+            // back to the hard-coded AOC logo even though Admin Panel had a custom logo.
+            const u = new URL(url, window.location.href);
+            const match = u.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+            let blob = null;
+            if (match) {
+              const bucket = decodeURIComponent(match[1]);
+              const path = decodeURIComponent(match[2]);
+              const result = await supabase.storage.from(bucket).download(path);
+              if (!result.error) blob = result.data;
+            }
+            if (!blob) {
+              const response = await fetch(url, { mode: "cors", cache: "no-store" });
+              if (!response.ok) throw new Error(`Logo HTTP ${response.status}`);
+              blob = await response.blob();
+            }
+            const dataUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            const img = new Image();
+            await new Promise((resolve, reject) => {
+              img.onload = resolve; img.onerror = reject; img.src = dataUrl;
+            });
+            return img;
+          } catch (error) {
+            console.warn("Member card PNG: custom logo could not be loaded", error);
+            return null;
+          }
         }
+        logoImg = await loadLogoForCanvas(logoUrl);
         const drawLogo = (x, y, size) => {
           ctx.save(); roundRect(x,y,size,size,18); ctx.fillStyle="#63e6b0"; ctx.fill();
           if (logoImg?.complete && logoImg.naturalWidth) {
