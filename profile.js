@@ -4,6 +4,7 @@ const form = document.getElementById("profileForm");
 const saveButton = document.getElementById("profileSave");
 const resetButton = document.getElementById("passwordReset");
 const messageBox = document.getElementById("profileMessage");
+const transactionPinCurrentInput = document.getElementById("profileTransactionPinCurrent");
 const transactionPinInput = document.getElementById("profileTransactionPin");
 const transactionPinConfirmInput = document.getElementById("profileTransactionPinConfirm");
 const saveTransactionPinButton = document.getElementById("saveTransactionPin");
@@ -174,7 +175,27 @@ resetButton.addEventListener("click", async () => {
 
 loadProfile();
 
-[transactionPinInput, transactionPinConfirmInput].forEach((input) => {
+async function refreshPinSecurityUI() {
+  const currentField = document.getElementById("currentPinField");
+  const hint = document.getElementById("pinSecurityHint");
+  try {
+    const { data, error } = await supabase.rpc("has_transaction_pin");
+    if (error) throw error;
+    const hasPin = data === true;
+    currentField?.classList.toggle("hidden", !hasPin);
+    if (transactionPinCurrentInput) transactionPinCurrentInput.required = hasPin;
+    if (hint) hint.textContent = hasPin
+      ? "Untuk mengganti PIN, masukkan PIN lama terlebih dahulu. Admin tidak dapat melihat PIN Anda."
+      : "Buat PIN 6 digit untuk mengamankan checkout. PIN hanya diketahui Anda dan tidak dapat dilihat admin.";
+    if (saveTransactionPinButton) saveTransactionPinButton.textContent = hasPin ? "Ganti PIN Transaksi" : "Buat PIN Transaksi";
+    return hasPin;
+  } catch (error) {
+    console.error("PIN status:", error);
+    return false;
+  }
+}
+
+[transactionPinCurrentInput, transactionPinInput, transactionPinConfirmInput].forEach((input) => {
   input?.addEventListener("input", () => {
     input.value = input.value.replace(/\D/g, "").slice(0, 6);
   });
@@ -183,31 +204,29 @@ loadProfile();
 saveTransactionPinButton?.addEventListener("click", async () => {
   const pin = String(transactionPinInput?.value || "");
   const confirm = String(transactionPinConfirmInput?.value || "");
-  if (!/^\d{6}$/.test(pin)) {
-    message(messageBox, "PIN transaksi harus tepat 6 digit.", "error");
-    return;
-  }
-  if (pin !== confirm) {
-    message(messageBox, "Konfirmasi PIN transaksi tidak sama.", "error");
-    return;
-  }
-  if (new Set(pin.split("")).size === 1) {
-    message(messageBox, "Jangan gunakan PIN yang semua angkanya sama.", "error");
-    return;
-  }
+  const current = String(transactionPinCurrentInput?.value || "");
+  if (!/^\d{6}$/.test(pin)) { message(messageBox, "PIN transaksi harus tepat 6 digit.", "error"); return; }
+  if (pin !== confirm) { message(messageBox, "Konfirmasi PIN transaksi tidak sama.", "error"); return; }
+  if (new Set(pin.split("")).size === 1) { message(messageBox, "Jangan gunakan PIN yang semua angkanya sama.", "error"); return; }
+  const hasPin = await refreshPinSecurityUI();
+  if (hasPin && !/^\d{6}$/.test(current)) { message(messageBox, "Masukkan PIN lama untuk mengganti PIN.", "error"); return; }
   saveTransactionPinButton.disabled = true;
-  saveTransactionPinButton.textContent = "Menyimpan...";
+  saveTransactionPinButton.textContent = hasPin ? "Mengganti..." : "Membuat...";
   try {
-    const { data, error } = await supabase.rpc("set_transaction_pin", { p_pin: pin });
+    const rpc = hasPin
+      ? supabase.rpc("change_transaction_pin", { p_current_pin: current, p_new_pin: pin })
+      : supabase.rpc("set_transaction_pin", { p_pin: pin });
+    const { data, error } = await rpc;
     if (error) throw error;
-    message(messageBox, data?.message || "PIN transaksi berhasil disimpan.", "success");
-    transactionPinInput.value = "";
-    transactionPinConfirmInput.value = "";
+    message(messageBox, data?.message || (hasPin ? "PIN transaksi berhasil diganti." : "PIN transaksi berhasil dibuat."), "success");
+    transactionPinCurrentInput.value = ""; transactionPinInput.value = ""; transactionPinConfirmInput.value = "";
+    await refreshPinSecurityUI();
   } catch (error) {
-    message(messageBox, error.message || "PIN transaksi gagal disimpan.", "error");
+    message(messageBox, error.message || "PIN transaksi gagal diproses.", "error");
   } finally {
     saveTransactionPinButton.disabled = false;
-    saveTransactionPinButton.textContent = "Simpan PIN Transaksi";
+    await refreshPinSecurityUI();
   }
 });
 
+refreshPinSecurityUI();

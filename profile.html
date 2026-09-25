@@ -182,9 +182,11 @@
 <p class="muted">Buat atau ganti PIN 6 digit untuk mengonfirmasi checkout.</p>
 </div>
 <div class="two">
-<label class="field"><span>PIN baru</span><input class="input" id="profileTransactionPin" inputmode="numeric" maxlength="6" minlength="6" pattern="[0-9]{6}" placeholder="6 digit" type="password"/></label>
-<label class="field"><span>Konfirmasi PIN</span><input class="input" id="profileTransactionPinConfirm" inputmode="numeric" maxlength="6" minlength="6" pattern="[0-9]{6}" placeholder="Ulangi PIN" type="password"/></label>
+<label class="field" id="currentPinField"><span>PIN lama</span><input class="input" id="profileTransactionPinCurrent" inputmode="numeric" maxlength="6" minlength="6" pattern="[0-9]{6}" placeholder="PIN lama" type="password" autocomplete="current-password"/></label>
+<label class="field"><span>PIN baru</span><input class="input" id="profileTransactionPin" inputmode="numeric" maxlength="6" minlength="6" pattern="[0-9]{6}" placeholder="6 digit" type="password" autocomplete="new-password"/></label>
+<label class="field"><span>Konfirmasi PIN</span><input class="input" id="profileTransactionPinConfirm" inputmode="numeric" maxlength="6" minlength="6" pattern="[0-9]{6}" placeholder="Ulangi PIN" type="password" autocomplete="new-password"/></label>
 </div>
+<p class="muted" id="pinSecurityHint">PIN hanya diketahui Anda. Admin tidak dapat melihat PIN.</p>
 <button class="btn secondary" id="saveTransactionPin" type="button">Simpan PIN Transaksi</button>
 </section>
 <div class="profile-actions">

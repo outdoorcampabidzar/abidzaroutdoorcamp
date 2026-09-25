@@ -107,7 +107,7 @@ async function verifyCode() {
     const verifiedType = pendingCodeType;
     hideCodePanel();
     message(messageBox, verifiedType === "login" ? "Login berhasil." : "Akun berhasil diaktifkan.", "success");
-    setTimeout(() => { location.href = nextPage; }, 400);
+    setTimeout(() => { finishAuthRedirect(); }, 400);
   } catch (error) {
     message(messageBox, error.message || "Kode tidak valid.", "error");
   } finally {
@@ -131,6 +131,34 @@ function safeNextPage() {
 }
 
 const nextPage = safeNextPage();
+
+function onboardingPage() {
+  return new URL("complete-profile.html", window.location.href).toString();
+}
+
+async function needsGoogleOnboarding() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("full_name,phone,address,city,postal_code")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (error) { console.warn("Profile check:", error.message); return true; }
+  const required = [data?.full_name, data?.phone, data?.address, data?.city];
+  const complete = required.every(v => String(v || "").trim().length > 0);
+  const { data: pinSet, error: pinError } = await supabase.rpc("has_transaction_pin");
+  if (pinError) { console.warn("PIN check:", pinError.message); return true; }
+  return !complete || pinSet !== true;
+}
+
+async function finishAuthRedirect() {
+  if (await needsGoogleOnboarding()) {
+    location.href = onboardingPage() + "?next=" + encodeURIComponent(nextPage);
+    return;
+  }
+  location.href = nextPage;
+}
 
 function clearMessage() {
   messageBox.textContent = "";
