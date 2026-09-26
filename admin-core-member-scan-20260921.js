@@ -7,10 +7,9 @@
         DEFAULT_SITE_SETTINGS,
         loadSiteSettings,
         applySiteSettings,
-        normalizeLogoUrl,
         aocConfirm,
         aocPrompt,
-      } from "./app.js?v=202609210800";
+      } from "./app.js?v=202609260714-admin-boot-fix";
 
       const root = document.getElementById("adminRoot");
 
@@ -2791,7 +2790,7 @@
             <div class="admin-rental-summary">
               <strong>Sewa ${rupiah(item.price)}</strong>
               <span>${Number(item.stock || 0)} stok</span>
-              ${item.sale_enabled ? `<span>Jual ${rupiah(Number(item.sale_price) > 0 ? item.sale_price : item.price)}</span>` : ""}
+              ${item.sale_enabled ? `<span>Jual ${rupiah(item.sale_price || 0)}</span>` : ""}
             </div>
 
             <div class="inventory-status-pills">
@@ -4531,29 +4530,6 @@
 
       let financeRange = "month";
       let financeLocation = "all";
-      let financeResetAt = undefined;
-      async function loadFinanceResetPoint(){
-        try{
-          const {data,error}=await supabase.rpc("get_finance_reset_at",{p_location_id:financeLocation==="all"?null:financeLocation});
-          if(error) throw error;
-          financeResetAt=data||null;
-        }catch(_){ financeResetAt=null; }
-      }
-      async function financeResetOmzet(){
-        if(!(can("finance.manage")||can("*"))) return;
-        const target=financeLocation==="all"?"SEMUA TOKO":(document.querySelector("#financeLocation option:checked")?.textContent?.trim()||"Toko terpilih");
-        const ok=await window.aocReminderConfirm({icon:"♻️",title:"Reset Omzet?",confirmText:"Reset Omzet",danger:true,message:`Omzet pada laporan akan dimulai dari sekarang untuk ${target}. Data pesanan, pembayaran, refund, dan transaksi TIDAK dihapus.`});
-        if(!ok) return;
-        try{
-          const {data,error}=await supabase.rpc("admin_reset_omzet",{p_location_id:financeLocation==="all"?null:financeLocation});
-          if(error) throw error;
-          financeResetAt=data||new Date().toISOString();
-          showAdminMessage(`Omzet berhasil direset untuk ${target}. Data lama tetap tersimpan.`,"success");
-          ordersLoaded=false; ordersLoadPromise=null;
-          await loadOrdersData();
-          renderFinanceTab();
-        }catch(err){showAdminMessage(err?.message||"Gagal mereset omzet. Jalankan PATCH-RESET-OMSET.sql terlebih dahulu.","error");}
-      }
       function financeOrderAmount(o){return Number(o?.total ?? o?.subtotal ?? 0)||0;}
       function financeGrossAmount(o){return financeOrderAmount(o)+(Number(o?.late_fee)||0);}
       function financeRefundAmount(o){return (o?.order_refunds||[]).reduce((s,r)=>s+(Number(r?.amount)||0),0);}
@@ -4589,15 +4565,12 @@
           renderFinanceTab();
         }catch(err){showAdminMessage(err?.message||"Gagal menghapus pengeluaran.","error");}
       }
-      async function renderFinanceTab(){
+      function renderFinanceTab(){
         const content=document.getElementById("adminContent");
-        if(financeResetAt===undefined) await loadFinanceResetPoint();
         if(!ordersLoaded||!expensesLoaded){content.innerHTML='<div class="notice">Memuat laporan keuangan...</div>';Promise.all([loadOrdersData(),loadExpensesData()]).then(renderFinanceTab).catch(e=>content.innerHTML=`<div class="notice error">${esc(e?.message||"Gagal memuat laporan keuangan.")}</div>`);return;}
         const {s,e}=financeRangeBounds(financeRange);
-        const resetDate=financeResetAt?new Date(financeResetAt):null;
-        const effectiveStart=resetDate&&resetDate>s?resetDate:s;
-        const filtered=orders.filter(o=>financeIsRevenue(o)&&(financeLocation==="all"||String(o.location_id||"")===String(financeLocation))&&new Date(o.paid_at||o.created_at||0)>=effectiveStart&&new Date(o.paid_at||o.created_at||0)<=e);
-        const selectedOrders=orders.filter(o=>(financeLocation==="all"||String(o.location_id||"")===String(financeLocation))&&new Date(o.created_at||0)>=effectiveStart);
+        const filtered=orders.filter(o=>financeIsRevenue(o)&&(financeLocation==="all"||String(o.location_id||"")===String(financeLocation))&&new Date(o.paid_at||o.created_at||0)>=s&&new Date(o.paid_at||o.created_at||0)<=e);
+        const selectedOrders=orders.filter(o=>financeLocation==="all"||String(o.location_id||"")===String(financeLocation));
         const gross=filtered.reduce((x,o)=>x+financeGrossAmount(o),0),refunds=filtered.reduce((x,o)=>x+financeRefundAmount(o),0),late=filtered.reduce((x,o)=>x+(Number(o.late_fee)||0),0),net=gross-refunds,avg=filtered.length?net/filtered.length:0;
         const rental=filtered.filter(o=>financeLineType(o)==="rental").reduce((x,o)=>x+financeOrderAmount(o),0),sale=filtered.filter(o=>financeLineType(o)==="sale").reduce((x,o)=>x+financeOrderAmount(o),0),pending=selectedOrders.filter(o=>["pending","confirmed"].includes(o.status)&&new Date(o.created_at||0)>=s&&new Date(o.created_at||0)<=e).reduce((x,o)=>x+financeOrderAmount(o),0);
         const locations=[...new Map(orders.filter(o=>o.location_id).map(o=>[String(o.location_id),{id:o.location_id,name:o.location_name||"Lokasi"}])).values()];
@@ -4605,11 +4578,11 @@
         const dm=new Map();filtered.forEach(o=>{const d=new Date(o.paid_at||o.created_at),k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;dm.set(k,(dm.get(k)||0)+financeGrossAmount(o)-financeRefundAmount(o));});
         const days=[]; if(financeRange==="all"){[...dm.keys()].sort().slice(-14).forEach(k=>days.push([k,dm.get(k)||0]));}else{const c=new Date(s),count=Math.min(31,Math.ceil((e-s)/86400000)+1);for(let i=0;i<count;i++){const d=new Date(c);d.setDate(c.getDate()+i);const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;days.push([k,dm.get(k)||0]);}}const maxDay=Math.max(1,...days.map(x=>x[1]));
         const canExpense=financeCanManageExpenses();
-        const filteredExpenses=expenses.filter(x=>(financeLocation==="all"||String(x.location_id||"")===String(financeLocation)||!x.location_id)&&new Date(x.expense_date||x.created_at||0)>=effectiveStart&&new Date(x.expense_date||x.created_at||0)<=e);
+        const filteredExpenses=expenses.filter(x=>(financeLocation==="all"||String(x.location_id||"")===String(financeLocation)||!x.location_id)&&new Date(x.expense_date||x.created_at||0)>=s&&new Date(x.expense_date||x.created_at||0)<=e);
         const totalExpenses=filteredExpenses.reduce((x,o)=>x+(Number(o.amount)||0),0);
         const labaBersih=net-totalExpenses;
-        content.innerHTML=`<section class="card aoc-finance-dashboard"><div class="aoc-finance-head"><div><span class="badge">LAPORAN KEUANGAN</span><h3>💰 Omzet & Keuangan</h3><p class="muted">Omzet dihitung dari pesanan yang sudah dibayar/direalisasikan. Refund dikurangkan dari omzet bersih.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn secondary small" id="refreshFinance">↻ Muat Ulang</button>${financeCanManageExpenses()?`<button class="btn danger small" id="resetFinance">♻️ Reset Omzet</button>`:""}</div></div><div class="aoc-finance-toolbar"><div class="aoc-finance-range">${[["today","Hari ini"],["7d","7 Hari"],["month","Bulan ini"],["30d","30 Hari"],["all","Semua"]].map(([v,l])=>`<button type="button" class="btn small ${financeRange===v?"primary":"secondary"}" data-finance-range="${v}">${l}</button>`).join("")}</div><label class="aoc-finance-location"><span>📍 Toko</span><select id="financeLocation" class="input"><option value="all">Semua Toko</option>${locations.map(l=>`<option value="${esc(l.id)}" ${String(financeLocation)===String(l.id)?"selected":""}>${esc(l.name)}</option>`).join("")}</select></label></div><div class="aoc-finance-cards"><div class="aoc-finance-card main"><span>Omzet Bersih</span><strong>${financeMoney(net)}</strong><small>${filtered.length} transaksi</small></div><div class="aoc-finance-card"><span>Omzet Kotor</span><strong>${financeMoney(gross)}</strong><small>Sebelum refund</small></div><div class="aoc-finance-card"><span>Refund</span><strong>${financeMoney(refunds)}</strong><small>Pengembalian dana</small></div><div class="aoc-finance-card"><span>Denda</span><strong>${financeMoney(late)}</strong><small>Denda tercatat</small></div><div class="aoc-finance-card"><span>Rata-rata Order</span><strong>${financeMoney(avg)}</strong><small>Per transaksi</small></div><div class="aoc-finance-card"><span>Belum Dibayar</span><strong>${financeMoney(pending)}</strong><small>Pending + dikonfirmasi</small></div>${canExpense?`<div class="aoc-finance-card main"><span>Laba Bersih</span><strong>${financeMoney(Math.max(0,labaBersih))}</strong><small>Omzet Bersih − Pengeluaran (${financeMoney(totalExpenses)})</small></div>`:""}</div><div class="aoc-finance-split"><div class="aoc-finance-panel"><h4>📊 Sumber Pendapatan</h4><div class="aoc-finance-bar-row"><span>🏕️ Sewa</span><b>${financeMoney(rental)}</b></div><div class="aoc-finance-bar"><i style="width:${gross?Math.min(100,rental/gross*100):0}%"></i></div><div class="aoc-finance-bar-row"><span>🛒 Jual</span><b>${financeMoney(sale)}</b></div><div class="aoc-finance-bar"><i style="width:${gross?Math.min(100,sale/gross*100):0}%"></i></div></div><div class="aoc-finance-panel"><h4>🏪 Omzet per Toko</h4>${storeRows.length?storeRows.map(r=>`<div class="aoc-store-finance-row"><span><b>${esc(r.name)}</b><small>${r.count} transaksi</small></span><strong>${financeMoney(r.value)}</strong></div>`).join(""):'<p class="muted">Belum ada transaksi berlokasi.</p>'}</div></div><div class="aoc-finance-panel"><div class="aoc-finance-panel-head"><h4>📈 Omzet Harian</h4><small>${s.toLocaleDateString("id-ID")} – ${e.toLocaleDateString("id-ID")}</small></div><div class="aoc-finance-chart">${days.map(([k,v])=>`<div class="aoc-finance-day"><div class="aoc-finance-value">${v?financeMoney(v):"-"}</div><div class="aoc-finance-column" style="height:${Math.max(4,(v/maxDay)*150)}px"></div><small>${new Date(k+"T00:00:00").toLocaleDateString("id-ID",{day:"2-digit",month:"short"})}</small></div>`).join("")}</div></div>${canExpense?`<div class="aoc-finance-panel"><div class="aoc-finance-panel-head"><h4>📉 Pengeluaran</h4><button class="btn primary small" id="addExpenseBtn" type="button">➕ Tambah</button></div>${filteredExpenses.length?filteredExpenses.map(x=>`<div class="aoc-store-finance-row"><span><b>${esc(x.category||"Operasional")}</b><small>${esc(x.description||"-")} · ${esc(x.location_name||"Semua Toko")} · ${new Date(x.expense_date||x.created_at).toLocaleDateString("id-ID")}</small></span><strong>${financeMoney(x.amount)}</strong><button class="btn danger small" data-delete-expense="${esc(x.id)}" type="button">🗑️</button></div>`).join(""):'<p class="muted">Belum ada pengeluaran pada rentang ini.</p>'}<div class="aoc-finance-panel-head" style="margin-top:10px"><span class="muted">Total Pengeluaran</span><strong>${financeMoney(totalExpenses)}</strong></div></div>`:""}<div class="aoc-finance-footer"><span>📌 Data mengikuti toko, status transaksi, dan titik reset omzet. ${financeResetAt?`Reset terakhir: ${new Date(financeResetAt).toLocaleString("id-ID")}`:"Belum pernah di-reset."}</span><button class="btn secondary small" id="exportFinanceCsv">⬇️ Export CSV</button></div></section>`;
-        content.querySelectorAll("[data-finance-range]").forEach(b=>b.addEventListener("click",()=>{financeRange=b.dataset.financeRange;renderFinanceTab();}));content.querySelector("#financeLocation")?.addEventListener("change",async e=>{financeLocation=e.target.value;await loadFinanceResetPoint();renderFinanceTab();});content.querySelector("#refreshFinance")?.addEventListener("click",async()=>{ordersLoaded=false;ordersLoadPromise=null;await loadFinanceResetPoint();await loadOrdersData();renderFinanceTab();});content.querySelector("#resetFinance")?.addEventListener("click",financeResetOmzet);content.querySelector("#addExpenseBtn")?.addEventListener("click",financeAddExpense);content.querySelectorAll("[data-delete-expense]").forEach(b=>b.addEventListener("click",()=>financeDeleteExpense(b.dataset.deleteExpense)));content.querySelector("#exportFinanceCsv")?.addEventListener("click",()=>{const rows=[["Tanggal","Order","Toko","Status","Tipe","Subtotal","Denda","Refund","Net"]];filtered.forEach(o=>rows.push([new Date(o.paid_at||o.created_at).toLocaleString("id-ID"),o.order_number||"",o.location_name||"Belum dipilih",o.status,financeLineType(o),financeOrderAmount(o),Number(o.late_fee)||0,financeRefundAmount(o),financeGrossAmount(o)-financeRefundAmount(o)]));const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n"),blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`laporan-omzet-${financeRange}.csv`;a.click();URL.revokeObjectURL(url);});
+        content.innerHTML=`<section class="card aoc-finance-dashboard"><div class="aoc-finance-head"><div><span class="badge">LAPORAN KEUANGAN</span><h3>💰 Omzet & Keuangan</h3><p class="muted">Omzet dihitung dari pesanan yang sudah dibayar/direalisasikan. Refund dikurangkan dari omzet bersih.</p></div><button class="btn secondary small" id="refreshFinance">↻ Muat Ulang</button></div><div class="aoc-finance-toolbar"><div class="aoc-finance-range">${[["today","Hari ini"],["7d","7 Hari"],["month","Bulan ini"],["30d","30 Hari"],["all","Semua"]].map(([v,l])=>`<button type="button" class="btn small ${financeRange===v?"primary":"secondary"}" data-finance-range="${v}">${l}</button>`).join("")}</div><label class="aoc-finance-location"><span>📍 Toko</span><select id="financeLocation" class="input"><option value="all">Semua Toko</option>${locations.map(l=>`<option value="${esc(l.id)}" ${String(financeLocation)===String(l.id)?"selected":""}>${esc(l.name)}</option>`).join("")}</select></label></div><div class="aoc-finance-cards"><div class="aoc-finance-card main"><span>Omzet Bersih</span><strong>${financeMoney(net)}</strong><small>${filtered.length} transaksi</small></div><div class="aoc-finance-card"><span>Omzet Kotor</span><strong>${financeMoney(gross)}</strong><small>Sebelum refund</small></div><div class="aoc-finance-card"><span>Refund</span><strong>${financeMoney(refunds)}</strong><small>Pengembalian dana</small></div><div class="aoc-finance-card"><span>Denda</span><strong>${financeMoney(late)}</strong><small>Denda tercatat</small></div><div class="aoc-finance-card"><span>Rata-rata Order</span><strong>${financeMoney(avg)}</strong><small>Per transaksi</small></div><div class="aoc-finance-card"><span>Belum Dibayar</span><strong>${financeMoney(pending)}</strong><small>Pending + dikonfirmasi</small></div>${canExpense?`<div class="aoc-finance-card main"><span>Laba Bersih</span><strong>${financeMoney(Math.max(0,labaBersih))}</strong><small>Omzet Bersih − Pengeluaran (${financeMoney(totalExpenses)})</small></div>`:""}</div><div class="aoc-finance-split"><div class="aoc-finance-panel"><h4>📊 Sumber Pendapatan</h4><div class="aoc-finance-bar-row"><span>🏕️ Sewa</span><b>${financeMoney(rental)}</b></div><div class="aoc-finance-bar"><i style="width:${gross?Math.min(100,rental/gross*100):0}%"></i></div><div class="aoc-finance-bar-row"><span>🛒 Jual</span><b>${financeMoney(sale)}</b></div><div class="aoc-finance-bar"><i style="width:${gross?Math.min(100,sale/gross*100):0}%"></i></div></div><div class="aoc-finance-panel"><h4>🏪 Omzet per Toko</h4>${storeRows.length?storeRows.map(r=>`<div class="aoc-store-finance-row"><span><b>${esc(r.name)}</b><small>${r.count} transaksi</small></span><strong>${financeMoney(r.value)}</strong></div>`).join(""):'<p class="muted">Belum ada transaksi berlokasi.</p>'}</div></div><div class="aoc-finance-panel"><div class="aoc-finance-panel-head"><h4>📈 Omzet Harian</h4><small>${s.toLocaleDateString("id-ID")} – ${e.toLocaleDateString("id-ID")}</small></div><div class="aoc-finance-chart">${days.map(([k,v])=>`<div class="aoc-finance-day"><div class="aoc-finance-value">${v?financeMoney(v):"-"}</div><div class="aoc-finance-column" style="height:${Math.max(4,(v/maxDay)*150)}px"></div><small>${new Date(k+"T00:00:00").toLocaleDateString("id-ID",{day:"2-digit",month:"short"})}</small></div>`).join("")}</div></div>${canExpense?`<div class="aoc-finance-panel"><div class="aoc-finance-panel-head"><h4>📉 Pengeluaran</h4><button class="btn primary small" id="addExpenseBtn" type="button">➕ Tambah</button></div>${filteredExpenses.length?filteredExpenses.map(x=>`<div class="aoc-store-finance-row"><span><b>${esc(x.category||"Operasional")}</b><small>${esc(x.description||"-")} · ${esc(x.location_name||"Semua Toko")} · ${new Date(x.expense_date||x.created_at).toLocaleDateString("id-ID")}</small></span><strong>${financeMoney(x.amount)}</strong><button class="btn danger small" data-delete-expense="${esc(x.id)}" type="button">🗑️</button></div>`).join(""):'<p class="muted">Belum ada pengeluaran pada rentang ini.</p>'}<div class="aoc-finance-panel-head" style="margin-top:10px"><span class="muted">Total Pengeluaran</span><strong>${financeMoney(totalExpenses)}</strong></div></div>`:""}<div class="aoc-finance-footer"><span>📌 Data mengikuti toko yang dipilih dan status transaksi yang sudah terealisasi.</span><button class="btn secondary small" id="exportFinanceCsv">⬇️ Export CSV</button></div></section>`;
+        content.querySelectorAll("[data-finance-range]").forEach(b=>b.addEventListener("click",()=>{financeRange=b.dataset.financeRange;renderFinanceTab();}));content.querySelector("#financeLocation")?.addEventListener("change",e=>{financeLocation=e.target.value;renderFinanceTab();});content.querySelector("#refreshFinance")?.addEventListener("click",async()=>{ordersLoaded=false;ordersLoadPromise=null;await loadOrdersData();renderFinanceTab();});content.querySelector("#addExpenseBtn")?.addEventListener("click",financeAddExpense);content.querySelectorAll("[data-delete-expense]").forEach(b=>b.addEventListener("click",()=>financeDeleteExpense(b.dataset.deleteExpense)));content.querySelector("#exportFinanceCsv")?.addEventListener("click",()=>{const rows=[["Tanggal","Order","Toko","Status","Tipe","Subtotal","Denda","Refund","Net"]];filtered.forEach(o=>rows.push([new Date(o.paid_at||o.created_at).toLocaleString("id-ID"),o.order_number||"",o.location_name||"Belum dipilih",o.status,financeLineType(o),financeOrderAmount(o),Number(o.late_fee)||0,financeRefundAmount(o),financeGrossAmount(o)-financeRefundAmount(o)]));const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n"),blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`laporan-omzet-${financeRange}.csv`;a.click();URL.revokeObjectURL(url);});
       }
 
       async function refreshOrders() {
@@ -4970,8 +4943,8 @@
         return value.replace(/^AOC:(?:MEMBER|MEMBERSHIP):/i, "").trim();
       }
 
-      function renderScannedMemberResult(customer, card, closeScanner = false, scannedHistory = null) {
-        const history = Array.isArray(scannedHistory) ? scannedHistory : orders.filter((o) => String(o.user_id || "") === String(customer.user_id || ""));
+      function renderScannedMemberResult(customer, card, closeScanner = false) {
+        const history = orders.filter((o) => String(o.user_id || "") === String(customer.user_id || ""));
         const tierIcon = { Bronze: "🥉", Silver: "🥈", Gold: "🥇", Platinum: "💎" };
         const root = document.getElementById("aocMemberScanResult");
         if (!root) return;
@@ -5037,17 +5010,15 @@
                 if (codes?.length) {
                   running = false;
                   const raw = memberQrValue(codes[0].rawValue);
-                  status.textContent = "QR terbaca. Memuat data member...";
-                  const { data: lookup, error: lookupError } = await supabase.rpc("aoc_secure_member_lookup", { p_code: raw });
-                  if (lookupError || !lookup?.member?.user_id) {
-                    status.textContent = lookupError?.message || "Member tidak ditemukan.";
+                  status.textContent = "QR terbaca. Mencari member...";
+                  const card = membershipCardsCache.find((c) => String(c.card_number || "").toLowerCase() === raw.toLowerCase() || String(c.id || "").toLowerCase() === raw.toLowerCase() || String(c.user_id || "").toLowerCase() === raw.toLowerCase());
+                  const customer = card ? customers.find((c) => String(c.user_id) === String(card.user_id)) : customers.find((c) => String(c.email || "").toLowerCase() === raw.toLowerCase() || String(c.phone || "").replace(/\D/g, "") === raw.replace(/\D/g, ""));
+                  if (!customer) {
+                    status.textContent = "QR terbaca, tetapi member tidak ditemukan.";
                     running = true;
                   } else {
                     status.textContent = "Member ditemukan.";
-                    const customer = { ...(lookup.member || {}), user_id: lookup.member.user_id, total_spent: lookup.total_spent || 0 };
-                    const card = lookup.card || null;
-                    const history = Array.isArray(lookup.history) ? lookup.history : [];
-                    renderScannedMemberResult(customer, card, true, history);
+                    renderScannedMemberResult(customer, card, true);
                     if (stream) stream.getTracks().forEach((track) => track.stop());
                     return;
                   }
@@ -5060,116 +5031,6 @@
         } catch (e) {
           status.textContent = `Kamera gagal dibuka: ${e?.message || "izin kamera ditolak"}`;
         }
-      }
-
-      async function downloadMemberCardPng(customer, card) {
-        if (!card?.card_number) return showAdminMessage("Pelanggan belum memiliki kartu membership.", "error");
-        if (!window.QRCode) return showAdminMessage("Generator QR belum termuat. Muat ulang halaman admin.", "error");
-        await loadSettingsData();
-
-        const name = String(customer?.full_name || customer?.email || "Anggota").trim();
-        const tier = String(card.tier || "Bronze");
-        const tierIcon = { Bronze: "🥉", Silver: "🥈", Gold: "🥇", Platinum: "💎" };
-        const cardNo = String(card.card_number);
-        const W = 1011, H = 638, GAP = 48, PAD = 48;
-        // Export 600 DPI equivalent: 2x the previous 300-DPI canvas.
-        // Keep the drawing coordinates in logical card pixels, then scale the canvas.
-        const HD = 2;
-        const sheet = document.createElement("canvas");
-        sheet.width = (W * 2 + GAP) * HD;
-        sheet.height = H * HD;
-        const ctx = sheet.getContext("2d", { alpha: false });
-        ctx.scale(HD, HD);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, sheet.width, sheet.height);
-
-        const roundRect = (x, y, w, h, r) => {
-          ctx.beginPath();
-          ctx.moveTo(x + r, y);
-          ctx.arcTo(x + w, y, x + w, y + h, r);
-          ctx.arcTo(x + w, y + h, x, y + h, r);
-          ctx.arcTo(x, y + h, x, y, r);
-          ctx.arcTo(x, y, x + w, y, r);
-          ctx.closePath();
-        };
-        const drawCardBg = (x, back = false) => {
-          const g = ctx.createLinearGradient(x, 0, x + W, H);
-          g.addColorStop(0, back ? "#07151a" : "#062326");
-          g.addColorStop(.55, back ? "#0a2828" : "#0b3b36");
-          g.addColorStop(1, back ? "#061116" : "#07352f");
-          roundRect(x, 0, W, H, 38); ctx.fillStyle = g; ctx.fill();
-          ctx.save(); roundRect(x, 0, W, H, 38); ctx.clip();
-          const glow = ctx.createRadialGradient(x + W*.82, H*.08, 10, x + W*.82, H*.08, 360);
-          glow.addColorStop(0, "rgba(98,229,174,.30)"); glow.addColorStop(1, "rgba(98,229,174,0)");
-          ctx.fillStyle = glow; ctx.fillRect(x,0,W,H);
-          ctx.globalAlpha = .12; ctx.strokeStyle = "#7ff5cf"; ctx.lineWidth = 2;
-          for (let r=70; r<700; r+=48) { ctx.beginPath(); ctx.arc(x+W*.86,H*.12,r,Math.PI*.18,Math.PI*1.45); ctx.stroke(); }
-          ctx.restore();
-          ctx.strokeStyle = "rgba(151,255,225,.30)"; ctx.lineWidth = 2; roundRect(x,0,W,H,38); ctx.stroke();
-        };
-
-        drawCardBg(0, false); drawCardBg(W + GAP, true);
-
-        const logoUrl = String(siteSettings.site_logo_url || "");
-        let logoImg = null;
-        async function loadLogoForCanvas(url) {
-          if (!url) return null;
-          try {
-            const normalized = await normalizeLogoUrl(url);
-            const img = new Image();
-            await new Promise((resolve, reject) => { img.onload=resolve; img.onerror=reject; img.src=normalized; });
-            return img;
-          } catch (error) {
-            console.warn("Member card PNG: logo load failed", error);
-            return null;
-          }
-        }
-        logoImg = await loadLogoForCanvas(logoUrl);
-        const drawLogo = (x, y, size) => {
-          ctx.save(); roundRect(x,y,size,size,18); ctx.fillStyle="#63e6b0"; ctx.fill();
-          if (logoImg?.complete && logoImg.naturalWidth) {
-            const scale=Math.min(size/logoImg.naturalWidth,size/logoImg.naturalHeight);
-            const iw=logoImg.naturalWidth*scale, ih=logoImg.naturalHeight*scale;
-            ctx.drawImage(logoImg,x+(size-iw)/2,y+(size-ih)/2,iw,ih);
-          } else { ctx.fillStyle="#08231f"; ctx.font="900 34px Arial"; ctx.textAlign="center"; ctx.fillText("AOC",x+size/2,y+size/2+12); }
-          ctx.restore();
-        };
-        const brand = String(siteSettings.site_name || "AbidzarOutdoorcamp");
-        drawLogo(PAD, 34, 92);
-        ctx.fillStyle="#fff"; ctx.font="900 25px Arial"; ctx.textAlign="left"; ctx.fillText(brand, PAD+112, 68);
-        ctx.fillStyle="#62e5ae"; ctx.font="800 15px Arial"; ctx.fillText("RENTAL OUTDOOR EQUIPMENT", PAD+112, 94);
-        ctx.fillStyle="rgba(255,255,255,.15)"; roundRect(W-190,42,142,44,22); ctx.fill();
-        ctx.fillStyle="#fff"; ctx.font="800 18px Arial"; ctx.textAlign="center"; ctx.fillText(`${tierIcon[tier]||"🎫"} ${tier}`, W-119,71);
-        ctx.textAlign="left"; ctx.fillStyle="rgba(255,255,255,.58)"; ctx.font="700 13px Arial"; ctx.fillText("NAMA ANGGOTA", PAD, 390);
-        ctx.fillStyle="#fff"; ctx.font="900 32px Arial"; ctx.fillText(name.slice(0,30), PAD, 432);
-        ctx.fillStyle="rgba(255,255,255,.58)"; ctx.font="700 13px Arial"; ctx.fillText("ID ANGGOTA", PAD, 485);
-        ctx.fillStyle="#fff"; ctx.font="700 20px monospace"; ctx.fillText(cardNo, PAD, 518);
-        ctx.fillStyle="rgba(255,255,255,.70)"; ctx.font="800 13px Arial"; ctx.fillText("MEMBER CARD", PAD, 585);
-
-        const qrBox = document.createElement("div");
-        qrBox.style.cssText="position:fixed;left:-99999px;top:-99999px;width:180px;height:180px;background:#fff;padding:10px;";
-        document.body.appendChild(qrBox);
-        new window.QRCode(qrBox,{text:cardNo,width:320,height:320,colorDark:"#0b1120",colorLight:"#ffffff",correctLevel:window.QRCode.CorrectLevel.H});
-        await new Promise(r=>setTimeout(r,80));
-        const qrCanvas=qrBox.querySelector("canvas");
-        if (qrCanvas) {
-          const qx=W-245,qy=205; ctx.fillStyle="#fff"; roundRect(qx-14,qy-14,190,190,22); ctx.fill(); ctx.drawImage(qrCanvas,qx,qy,162,162);
-        }
-        qrBox.remove();
-
-        const bx=W+GAP;
-        drawLogo(bx+PAD, 34, 92);
-        ctx.fillStyle="#fff"; ctx.font="900 25px Arial"; ctx.textAlign="left"; ctx.fillText(brand,bx+PAD+112,68);
-        ctx.fillStyle="#62e5ae"; ctx.font="800 15px Arial"; ctx.fillText("MEMBERSHIP CARD",bx+PAD+112,94);
-        ctx.fillStyle="#fff"; ctx.font="900 27px Arial"; ctx.fillText("Benefit Member",bx+PAD,230);
-        const benefits=["Harga khusus member sesuai program aktif","Prioritas layanan saat verifikasi","Kartu berlaku untuk pemilik akun terdaftar"];
-        benefits.forEach((t,i)=>{ const y=285+i*62; ctx.fillStyle="#62e5ae"; ctx.beginPath(); ctx.arc(bx+PAD+10,y-6,9,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#fff"; ctx.font="700 17px Arial"; ctx.fillText(t,bx+PAD+32,y); });
-        ctx.fillStyle="rgba(255,255,255,.62)"; ctx.font="600 14px Arial"; ctx.fillText("Gunakan QR ini untuk verifikasi member saat transaksi.",bx+PAD,520);
-        ctx.fillStyle="#62e5ae"; ctx.font="800 13px Arial"; ctx.fillText("AbidzarOutdoorcamp",bx+PAD,570);
-        ctx.fillStyle="rgba(255,255,255,.42)"; ctx.font="500 12px Arial"; ctx.fillText(cardNo,bx+PAD,595);
-
-        const a=document.createElement("a"); a.download=`AOC-ID-CARD-${cardNo.replace(/[^a-zA-Z0-9_-]/g,"-")}.png`; a.href=sheet.toDataURL("image/png"); a.click();
-        showAdminMessage("ID Card PNG berhasil dibuat dan siap dicetak.","success");
       }
 
       async function renderCustomersTab() {
@@ -5202,7 +5063,7 @@
                 Number(customer.total_spent) >= 1000000;
               const card = membershipByUser[customer.user_id];
               const searchKey = [customer.full_name, customer.email, customer.phone, card?.card_number].filter(Boolean).join(" ").toLowerCase();
-              return `<details class="card customer-admin-card" data-search-key="${esc(searchKey)}"><summary><div><strong>${esc(customer.full_name || customer.email)}</strong><small>${esc(customer.email)} · ${esc(customer.phone || "Belum ada HP")}</small></div><div class="customer-badges">${card ? `<span class="badge">${tierIcon[card.tier] || "🎫"} ${esc(card.tier)}</span>` : ""}${loyal ? '<span class="badge">Langganan</span>' : ""}${customer.is_verified ? '<span class="admin-active">Terverifikasi</span>' : '<span class="admin-inactive">Belum verifikasi</span>'}${customer.is_blocked ? '<span class="status-danger">Diblokir</span>' : ""}</div></summary><div class="customer-detail"><div class="data-grid"><div class="data"><b>Total pesanan</b><br>${customer.total_orders}</div><div class="data"><b>Total transaksi</b><br>${rupiah(customer.total_spent)}</div><div class="data"><b>Pembatalan</b><br>${customer.cancelled_orders}</div><div class="data"><b>Terakhir transaksi</b><br>${customer.last_order_at ? new Date(customer.last_order_at).toLocaleString("id-ID") : "-"}</div></div><div class="order-subsection"><h4>🎫 Kartu Membership</h4>${card ? `<p>Nomor: <b>${esc(card.card_number)}</b> · Tier: <b>${tierIcon[card.tier] || ""} ${esc(card.tier)}</b></p>` : '<p class="muted">Belum punya kartu membership.</p>'}<button class="btn small" data-issue-membership="${customer.user_id}" type="button">🎫 ${card ? "Ubah Tier" : "Buat Kartu Membership"}</button>${card ? `<button class="btn small secondary" data-print-member-card="${customer.user_id}" type="button">🖼️ Cetak ID Card PNG</button>` : ""}</div><label class="admin-check"><input type="checkbox" data-customer-verified="${customer.user_id}" ${customer.is_verified ? "checked" : ""}><span>Pelanggan terverifikasi</span></label><label class="admin-check"><input type="checkbox" data-customer-blocked="${customer.user_id}" ${customer.is_blocked ? "checked" : ""}><span>Blokir pelanggan</span></label><label class="field"><span>Alasan blokir</span><input class="input" data-customer-reason="${customer.user_id}" value="${esc(customer.blocked_reason || "")}"></label><label class="field"><span>Catatan internal</span><textarea class="input" data-customer-notes="${customer.user_id}">${esc(customer.internal_notes || "")}</textarea></label><button class="btn small" data-save-customer="${customer.user_id}" type="button">Simpan Pelanggan</button><section class="order-subsection"><h4>Riwayat transaksi & pembatalan</h4>${history.map((order) => `<div class="order-line"><span>${esc(order.order_number)} · ${new Date(order.created_at).toLocaleDateString("id-ID")}<small>${esc(statusLabels[order.status] || order.status)}</small></span><b>${rupiah(order.total)}</b></div>`).join("") || '<p class="muted">Belum ada transaksi.</p>'}</section></div></details>`;
+              return `<details class="card customer-admin-card" data-search-key="${esc(searchKey)}"><summary><div><strong>${esc(customer.full_name || customer.email)}</strong><small>${esc(customer.email)} · ${esc(customer.phone || "Belum ada HP")}</small></div><div class="customer-badges">${card ? `<span class="badge">${tierIcon[card.tier] || "🎫"} ${esc(card.tier)}</span>` : ""}${loyal ? '<span class="badge">Langganan</span>' : ""}${customer.is_verified ? '<span class="admin-active">Terverifikasi</span>' : '<span class="admin-inactive">Belum verifikasi</span>'}${customer.is_blocked ? '<span class="status-danger">Diblokir</span>' : ""}</div></summary><div class="customer-detail"><div class="data-grid"><div class="data"><b>Total pesanan</b><br>${customer.total_orders}</div><div class="data"><b>Total transaksi</b><br>${rupiah(customer.total_spent)}</div><div class="data"><b>Pembatalan</b><br>${customer.cancelled_orders}</div><div class="data"><b>Terakhir transaksi</b><br>${customer.last_order_at ? new Date(customer.last_order_at).toLocaleString("id-ID") : "-"}</div></div><div class="order-subsection"><h4>🎫 Kartu Membership</h4>${card ? `<p>Nomor: <b>${esc(card.card_number)}</b> · Tier: <b>${tierIcon[card.tier] || ""} ${esc(card.tier)}</b></p>` : '<p class="muted">Belum punya kartu membership.</p>'}<button class="btn small" data-issue-membership="${customer.user_id}" type="button">🎫 ${card ? "Ubah Tier" : "Buat Kartu Membership"}</button></div><label class="admin-check"><input type="checkbox" data-customer-verified="${customer.user_id}" ${customer.is_verified ? "checked" : ""}><span>Pelanggan terverifikasi</span></label><label class="admin-check"><input type="checkbox" data-customer-blocked="${customer.user_id}" ${customer.is_blocked ? "checked" : ""}><span>Blokir pelanggan</span></label><label class="field"><span>Alasan blokir</span><input class="input" data-customer-reason="${customer.user_id}" value="${esc(customer.blocked_reason || "")}"></label><label class="field"><span>Catatan internal</span><textarea class="input" data-customer-notes="${customer.user_id}">${esc(customer.internal_notes || "")}</textarea></label><button class="btn small" data-save-customer="${customer.user_id}" type="button">Simpan Pelanggan</button><section class="order-subsection"><h4>Riwayat transaksi & pembatalan</h4>${history.map((order) => `<div class="order-line"><span>${esc(order.order_number)} · ${new Date(order.created_at).toLocaleDateString("id-ID")}<small>${esc(statusLabels[order.status] || order.status)}</small></span><b>${rupiah(order.total)}</b></div>`).join("") || '<p class="muted">Belum ada transaksi.</p>'}</section></div></details>`;
             })
             .join("") || '<div class="notice">Belum ada pelanggan.</div>'
         }</div>`;
@@ -5250,16 +5111,6 @@
               );
               await renderCustomersTab();
             }),
-        );
-        document.querySelectorAll("[data-print-member-card]").forEach((button) =>
-          (button.onclick = async () => {
-            const id = button.dataset.printMemberCard;
-            const customer = customers.find((x) => x.user_id === id);
-            if (!customer) return showAdminMessage("Data pelanggan tidak ditemukan.", "error");
-            const { data: card, error } = await supabase.from("membership_cards").select("*").eq("user_id", id).eq("status", "active").maybeSingle();
-            if (error || !card) return showAdminMessage("Kartu membership belum tersedia.", "error");
-            try { await downloadMemberCardPng(customer, card); } catch (e) { console.error(e); showAdminMessage(`Gagal membuat PNG: ${e?.message || "Kesalahan tidak diketahui"}`, "error"); }
-          }),
         );
         document.querySelectorAll("[data-save-customer]").forEach(
           (button) =>
@@ -5754,7 +5605,7 @@
       Promise.race([
         initialize(),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Admin Panel timeout. Koneksi/auth Supabase tidak merespons dalam 10 detik.")), 10000),
+          setTimeout(() => reject(new Error("Admin Panel timeout. Koneksi/auth Supabase tidak merespons dalam 12 detik.")), 12000),
         ),
       ]).catch((error) => {
         console.error("Admin initialize watchdog:", error);

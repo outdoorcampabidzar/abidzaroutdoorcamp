@@ -206,11 +206,7 @@
 
       function unitPrice() {
         if (item?.type === "trip") return Number(item.price || 0);
-        if (mode === "sale") {
-          const sale = Number(item?.sale_price);
-          const base = Number(item?.price);
-          return sale > 0 ? sale : base > 0 ? base : 0;
-        }
+        if (mode === "sale") return Number(item?.sale_price || 0);
         const variantId = selectedVariant()?.id || null;
         const tier = (item?.item_price_tiers || []).find(
           (entry) => Number(entry.duration_days) === 1 &&

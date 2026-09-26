@@ -95,13 +95,16 @@ export function applySiteSettings(settings) {
     if (logoUrl) {
       const img = document.createElement("img");
       img.className = "brand-logo";
+      img.src = logoUrl;
       img.alt = siteName;
       img.loading = "eager";
       img.decoding = "async";
       img.referrerPolicy = "no-referrer";
-      img.onerror = () => { element.classList.remove("has-custom-logo"); img.remove(); };
+      img.onerror = () => {
+        element.classList.remove("has-custom-logo");
+        img.remove();
+      };
       element.append(img);
-      normalizeLogoUrl(logoUrl).then((normalized) => { if (img.isConnected) img.src = normalized; });
     }
     element.append(textWrap);
   });
@@ -317,7 +320,7 @@ export function addCart(
     priceOverride !== null && Number.isFinite(Number(priceOverride))
       ? Number(priceOverride)
       : mode === "sale"
-        ? (Number(item.sale_price) > 0 ? Number(item.sale_price) : Number(item.price || 0))
+        ? Number(item.sale_price || 0)
         : Number(item.price || 0);
   const max = Math.max(
     1,
@@ -329,7 +332,7 @@ export function addCart(
     item_id: item.id,
     title: item.title,
     price: unitPrice,
-    sale_price: Number(item.sale_price) > 0 ? Number(item.sale_price) : (mode === "sale" ? Number(item.price || 0) : 0),
+    sale_price: Number(item.sale_price || 0),
     rental_price: mode === "rental" ? unitPrice : Number(item.price || 0),
     image_url: item.image_url,
     type: item.type,
@@ -398,58 +401,14 @@ export async function mountMembershipCard(sectionId = "membershipCardSection") {
     const tierEl = document.getElementById("membershipCardTier");
     const cardEl = document.getElementById("membershipCard");
     const qrEl = document.getElementById("membershipCardQr");
-    const membershipLogo = document.getElementById("membershipCardLogo");
-    const membershipBackLogo = document.getElementById("membershipCardBackLogo");
-    const membershipBrand = document.getElementById("membershipCardBrand");
-    const membershipBackBrand = document.getElementById("membershipCardBackBrand");
-    const siteSettings = await loadSiteSettings();
-    const logoUrl = String(siteSettings?.site_logo_url || "").trim();
-    const siteName = String(siteSettings?.site_name || DEFAULT_SITE_SETTINGS.site_name).trim();
-    if (membershipLogo) membershipLogo.classList.toggle("has-logo", Boolean(logoUrl));
-    if (membershipBackLogo) membershipBackLogo.classList.toggle("has-logo", Boolean(logoUrl));
-    if (logoUrl) {
-      const normalized = await normalizeLogoUrl(logoUrl);
-      const logoMarkup = `<img src="${normalized.replace(/&/g, "&amp;").replace(/\"/g, "&quot;")}" alt="" loading="eager" decoding="async">`;
-      if (membershipLogo) membershipLogo.innerHTML = logoMarkup;
-      if (membershipBackLogo) membershipBackLogo.innerHTML = logoMarkup;
-    }
-    const splitAt = siteName.toLowerCase().indexOf("outdoor");
-    if (membershipBrand) {
-      membershipBrand.innerHTML = splitAt > 0
-        ? `${siteName.slice(0, splitAt)}<span>${siteName.slice(splitAt)}</span><small>RENTAL OUTDOOR EQUIPMENT</small>`
-        : `${siteName}<small>RENTAL OUTDOOR EQUIPMENT</small>`;
-    }
-    if (membershipBackBrand) {
-      membershipBackBrand.innerHTML = splitAt > 0
-        ? `${siteName.slice(0, splitAt)}<span>${siteName.slice(splitAt)}</span>`
-        : siteName;
-    }
     if (nameEl) nameEl.textContent = profile?.full_name?.trim() || user.email || "Anggota";
     if (numberEl) numberEl.textContent = card.card_number;
     if (tierEl) tierEl.textContent = MEMBERSHIP_TIER_LABEL[card.tier] || card.tier;
     if (cardEl) cardEl.dataset.membershipTier = card.tier;
-    const flipButton = document.getElementById("membershipCardFlip");
-    const stage = document.getElementById("membershipCardStage");
-    if (cardEl && !cardEl.dataset.interactive) {
-      cardEl.dataset.interactive = "1";
-      let rotX = 0, rotY = 0, dragging = false, sx = 0, sy = 0;
-      const render = () => {
-        const flip = cardEl.classList.contains("is-flipped") ? 180 : 0;
-        cardEl.style.transform = `rotateX(${rotX}deg) rotateY(${flip + rotY}deg)`;
-      };
-      const flip = () => { cardEl.classList.toggle("is-flipped"); rotY = 0; render(); };
-      flipButton?.addEventListener("click", flip);
-      stage?.addEventListener("click", (e) => { if (!dragging && !e.target.closest("button")) flip(); });
-      stage?.addEventListener("pointerdown", (e) => { dragging=true; sx=e.clientX; sy=e.clientY; cardEl.classList.add("is-dragging"); stage.setPointerCapture?.(e.pointerId); });
-      stage?.addEventListener("pointermove", (e) => { if(!dragging) return; rotY=Math.max(-32,Math.min(32,(e.clientX-sx)*0.35)); rotX=Math.max(-18,Math.min(18,(sy-e.clientY)*0.22)); render(); });
-      stage?.addEventListener("pointerup", (e) => { const moved=Math.abs(e.clientX-sx)+Math.abs(e.clientY-sy)>12; dragging=false; cardEl.classList.remove("is-dragging"); if(!moved) return; if(Math.abs(rotY)>22) cardEl.classList.toggle("is-flipped"); rotX=0; rotY=0; render(); });
-      stage?.addEventListener("pointercancel", () => { dragging=false; cardEl.classList.remove("is-dragging"); rotX=0; rotY=0; render(); });
-      render();
-    }
     if (qrEl && window.QRCode) {
       qrEl.innerHTML = "";
       new window.QRCode(qrEl, {
-        text: String(card.card_number || "").trim(),
+        text: card.card_number,
         width: 108,
         height: 108,
         colorDark: "#0b1120",

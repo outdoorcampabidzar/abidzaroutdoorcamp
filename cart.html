@@ -342,7 +342,7 @@
       cart.forEach((entry) => {
         if (!entry.fulfillment_type)
           entry.fulfillment_type = entry.type === "trip" ? "trip" : "rental";
-        if (entry.sale_price == null || Number(entry.sale_price) <= 0) entry.sale_price = Number(entry.fulfillment_type === "sale" ? entry.price : 0);
+        if (entry.sale_price == null) entry.sale_price = Number(entry.fulfillment_type === "sale" ? entry.price : 0);
         if (entry.rental_price == null) entry.rental_price = Number(entry.fulfillment_type === "rental" ? entry.price : 0);
         if (entry.type === "product") {
           const modePrice = entry.fulfillment_type === "sale" ? entry.sale_price : entry.rental_price;
@@ -388,10 +388,7 @@
       };
       const rentalUnitPrice = (item, days = rentalDays()) => {
         if (item.type !== "product") return Number(item.price);
-        if (item.fulfillment_type === "sale") {
-          const sale = Number(item.sale_price);
-          return sale > 0 ? sale : Number(item.price || 0);
-        }
+        if (item.fulfillment_type === "sale") return Number(item.sale_price ?? item.price);
         const tiers = item.price_tiers || [];
         const tier =
           tiers.find(

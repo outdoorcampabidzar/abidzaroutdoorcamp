@@ -136,8 +136,34 @@
 <div class="notice">Memeriksa akses admin...</div>
 </section>
 </main>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="./admin-core-member-scan-20260921.js?v=202609211200-member-scan-fixed"></script>
+<script type="module" src="./admin-core-member-scan-20260921.js?v=202609260714-admin-boot-fix"></script>
+<script>
+// Admin boot watchdog: jangan biarkan halaman berhenti di "Memeriksa akses admin...".
+(function(){
+  var done = false;
+  function showError(title, detail){
+    if(done) return;
+    var root = document.getElementById("adminRoot");
+    if(!root) return;
+    done = true;
+    root.innerHTML = '<section class="container section"><div class="notice error"><b>❌ '+title+'</b><br><br><span>'+String(detail || "Admin Panel tidak berhasil memuat.").replace(/[&<>]/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]);})+'</span><br><br><button class="btn primary" type="button" onclick="location.reload()">↻ Coba Lagi</button> <a class="btn" href="login.html?next=admin.html">Login Ulang</a></div></section>';
+  }
+  window.addEventListener("error", function(e){
+    var msg = e && (e.message || (e.error && e.error.message));
+    if(msg && /module|import|supabase|SyntaxError|Unexpected token/i.test(msg)) showError("Admin Panel gagal memuat", msg);
+  });
+  window.addEventListener("unhandledrejection", function(e){
+    var reason=e && e.reason;
+    var msg=reason && reason.message ? reason.message : String(reason || "Promise gagal");
+    if(/supabase|admin|module|network|fetch/i.test(msg)) showError("Admin Panel mengalami error", msg);
+  });
+  setTimeout(function(){
+    var root=document.getElementById("adminRoot");
+    if(root && /Memeriksa akses admin/i.test(root.textContent || "")) showError("Admin Panel timeout", "Pemeriksaan sesi/admin tidak selesai dalam 12 detik. Periksa koneksi Supabase atau login ulang.");
+  },12000);
+})();
+</script>
+
 <div id="aocRentalConditionModal" class="aoc-condition-modal" hidden role="dialog" aria-modal="true" aria-labelledby="aocRentalConditionTitle">
   <div class="aoc-condition-backdrop" data-condition-close></div>
   <div class="aoc-condition-sheet">

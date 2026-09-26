@@ -39,13 +39,19 @@
   }
   function close(){ running=false; if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;} if(modal){modal.remove();modal=null;} }
   async function lookup(raw,status,result){
-    const v=qrValue(raw); status.textContent='QR terbaca. Memuat data member...';
-    let lookup=null;
-    try { lookup=await api('/rest/v1/rpc/aoc_secure_member_lookup',{method:'POST',body:JSON.stringify({p_code:v})}); } catch (e) { status.textContent=e?.message||'Member tidak ditemukan.'; return; }
-    const customer=lookup?.member ? {...lookup.member,user_id:lookup.member.user_id,total_spent:lookup.total_spent||0} : null;
-    const card=lookup?.card||null;
-    const history=Array.isArray(lookup?.history)?lookup.history:[];
+    const v=qrValue(raw); status.textContent='QR terbaca. Mencari member...';
+    const q=encodeURIComponent(v);
+    let cards=[];
+    try { cards=await api(`/rest/v1/membership_cards?select=*&or=(card_number.ilike.${q},id.eq.${q},user_id.eq.${q})&limit=5`); } catch (_) {}
+    let card=cards[0]||null, customer=null;
+    if(card){ const cs=await api(`/rest/v1/rpc/secure_list_customers`,{method:'POST',body:'{}'}); customer=(cs||[]).find(c=>String(c.user_id)===String(card.user_id)); }
+    if(!customer){
+      const cs=await api(`/rest/v1/rpc/secure_list_customers`,{method:'POST',body:'{}'});
+      customer=(cs||[]).find(c=>String(c.email||'').toLowerCase()===v.toLowerCase() || String(c.phone||'').replace(/\D/g,'')===v.replace(/\D/g,''));
+    }
     if(!customer){ status.textContent='QR terbaca, tetapi member tidak ditemukan.'; return; }
+    let history=[];
+    try { history=await api(`/rest/v1/orders?select=id,order_number,status,total,late_fee,created_at,user_id&user_id=eq.${encodeURIComponent(customer.user_id)}&order=created_at.desc&limit=30`); } catch (_) {}
     status.textContent='Member ditemukan.';
     result.innerHTML=`<div class="aoc-ss-result"><h3 style="margin:8px 0">${esc(customer.full_name||customer.email||'Member')}</h3><p style="opacity:.7;margin:0 0 10px">${esc(card?.card_number||v)} · ${esc(card?.tier||'Member')}</p><div class="aoc-ss-grid"><div class="aoc-ss-stat"><small>WhatsApp</small><b>${esc(customer.phone||'-')}</b></div><div class="aoc-ss-stat"><small>Email</small><b>${esc(customer.email||'-')}</b></div><div class="aoc-ss-stat"><small>Status</small><b>${customer.is_blocked?'🔴 Diblokir':customer.is_verified?'🟢 Aktif':'🟡 Belum verifikasi'}</b></div><div class="aoc-ss-stat"><small>Total transaksi</small><b>${rupiah(customer.total_spent||0)}</b></div></div><h4 style="margin:16px 0 6px">Riwayat Rental</h4><div class="aoc-ss-history">${history.map(o=>`<div class="aoc-ss-row"><span><b>${esc(o.order_number||'-')}</b><br><small>${esc(o.status||'-')} · ${o.created_at?new Date(o.created_at).toLocaleDateString('id-ID'):'-'}</small></span><b>${rupiah(Number(o.total||0)+Number(o.late_fee||0))}</b></div>`).join('')||'<div style="opacity:.65">Belum ada riwayat rental.</div>'}</div></div>`;
     running=false; if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
