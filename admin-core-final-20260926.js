@@ -9,9 +9,10 @@
         applySiteSettings,
         aocConfirm,
         aocPrompt,
-      } from "./app.js?v=202609210800";
+      } from "./app.js?v=202609260714-admin-boot-fix";
 
       const root = document.getElementById("adminRoot");
+      window.__AOC_ADMIN_MODULE_LOADED__ = true;
 
       const statusLabels = {
         pending: "Menunggu",
@@ -38,6 +39,7 @@
       let orderDateFrom = "";
       let orderDateTo = "";
       let customers = [];
+      let membershipCardsCache = [];
       let adminRatings = [];
       let customerNotifications = [];
       let currentStaffRole = "user";
@@ -137,7 +139,7 @@
         try {
           const sessionResult = await withTimeout(
             supabase.auth.getSession(),
-            3000,
+            3500,
             "Membaca sesi login",
           );
           user = sessionResult?.data?.session?.user || null;
@@ -145,12 +147,36 @@
           console.warn("Pembacaan sesi Supabase gagal/timeout:", error);
         }
 
+        // Jika sesi belum tersedia di cache client, beri satu kesempatan untuk
+        // membaca user aktif dari Auth API. Tetap dibatasi timeout agar panel
+        // tidak pernah menggantung di "Memeriksa akses admin...".
+        if (!user) {
+          try {
+            const userResult = await withTimeout(
+              supabase.auth.getUser(),
+              3500,
+              "Memeriksa akun login",
+            );
+            user = userResult?.data?.user || null;
+          } catch (error) {
+            console.warn("Pemeriksaan user Supabase gagal/timeout:", error);
+          }
+        }
+
         if (!user) {
           user = getCachedAuthSession().user;
         }
 
         if (!user?.id) {
-          location.href = "login.html?next=admin.html";
+          root.innerHTML = `
+          <section class="container section">
+            <div class="notice error">
+              <b>Anda belum login.</b><br><br>
+              Admin Panel hanya dapat dibuka setelah login dengan akun administrator.
+              <br><br>
+              <a class="btn primary" href="login.html?next=admin.html">🔐 Login ke Admin</a>
+            </div>
+          </section>`;
           return false;
         }
 
@@ -4879,8 +4905,132 @@
         showAdminMessage("Data pembayaran berhasil diperbarui.", "success");
       }
 
+      function ensureMemberScannerStyles() {
+        if (document.getElementById("aocMemberScannerStyles")) return;
+        const style = document.createElement("style");
+        style.id = "aocMemberScannerStyles";
+        style.textContent = `
+          .aoc-member-scan-modal{position:fixed;inset:0;z-index:10000;background:rgba(3,7,12,.82);display:flex;align-items:center;justify-content:center;padding:16px}
+          .aoc-member-scan-card{width:min(560px,100%);max-height:92vh;overflow:auto;background:#0d131a;border:1px solid rgba(255,255,255,.12);border-radius:22px;box-shadow:0 24px 80px rgba(0,0,0,.45);padding:16px;color:#fff}
+          .aoc-member-scan-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+          .aoc-member-scan-head h3{margin:0}.aoc-member-scan-close{border:0;background:rgba(255,255,255,.08);color:#fff;border-radius:12px;width:42px;height:42px;font-size:24px;cursor:pointer}
+          .aoc-member-camera{position:relative;overflow:hidden;border-radius:18px;background:#000;aspect-ratio:1/1;margin-bottom:12px}
+          .aoc-member-camera video{width:100%;height:100%;object-fit:cover;display:block}.aoc-member-scan-frame{position:absolute;inset:18%;border:2px solid #63e6a8;border-radius:18px;box-shadow:0 0 0 999px rgba(0,0,0,.22)}
+          .aoc-member-scan-line{position:absolute;left:20%;right:20%;top:50%;height:2px;background:#63e6a8;box-shadow:0 0 16px #63e6a8;animation:aocScan 1.8s ease-in-out infinite alternate}
+          @keyframes aocScan{from{transform:translateY(-90px)}to{transform:translateY(90px)}}
+          .aoc-member-scan-status{padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.06);font-size:13px;margin-bottom:10px}
+          .aoc-member-result{margin-top:12px}.aoc-member-profile{display:grid;grid-template-columns:1fr 1fr;gap:8px}.aoc-member-stat{padding:12px;border-radius:14px;background:rgba(255,255,255,.055)}.aoc-member-stat small{display:block;opacity:.65;margin-bottom:4px}.aoc-member-stat b{font-size:15px}.aoc-member-history{display:grid;gap:8px;margin-top:10px}.aoc-member-history-row{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.045)}
+          @media(max-width:520px){.aoc-member-profile{grid-template-columns:1fr}.aoc-member-scan-card{padding:12px}}
+        `;
+        document.head.appendChild(style);
+      }
+
+      function memberQrValue(raw) {
+        let value = String(raw || "").trim();
+        try {
+          if (value.startsWith("http://") || value.startsWith("https://")) {
+            const u = new URL(value);
+            value = u.searchParams.get("card") || u.searchParams.get("member") || u.searchParams.get("token") || value;
+          }
+        } catch (_) {}
+        return value.replace(/^AOC:(?:MEMBER|MEMBERSHIP):/i, "").trim();
+      }
+
+      function renderScannedMemberResult(customer, card, closeScanner = false) {
+        const history = orders.filter((o) => String(o.user_id || "") === String(customer.user_id || ""));
+        const tierIcon = { Bronze: "🥉", Silver: "🥈", Gold: "🥇", Platinum: "💎" };
+        const root = document.getElementById("aocMemberScanResult");
+        if (!root) return;
+        root.innerHTML = `<section class="aoc-member-result">
+          <div class="aoc-member-scan-head"><div><span class="badge">MEMBER DITEMUKAN</span><h3 style="margin:6px 0 2px">${esc(customer.full_name || customer.email || "Member")}</h3><small class="muted">${esc(card?.card_number || "Tanpa kartu")} · ${tierIcon[card?.tier] || "🎫"} ${esc(card?.tier || "Member")}</small></div></div>
+          <div class="aoc-member-profile">
+            <div class="aoc-member-stat"><small>No. WhatsApp</small><b>${esc(customer.phone || "-")}</b></div>
+            <div class="aoc-member-stat"><small>Email</small><b>${esc(customer.email || "-")}</b></div>
+            <div class="aoc-member-stat"><small>Status</small><b>${customer.is_blocked ? "🔴 Diblokir" : customer.is_verified ? "🟢 Aktif / Terverifikasi" : "🟡 Belum verifikasi"}</b></div>
+            <div class="aoc-member-stat"><small>Total transaksi</small><b>${rupiah(customer.total_spent || 0)}</b></div>
+          </div>
+          <div class="order-subsection" style="margin-top:14px"><h4>Riwayat Rental</h4><div class="aoc-member-history">${history.map((o) => `<div class="aoc-member-history-row"><span><b>${esc(o.order_number || "-")}</b><br><small>${esc(statusLabels[o.status] || o.status || "-")} · ${o.created_at ? new Date(o.created_at).toLocaleDateString("id-ID") : "-"}</small></span><b>${rupiah(Number(o.total || 0) + Number(o.late_fee || 0))}</b></div>`).join("") || '<div class="notice">Belum ada riwayat rental.</div>'}</div></div>
+          <div class="actions" style="margin-top:12px"><button class="btn secondary small" type="button" id="aocMemberViewCustomer">Buka Data Pelanggan</button>${closeScanner ? '<button class="btn primary small" type="button" id="aocMemberCloseScanner">Tutup Scanner</button>' : ""}</div>
+        </section>`;
+        document.getElementById("aocMemberViewCustomer")?.addEventListener("click", () => {
+          const input = document.getElementById("customerSearchInput");
+          if (input) { input.value = customer.full_name || customer.email || card?.card_number || ""; input.dispatchEvent(new Event("input")); }
+          document.querySelector(`[data-search-key*="${CSS.escape(String(card?.card_number || "").toLowerCase())}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+        document.getElementById("aocMemberCloseScanner")?.addEventListener("click", () => closeMemberScanner());
+      }
+
+      function closeMemberScanner() {
+        const modal = document.getElementById("aocMemberScanModal");
+        const video = document.getElementById("aocMemberScanVideo");
+        if (video?.srcObject) video.srcObject.getTracks().forEach((track) => track.stop());
+        if (modal) modal.remove();
+      }
+
+      async function openMemberScanner() {
+        ensureMemberScannerStyles();
+        if (!navigator.mediaDevices?.getUserMedia) {
+          showAdminMessage("Kamera tidak tersedia. Pastikan halaman dibuka melalui HTTPS atau localhost.", "error");
+          return;
+        }
+        if (!window.BarcodeDetector) {
+          showAdminMessage("Browser ini belum mendukung QR scanner bawaan. Gunakan Chrome/Edge terbaru di HP atau minta fitur upload QR image.", "error");
+          return;
+        }
+        closeMemberScanner();
+        const modal = document.createElement("div");
+        modal.id = "aocMemberScanModal";
+        modal.className = "aoc-member-scan-modal";
+        modal.innerHTML = `<div class="aoc-member-scan-card"><div class="aoc-member-scan-head"><div><span class="badge">SCAN MEMBER</span><h3>Scan QR Member</h3><small class="muted">Arahkan QR kartu/member ke kamera.</small></div><button class="aoc-member-scan-close" id="aocMemberScanClose" type="button">×</button></div><div class="aoc-member-camera"><video id="aocMemberScanVideo" autoplay muted playsinline></video><div class="aoc-member-scan-frame"></div><div class="aoc-member-scan-line"></div></div><div class="aoc-member-scan-status" id="aocMemberScanStatus">Menyalakan kamera...</div><div id="aocMemberScanResult"></div></div>`;
+        document.body.appendChild(modal);
+        document.getElementById("aocMemberScanClose")?.addEventListener("click", closeMemberScanner);
+        modal.addEventListener("click", (e) => { if (e.target === modal) closeMemberScanner(); });
+        const video = document.getElementById("aocMemberScanVideo");
+        const status = document.getElementById("aocMemberScanStatus");
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
+          video.srcObject = stream;
+          await video.play();
+          const detector = new BarcodeDetector({ formats: ["qr_code"] });
+          status.textContent = "Kamera aktif — arahkan QR ke kotak scan.";
+          let running = true;
+          const scan = async () => {
+            if (!running || !document.body.contains(modal)) return;
+            try {
+              if (video.readyState >= 2) {
+                const codes = await detector.detect(video);
+                if (codes?.length) {
+                  running = false;
+                  const raw = memberQrValue(codes[0].rawValue);
+                  status.textContent = "QR terbaca. Mencari member...";
+                  const card = membershipCardsCache.find((c) => String(c.card_number || "").toLowerCase() === raw.toLowerCase() || String(c.id || "").toLowerCase() === raw.toLowerCase() || String(c.user_id || "").toLowerCase() === raw.toLowerCase());
+                  const customer = card ? customers.find((c) => String(c.user_id) === String(card.user_id)) : customers.find((c) => String(c.email || "").toLowerCase() === raw.toLowerCase() || String(c.phone || "").replace(/\D/g, "") === raw.replace(/\D/g, ""));
+                  if (!customer) {
+                    status.textContent = "QR terbaca, tetapi member tidak ditemukan.";
+                    running = true;
+                  } else {
+                    status.textContent = "Member ditemukan.";
+                    renderScannedMemberResult(customer, card, true);
+                    if (stream) stream.getTracks().forEach((track) => track.stop());
+                    return;
+                  }
+                }
+              }
+            } catch (e) { status.textContent = "Scanner aktif — arahkan QR dengan jelas."; }
+            if (running) setTimeout(scan, 180);
+          };
+          scan();
+        } catch (e) {
+          status.textContent = `Kamera gagal dibuka: ${e?.message || "izin kamera ditolak"}`;
+        }
+      }
+
       async function renderCustomersTab() {
         const content = document.getElementById("adminContent");
+        if (!ordersLoaded) {
+          try { await refreshOrders(); } catch (_) {}
+        }
         content.innerHTML = '<div class="notice">Memuat pelanggan...</div>';
         const { data, error } = await supabase.rpc("secure_list_customers");
         if (error)
@@ -4889,12 +5039,13 @@
         let membershipByUser = {};
         try {
           const { data: cards } = await supabase.from("membership_cards").select("*");
+          membershipCardsCache = cards || [];
           (cards || []).forEach((c) => (membershipByUser[c.user_id] = c));
         } catch (e) {
           console.warn("Gagal memuat kartu membership (jalankan PATCH-MEMBERSHIP-CARD.sql?):", e);
         }
         const tierIcon = { Bronze: "🥉", Silver: "🥈", Gold: "🥇", Platinum: "💎" };
-        content.innerHTML = `<div class="admin-list-heading"><div><h3>Data Pelanggan</h3><p class="muted">${customers.length} pelanggan · pelanggan langganan ditandai dari jumlah transaksi.</p></div></div><div class="field" style="margin-bottom:12px"><span>🔍 Cari nama/email/HP/nomor kartu membership</span><input class="input" id="customerSearchInput" placeholder="Scan atau ketik nomor kartu, mis. AOC-XXXXXXXX" type="text"></div><div class="customer-admin-grid" id="customerAdminGrid">${
+        content.innerHTML = `<div class="admin-list-heading"><div><h3>Data Pelanggan</h3><p class="muted">${customers.length} pelanggan · pelanggan langganan ditandai dari jumlah transaksi.</p></div><button class="btn primary small" id="aocOpenMemberScanner" type="button">📷 Scan Member</button></div><div class="field" style="margin-bottom:12px"><span>🔍 Cari nama/email/HP/nomor kartu membership</span><input class="input" id="customerSearchInput" placeholder="Scan atau ketik nomor kartu, mis. AOC-XXXXXXXX" type="text"></div><div class="customer-admin-grid" id="customerAdminGrid">${
           customers
             .map((customer) => {
               const history = orders.filter(
@@ -4909,6 +5060,7 @@
             })
             .join("") || '<div class="notice">Belum ada pelanggan.</div>'
         }</div>`;
+        document.getElementById("aocOpenMemberScanner")?.addEventListener("click", openMemberScanner);
         document.getElementById("customerSearchInput")?.addEventListener("input", (e) => {
           const q = e.target.value.trim().toLowerCase();
           document.querySelectorAll("#customerAdminGrid .customer-admin-card").forEach((el) => {
@@ -4917,6 +5069,7 @@
             if (match && q) el.open = true;
           });
         });
+        document.querySelectorAll("[data-issue-membership]").forEach(
           (button) =>
             (button.onclick = async () => {
               const id = button.dataset.issueMembership;
@@ -5382,16 +5535,6 @@
           setTimeout(() => cancelBtn.focus(), 30);
         });
       };
-        // Tidak ada heartbeat kode keamanan 6 digit. Akses admin dijaga oleh session + role/permission.
-          } catch (_) {
-            // Jangan mengeluarkan admin hanya karena jaringan sesaat putus.
-          }
-        };
-        adminSecurityHeartbeat = setInterval(check, 5 * 60 * 1000);
-        document.addEventListener("visibilitychange", () => {
-          if (document.visibilityState === "visible") check();
-        }, { passive: true });
-      }
 
       async function initialize() {
         try {
@@ -5409,7 +5552,6 @@
 
           // Tampilkan shell admin segera. Data berat dimuat setelah menu dibuka.
           renderShell();
-          startAdminSecurityHeartbeat();
         } catch (error) {
           const rawMessage = String(error?.message || "Admin panel gagal dimuat.");
           const needsSaleRentalMigration =
@@ -5433,7 +5575,7 @@
       Promise.race([
         initialize(),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Admin Panel timeout. Koneksi/auth Supabase tidak merespons dalam 10 detik.")), 10000),
+          setTimeout(() => reject(new Error("Admin Panel timeout. Koneksi/auth Supabase tidak merespons dalam 12 detik.")), 12000),
         ),
       ]).catch((error) => {
         console.error("Admin initialize watchdog:", error);

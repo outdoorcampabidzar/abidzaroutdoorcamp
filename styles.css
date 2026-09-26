@@ -8646,3 +8646,36 @@ body.auth-locked { overflow: hidden !important; }
     height: 38px;
   }
 }
+
+/* Homepage 6-digit security input */
+.home-security-code-section { margin-top: 18px; }
+.home-security-code-card {
+  display: flex; flex-direction: column; gap: 16px; padding: 20px;
+  border: 1px solid rgba(255,255,255,.10); border-radius: 18px;
+  background: rgba(13,20,29,.78); box-shadow: 0 12px 35px rgba(0,0,0,.18);
+}
+.home-security-code-card h3 { margin: 8px 0 4px; }
+.home-security-form { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.home-security-input-wrap { width: 100%; }
+#homeSecurityInput {
+  width: 100%; box-sizing: border-box; text-align: center;
+  padding: 15px 18px; border-radius: 14px;
+  border: 1px solid rgba(104,232,171,.28);
+  background: rgba(104,232,171,.08); color: inherit;
+  letter-spacing: .28em; font: 800 28px/1.1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+#homeSecurityInput::placeholder { letter-spacing: .28em; opacity: .45; }
+#homeSecurityInput:focus { outline: 2px solid rgba(104,232,171,.45); outline-offset: 2px; }
+.home-security-form .btn { width: 100%; }
+
+/* AOC V8 — full homepage security gate */
+.home-security-gate{position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(3,8,12,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.home-security-gate-card{width:min(440px,100%);padding:28px;border:1px solid rgba(104,232,171,.24);border-radius:24px;background:#0b1116;box-shadow:0 24px 80px rgba(0,0,0,.55);text-align:center}
+.home-security-lock{width:64px;height:64px;display:grid;place-items:center;margin:0 auto 16px;border-radius:18px;background:rgba(104,232,171,.10);font-size:30px}
+.home-security-gate-card h2{margin:14px 0 8px}
+.home-security-gate-card .home-security-form{display:grid;gap:12px;margin-top:22px}
+.home-security-gate-card #homeSecurityInput{width:100%;box-sizing:border-box;text-align:center;font-size:28px;font-weight:700;letter-spacing:.38em;padding:15px 10px;border-radius:14px;border:1px solid rgba(104,232,171,.35);background:#0d2020;color:#fff}
+.home-security-gate-card #homeSecurityInput:focus{outline:2px solid rgba(104,232,171,.45);outline-offset:2px}
+.home-security-gate-card #homeSecuritySubmit{width:100%}
+.home-security-gate .is-closing{opacity:0;transform:scale(.98);transition:opacity .18s ease,transform .18s ease}
+body.home-security-locked{overflow:hidden}

@@ -136,6 +136,20 @@
 <div class="membership-card-hint">Tunjukkan QR di atas ke admin toko untuk verifikasi cepat saat transaksi.</div>
 </div>
 </section>
+<div id="homeSecurityGate" class="home-security-gate" aria-modal="true" aria-hidden="false" role="dialog" aria-labelledby="homeSecurityGateTitle">
+  <div class="home-security-gate-card">
+    <div class="home-security-lock">🔐</div>
+    <span class="badge">Keamanan Beranda</span>
+    <h2 id="homeSecurityGateTitle">Masukkan kode keamanan</h2>
+    <p class="muted">Beranda dikunci. Masukkan kode acak tepat 6 digit untuk melanjutkan.</p>
+    <form id="homeSecurityForm" class="home-security-form" autocomplete="off">
+      <label class="sr-only" for="homeSecurityInput">Kode keamanan 6 digit</label>
+      <input id="homeSecurityInput" name="security_code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" minlength="6" placeholder="••••••" autocomplete="off" aria-describedby="homeSecurityStatus" required autofocus>
+      <button class="btn primary" id="homeSecuritySubmit" type="submit">Buka Beranda</button>
+      <div id="homeSecurityStatus" class="muted" role="status" aria-live="polite">Masukkan 6 digit kode keamanan.</div>
+    </form>
+  </div>
+</div>
 <section class="container hero catalog-home-hero">
 <div>
 <div class="hero-eyebrow" id="site-hero-eyebrow">
@@ -300,7 +314,8 @@
     import { mountWebsiteRating } from "./website-rating.js?v=20260723-5";
     import { mountMembershipCard } from "./app.js?v=202609210800";
     import { mountAnnouncements } from "./announcements.js?v=20260921-popup-banner-v2";
-
+    import { mountHomeSecurityCode } from "./home-security-code.js?v=20260926-3-v10";
+    mountHomeSecurityCode();
     mountCatalog({
       type: "product",
       gridId: "rentalPreview",

@@ -156,40 +156,8 @@
         }
 
         currentAdminUserId = user.id;
-
-        // Verifikasi kode login harus tercatat di server sebelum Admin Panel dibuka.
-        // Frontend/localStorage tidak dianggap sebagai bukti keamanan.
-        try {
-          const securityResult = await withTimeout(
-            supabase.rpc("admin_security_check"),
-            2500,
-            "Pemeriksaan verifikasi keamanan admin",
-          );
-          if (securityResult?.error) throw securityResult.error;
-          if (securityResult?.data !== true) {
-            root.innerHTML = `
-              <section class="container section">
-                <div class="notice error">
-                  <b>🔐 Verifikasi keamanan admin diperlukan.</b><br><br>
-                  Sesi login ditemukan, tetapi kode 6 digit belum diverifikasi atau sudah kedaluwarsa.
-                  Silakan login ulang untuk mendapatkan kode baru.<br><br>
-                  <a class="btn primary" href="login.html?next=admin.html">Login + Verifikasi Kode</a>
-                </div>
-              </section>`;
-            return false;
-          }
-        } catch (error) {
-          console.warn("Verifikasi keamanan admin gagal:", error);
-          root.innerHTML = `
-            <section class="container section">
-              <div class="notice error">
-                <b>🔐 Keamanan Admin belum dapat diverifikasi.</b><br><br>
-                Jalankan patch <b>PATCH-AUTH-LOGIN-DAN-AKTIVASI-KODE-6-DIGIT.sql</b>, lalu login ulang.<br><br>
-                <small>${esc(error?.message || "RPC admin_security_check tidak tersedia.")}</small>
-              </div>
-            </section>`;
-          return false;
-        }
+        // Admin Panel tidak menggunakan kode keamanan 6 digit.
+        // Kode/PIN user hanya digunakan saat checkout; akses admin tetap dilindungi oleh session + role/permission.
 
         // access-security.sql menggunakan role super_admin, bukan lagi "admin".
         // Cek profile dengan timeout pendek, lalu fallback ke RPC permission.
@@ -5543,28 +5511,6 @@
         });
       };
 
-      let adminSecurityHeartbeat = null;
-
-      function startAdminSecurityHeartbeat() {
-        if (adminSecurityHeartbeat) clearInterval(adminSecurityHeartbeat);
-        const check = async () => {
-          try {
-            const result = await supabase.rpc("admin_security_check");
-            if (result?.error || result?.data !== true) {
-              clearInterval(adminSecurityHeartbeat);
-              adminSecurityHeartbeat = null;
-              location.href = "login.html?next=admin.html";
-            }
-          } catch (_) {
-            // Jangan mengeluarkan admin hanya karena jaringan sesaat putus.
-          }
-        };
-        adminSecurityHeartbeat = setInterval(check, 5 * 60 * 1000);
-        document.addEventListener("visibilitychange", () => {
-          if (document.visibilityState === "visible") check();
-        }, { passive: true });
-      }
-
       async function initialize() {
         try {
           const allowed = await verifyAdmin();
@@ -5581,7 +5527,6 @@
 
           // Tampilkan shell admin segera. Data berat dimuat setelah menu dibuka.
           renderShell();
-          startAdminSecurityHeartbeat();
         } catch (error) {
           const rawMessage = String(error?.message || "Admin panel gagal dimuat.");
           const needsSaleRentalMigration =

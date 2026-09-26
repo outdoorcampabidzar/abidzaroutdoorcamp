@@ -105,29 +105,36 @@
 </div>
 </div>
 </nav>
-<!-- AOC ADMIN BUILD 2026-09-21: recovery build -->
+<!-- AOC ADMIN BUILD 2026-09-26: stable boot / checkout-only admin -->
 <script>
 (function () {
-  try {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function (regs) {
-        return Promise.all(regs.map(function (r) { return r.unregister(); }));
-      }).catch(function () {});
-    }
-    if (window.caches && caches.keys) {
-      caches.keys().then(function (keys) {
-        return Promise.all(keys.map(function (key) { return caches.delete(key); }));
-      }).catch(function () {});
-    }
-  } catch (_) {}
-  window.__AOC_ADMIN_BUILD__ = '20260921-0935-recovery';
+  window.__AOC_ADMIN_BUILD__ = '20260926-stable-boot';
+  window.__AOC_ADMIN_MODULE_LOADED__ = false;
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>]/g, function (c) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]);
+    });
+  }
+  function showBootError(title, detail) {
+    var root = document.getElementById('adminRoot');
+    if (!root || window.__AOC_ADMIN_MODULE_LOADED__) return;
+    root.innerHTML = '<section class="container section"><div class="notice error"><b>❌ ' + escapeHtml(title) + '</b><br><br><span>' + escapeHtml(detail || 'Admin Panel tidak berhasil memuat.') + '</span><br><br><button class="btn primary" type="button" onclick="location.reload()">↻ Coba Lagi</button> <a class="btn" href="login.html?next=admin.html">Login Ulang</a></div></section>';
+  }
+  window.__AOC_ADMIN_SHOW_BOOT_ERROR__ = showBootError;
   window.addEventListener('error', function (event) {
     var msg = event && event.error && event.error.message ? event.error.message : (event.message || 'JavaScript error');
-    if (/SyntaxError|Unexpected token/i.test(msg)) {
-      var root = document.getElementById('adminRoot');
-      if (root) root.innerHTML = '<section class="container section"><div class="notice error"><b>Admin Panel gagal memuat JavaScript.</b><br><br><code>' + String(msg).replace(/</g,'&lt;') + '</code><br><br><small>Build: 2026-09-21 recovery</small></div></section>';
-    }
+    if (/module|import|SyntaxError|Unexpected token|supabase/i.test(msg)) showBootError('Admin Panel gagal memuat', msg);
   });
+  window.addEventListener('unhandledrejection', function (event) {
+    var reason = event && event.reason;
+    var msg = reason && reason.message ? reason.message : String(reason || 'Promise gagal');
+    if (/module|import|supabase|auth|network/i.test(msg)) showBootError('Admin Panel mengalami error', msg);
+  });
+  setTimeout(function () {
+    if (!window.__AOC_ADMIN_MODULE_LOADED__) {
+      showBootError('Admin Panel tidak memuat', 'JavaScript Admin belum berhasil dimuat. Coba refresh sekali lagi atau buka Login Ulang.');
+    }
+  }, 9000);
 })();
 </script>
 <div class="container section" style="padding-bottom:0"><a class="btn secondary" href="admin-announcements.html">📢 Pengumuman</a></div>
@@ -136,33 +143,8 @@
 <div class="notice">Memeriksa akses admin...</div>
 </section>
 </main>
-<script type="module" src="./admin-core-member-scan-20260921.js?v=202609260714-admin-boot-fix"></script>
-<script>
-// Admin boot watchdog: jangan biarkan halaman berhenti di "Memeriksa akses admin...".
-(function(){
-  var done = false;
-  function showError(title, detail){
-    if(done) return;
-    var root = document.getElementById("adminRoot");
-    if(!root) return;
-    done = true;
-    root.innerHTML = '<section class="container section"><div class="notice error"><b>❌ '+title+'</b><br><br><span>'+String(detail || "Admin Panel tidak berhasil memuat.").replace(/[&<>]/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]);})+'</span><br><br><button class="btn primary" type="button" onclick="location.reload()">↻ Coba Lagi</button> <a class="btn" href="login.html?next=admin.html">Login Ulang</a></div></section>';
-  }
-  window.addEventListener("error", function(e){
-    var msg = e && (e.message || (e.error && e.error.message));
-    if(msg && /module|import|supabase|SyntaxError|Unexpected token/i.test(msg)) showError("Admin Panel gagal memuat", msg);
-  });
-  window.addEventListener("unhandledrejection", function(e){
-    var reason=e && e.reason;
-    var msg=reason && reason.message ? reason.message : String(reason || "Promise gagal");
-    if(/supabase|admin|module|network|fetch/i.test(msg)) showError("Admin Panel mengalami error", msg);
-  });
-  setTimeout(function(){
-    var root=document.getElementById("adminRoot");
-    if(root && /Memeriksa akses admin/i.test(root.textContent || "")) showError("Admin Panel timeout", "Pemeriksaan sesi/admin tidak selesai dalam 12 detik. Periksa koneksi Supabase atau login ulang.");
-  },12000);
-})();
-</script>
+<script type="module" src="./admin-core.js?v=202609260926-admin-stable" onload="window.__AOC_ADMIN_MODULE_LOADED__=true" onerror="window.__AOC_ADMIN_SHOW_BOOT_ERROR__&&window.__AOC_ADMIN_SHOW_BOOT_ERROR__('Admin Panel gagal dimuat','File admin-core.js tidak dapat dimuat. Pastikan semua file ZIP di-upload.')"></script>
+
 
 <div id="aocRentalConditionModal" class="aoc-condition-modal" hidden role="dialog" aria-modal="true" aria-labelledby="aocRentalConditionTitle">
   <div class="aoc-condition-backdrop" data-condition-close></div>

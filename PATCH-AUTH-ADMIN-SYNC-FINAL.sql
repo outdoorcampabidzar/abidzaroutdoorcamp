@@ -1,7 +1,8 @@
--- AOC AUTH + ADMIN SYNC FINAL
+-- AOC AUTH + ADMIN SYNC FINAL — CHECKOUT PIN ONLY
 -- Jalankan TERAKHIR setelah access-security.sql dan PATCH-AUTH-LOGIN-DAN-AKTIVASI-KODE-6-DIGIT.sql.
 -- Menyatukan role lama "admin" dengan sistem role baru "super_admin" tanpa
--- memutus akun lama. Semua pemeriksaan admin memakai sumber yang sama.
+-- memutus akun lama. Admin Panel memakai session + role/permission; PIN 6 digit
+-- hanya untuk checkout, bukan untuk membuka Admin Panel.
 
 -- 1) Normalisasi role lama.
 update public.profiles
@@ -34,11 +35,10 @@ language sql stable security definer set search_path=public as $$
   select exists (
     select 1
     from public.profiles p
-    left join public.role_permissions rp on rp.role = case when p.role in ('admin','superadmin') then 'super_admin' else p.role end
-    left join public.admin_security_verifications v on v.user_id=p.id
+    left join public.role_permissions rp
+      on rp.role = case when p.role in ('admin','superadmin') then 'super_admin' else p.role end
     where p.id=auth.uid()
       and p.role <> 'user'
-      and (v.verified_until > now() or p.role in ('admin','superadmin'))
       and (rp.permission='*' or rp.permission=p_permission)
   );
 $$;

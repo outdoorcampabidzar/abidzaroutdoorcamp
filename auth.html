@@ -251,7 +251,7 @@
         Belum punya akun? Daftar
       </button>
 <p class="auth-security-note">
-        🔒 Password dikelola oleh Supabase Auth. PIN transaksi disimpan sebagai hash dan diverifikasi di server. Setelah password benar, verifikasi kode 6 digit wajib diselesaikan sebelum akses dilanjutkan.
+        🔒 Password dikelola oleh Supabase Auth. PIN transaksi disimpan sebagai hash dan diverifikasi di server. PIN transaksi digunakan hanya saat checkout.
       </p>
 </section>
 </main>
@@ -262,24 +262,7 @@
     <div class="auth-lock-icon" aria-hidden="true">🔐</div>
     <span class="badge">VERIFIKASI WAJIB</span>
     <h2 id="authLockTitle">Verifikasi Kode Keamanan</h2>
-    <p class="muted">Semua akses dikunci sementara. Masukkan kode 6 digit yang tampil untuk melanjutkan.</p>
-    <section aria-live="polite" class="auth-code-panel hidden" id="authCodePanel">
-<div class="auth-code-head">
-<span class="badge">Kode Keamanan</span>
-<strong id="authCodeTitle">Kode Aktivasi</strong>
-<p class="muted" id="authCodeHint">Masukkan kode 6 digit yang muncul di bawah.</p>
-</div>
-<div aria-label="Kode keamanan" class="auth-code-display" id="authCodeDisplay">------</div>
-<label class="field">
-<span>Masukkan kode 6 digit</span>
-<input autocomplete="one-time-code" class="input auth-code-input" id="authCodeInput" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" type="text"/>
-</label>
-<div class="auth-code-actions">
-<button class="btn auth-submit" id="authCodeVerify" type="button">Verifikasi Kode</button>
-<button class="btn secondary" id="authCodeNew" type="button">Buat Kode Baru</button>
-</div>
 </section>
-  </section>
 </div>
 
 <script src="auth.js" type="module"></script>

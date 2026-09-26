@@ -23,97 +23,7 @@ const confirmTransactionPinInput = document.getElementById("confirmTransactionPi
 
 let mode = "login";
 let isSubmitting = false;
-let pendingCodeType = null;
-let pendingCode = null;
 
-const authCodePanel = document.getElementById("authCodePanel");
-const authCodeTitle = document.getElementById("authCodeTitle");
-const authCodeHint = document.getElementById("authCodeHint");
-const authCodeDisplay = document.getElementById("authCodeDisplay");
-const authCodeInput = document.getElementById("authCodeInput");
-const authCodeVerify = document.getElementById("authCodeVerify");
-const authCodeNew = document.getElementById("authCodeNew");
-const authLockOverlay = document.getElementById("authLockOverlay");
-const authLockPanelHost = document.getElementById("authLockPanelHost");
-const authCodePanelPlaceholder = document.getElementById("authCodePanelPlaceholder");
-
-function setAuthLock(locked) {
-  document.body.classList.toggle("auth-locked", locked);
-  if (authLockOverlay) {
-    authLockOverlay.classList.toggle("hidden", !locked);
-    authLockOverlay.setAttribute("aria-hidden", String(!locked));
-  }
-  if (page) page.inert = locked;
-  document.querySelectorAll("body > nav, body > .customer-service-float").forEach(el => {
-    if (locked) el.setAttribute("inert", "");
-    else el.removeAttribute("inert");
-  });
-}
-
-function hideCodePanel() {
-  setAuthLock(false);
-  authCodePanel.classList.add("hidden");
-  if (authCodePanelPlaceholder?.parentNode) {
-    authCodePanelPlaceholder.parentNode.insertBefore(authCodePanel, authCodePanelPlaceholder.nextSibling);
-  }
-  authCodeDisplay.textContent = "------";
-  authCodeInput.value = "";
-  pendingCodeType = null;
-  pendingCode = null;
-}
-
-function showCodePanel(type, code) {
-  pendingCodeType = type;
-  pendingCode = String(code || "");
-  authCodeTitle.textContent = type === "login" ? "Kode Login" : "Kode Aktivasi";
-  authCodeHint.textContent = type === "login"
-    ? "Setiap login menghasilkan kode 6 digit acak. Masukkan kode yang tampil untuk melanjutkan."
-    : "Akun dibuat. Masukkan kode 6 digit yang tampil untuk mengaktifkan akun.";
-  authCodeDisplay.textContent = pendingCode || "------";
-  if (authLockPanelHost) authLockPanelHost.appendChild(authCodePanel);
-  authCodePanel.classList.remove("hidden");
-  setAuthLock(true);
-  authCodeInput.value = "";
-  requestAnimationFrame(() => authCodeInput.focus());
-}
-
-async function issueCode(type) {
-  const fn = type === "login" ? "issue_login_code" : "issue_account_activation_code";
-  const { data, error } = await supabase.rpc(fn);
-  if (error) throw error;
-  const code = data?.code ?? data;
-  if (!/^\d{6}$/.test(String(code || ""))) {
-    throw new Error("Supabase tidak mengembalikan kode 6 digit.");
-  }
-  showCodePanel(type, String(code));
-  message(messageBox, type === "login" ? "Kode login baru berhasil dibuat." : "Kode aktivasi berhasil dibuat.", "success");
-}
-
-async function verifyCode() {
-  if (!pendingCodeType) return;
-  const code = String(authCodeInput.value || "").replace(/\D/g, "");
-  if (!/^\d{6}$/.test(code)) {
-    message(messageBox, "Masukkan tepat 6 digit kode.", "error");
-    return;
-  }
-
-  authCodeVerify.disabled = true;
-  try {
-    const fn = pendingCodeType === "login" ? "verify_login_code" : "verify_account_activation_code";
-    const { data, error } = await supabase.rpc(fn, { p_code: code });
-    if (error) throw error;
-    if (data === false || data?.success === false) throw new Error("Kode salah atau sudah kedaluwarsa.");
-
-    const verifiedType = pendingCodeType;
-    hideCodePanel();
-    message(messageBox, verifiedType === "login" ? "Login berhasil." : "Akun berhasil diaktifkan.", "success");
-    setTimeout(() => { location.href = nextPage; }, 400);
-  } catch (error) {
-    message(messageBox, error.message || "Kode tidak valid.", "error");
-  } finally {
-    authCodeVerify.disabled = false;
-  }
-}
 
 function safeNextPage() {
   const rawNext =
@@ -334,8 +244,7 @@ async function register(values) {
     await saveImmediateProfile(data.user.id, profile);
     const { error: pinError } = await supabase.rpc("set_transaction_pin", { p_pin: transactionPin });
     if (pinError) throw pinError;
-    await issueCode("register");
-    message(messageBox, "Akun berhasil dibuat. Masukkan kode aktivasi 6 digit.", "success");
+    message(messageBox, "Akun berhasil dibuat. Silakan lanjut.", "success");
     return;
   }
 
@@ -438,22 +347,11 @@ toggleButton.addEventListener("click", () => {
 
 passwordInput.addEventListener("input", updatePasswordStrength);
 
-authCodeInput.addEventListener("input", () => {
-  authCodeInput.value = authCodeInput.value.replace(/\D/g, "").slice(0, 6);
-});
 
 [transactionPinInput, confirmTransactionPinInput].forEach((input) => {
   input?.addEventListener("input", () => {
     input.value = input.value.replace(/\D/g, "").slice(0, 6);
   });
-});
-authCodeVerify.addEventListener("click", verifyCode);
-authCodeNew.addEventListener("click", async () => {
-  if (!pendingCodeType) return;
-  authCodeNew.disabled = true;
-  try { await issueCode(pendingCodeType); }
-  catch (error) { message(messageBox, error.message || "Gagal membuat kode baru.", "error"); }
-  finally { authCodeNew.disabled = false; }
 });
 
 document.querySelectorAll("[data-password-toggle]").forEach(button => {
@@ -470,12 +368,6 @@ document.querySelectorAll("[data-password-toggle]").forEach(button => {
   });
 });
 
-document.addEventListener("keydown", event => {
-  if (authLockOverlay && !authLockOverlay.classList.contains("hidden") && event.key === "Escape") {
-    event.preventDefault();
-    authCodeInput.focus();
-  }
-});
 
 window.addEventListener("beforeunload", () => {
   // Do not persist a successful verification flag in localStorage/sessionStorage.
