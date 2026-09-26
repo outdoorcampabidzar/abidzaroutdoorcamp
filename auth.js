@@ -24,17 +24,13 @@ const confirmTransactionPinInput = document.getElementById("confirmTransactionPi
 let mode = "login";
 let isSubmitting = false;
 
-
 function safeNextPage() {
-  const rawNext =
-    new URLSearchParams(location.search).get("next") || "index.html";
-
+  const rawNext = new URLSearchParams(location.search).get("next") || "index.html";
   try {
     const resolved = new URL(rawNext, location.href);
-
     if (resolved.origin !== location.origin) return "index.html";
-
-    return `${resolved.pathname.split("/").pop() || "index.html"}${resolved.search}${resolved.hash}`;
+    const filename = resolved.pathname.split("/").pop() || "index.html";
+    return `${filename}${resolved.search}${resolved.hash}`;
   } catch {
     return "index.html";
   }
@@ -43,37 +39,43 @@ function safeNextPage() {
 const nextPage = safeNextPage();
 
 function clearMessage() {
+  if (!messageBox) return;
   messageBox.textContent = "";
   messageBox.className = "notice hidden";
 }
 
+function showMessage(text, type = "warning") {
+  if (typeof message === "function") {
+    message(messageBox, text, type);
+  } else if (messageBox) {
+    messageBox.textContent = text;
+    messageBox.className = `notice ${type}`;
+  }
+}
+
 function normalizePhone(value) {
   const compact = String(value || "").replace(/[^\d+]/g, "");
-
   if (compact.startsWith("+62")) return `0${compact.slice(3)}`;
   if (compact.startsWith("62")) return `0${compact.slice(2)}`;
-
   return compact;
 }
 
 function validatePhone(value) {
-  const digits = normalizePhone(value).replace(/\D/g, "");
-  return /^08\d{8,12}$/.test(digits);
+  return /^08\d{8,12}$/.test(normalizePhone(value).replace(/\D/g, ""));
 }
 
 function passwordScore(value) {
   const password = String(value || "");
   let score = 0;
-
   if (password.length >= 8) score += 1;
   if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
   if (/\d/.test(password)) score += 1;
   if (/[^A-Za-z0-9]/.test(password) || password.length >= 12) score += 1;
-
   return score;
 }
 
 function updatePasswordStrength() {
+  if (!strengthBox || !strengthText || !passwordInput) return;
   const score = passwordScore(passwordInput.value);
   const bars = strengthBox.querySelectorAll(".password-strength-bars span");
   const labels = [
@@ -83,72 +85,63 @@ function updatePasswordStrength() {
     "Password kuat.",
     "Password sangat kuat."
   ];
-
   bars.forEach((bar, index) => {
     bar.classList.toggle("active", index < score);
     bar.dataset.level = String(score);
   });
-
   strengthText.textContent = labels[score];
 }
 
 function setRegisterRequired(enabled) {
-  document.querySelectorAll("[data-register-required]").forEach(field => {
+  document.querySelectorAll("[data-register-required]").forEach((field) => {
     field.required = enabled;
   });
+  if (passwordInput) passwordInput.autocomplete = enabled ? "new-password" : "current-password";
+}
 
-  passwordInput.autocomplete = enabled
-    ? "new-password"
-    : "current-password";
+function toggleOptionalField(field, hidden) {
+  if (!field) return;
+  field.classList.toggle("hidden", hidden);
+  field.setAttribute("aria-hidden", String(hidden));
 }
 
 function setMode(nextMode) {
-  hideCodePanel();
-  mode = nextMode;
+  mode = nextMode === "register" ? "register" : "login";
   const isRegister = mode === "register";
 
-  page.classList.toggle("is-register", isRegister);
-  registerFields.classList.toggle("hidden", !isRegister);
-  confirmPasswordField.classList.toggle("hidden", !isRegister);
-  termsField.classList.toggle("hidden", !isRegister);
-  strengthBox.classList.toggle("hidden", !isRegister);
-  transactionPinField.classList.toggle("hidden", !isRegister);
-  confirmTransactionPinField.classList.toggle("hidden", !isRegister);
-  transactionPinField.setAttribute("aria-hidden", String(!isRegister));
-  confirmTransactionPinField.setAttribute("aria-hidden", String(!isRegister));
-
-  registerFields.setAttribute("aria-hidden", String(!isRegister));
-  confirmPasswordField.setAttribute("aria-hidden", String(!isRegister));
-  termsField.setAttribute("aria-hidden", String(!isRegister));
-
+  page?.classList.toggle("is-register", isRegister);
+  toggleOptionalField(registerFields, !isRegister);
+  toggleOptionalField(confirmPasswordField, !isRegister);
+  toggleOptionalField(termsField, !isRegister);
+  toggleOptionalField(strengthBox, !isRegister);
+  toggleOptionalField(transactionPinField, !isRegister);
+  toggleOptionalField(confirmTransactionPinField, !isRegister);
   setRegisterRequired(isRegister);
   clearMessage();
 
-  title.textContent = isRegister ? "Daftar Akun" : "Masuk ke Akun";
-  badge.textContent = isRegister ? "Buat Profil Baru" : "Selamat Datang";
-
-  subtitle.textContent = isRegister
-    ? "Lengkapi profil agar proses checkout berikutnya lebih cepat."
-    : "Gunakan email dan password yang sudah terdaftar.";
-
-  submitButton.textContent = isRegister ? "Buat Akun" : "Login";
-
-  toggleButton.textContent = isRegister
-    ? "Sudah punya akun? Login"
-    : "Belum punya akun? Daftar";
+  if (title) title.textContent = isRegister ? "Daftar Akun" : "Masuk ke Akun";
+  if (badge) badge.textContent = isRegister ? "Buat Profil Baru" : "Selamat Datang";
+  if (subtitle) {
+    subtitle.textContent = isRegister
+      ? "Lengkapi profil agar proses checkout berikutnya lebih cepat."
+      : "Gunakan email dan password yang sudah terdaftar.";
+  }
+  if (submitButton) submitButton.textContent = isRegister ? "Buat Akun" : "Login";
+  if (toggleButton) {
+    toggleButton.textContent = isRegister ? "Sudah punya akun? Login" : "Belum punya akun? Daftar";
+  }
 
   if (!isRegister) {
-    confirmPasswordInput.value = "";
-    transactionPinInput.value = "";
-    confirmTransactionPinInput.value = "";
-    form.elements.terms.checked = false;
+    if (confirmPasswordInput) confirmPasswordInput.value = "";
+    if (transactionPinInput) transactionPinInput.value = "";
+    if (confirmTransactionPinInput) confirmTransactionPinInput.value = "";
+    const terms = form?.elements?.terms;
+    if (terms) terms.checked = false;
   }
 
   requestAnimationFrame(() => {
-    (isRegister
-      ? form.elements.full_name
-      : form.elements.email
-    )?.focus();
+    const target = isRegister ? form?.elements?.full_name : form?.elements?.email;
+    target?.focus?.();
   });
 }
 
@@ -162,62 +155,26 @@ function validateRegistration(values) {
   const transactionPin = String(values.transaction_pin || "").replace(/\D/g, "");
   const confirmTransactionPin = String(values.confirm_transaction_pin || "").replace(/\D/g, "");
 
-  if (fullName.length < 3) {
-    return "Nama lengkap minimal 3 karakter.";
-  }
+  if (fullName.length < 3) return "Nama lengkap minimal 3 karakter.";
+  if (!validatePhone(phone)) return "Nomor WhatsApp tidak valid. Gunakan format 08xxxxxxxxxx.";
+  if (city.length < 2) return "Kota atau kabupaten wajib diisi.";
+  if (address.length < 8) return "Alamat domisili terlalu singkat.";
+  if (password.length < 8) return "Password minimal 8 karakter.";
+  if (passwordScore(password) < 2) return "Password terlalu lemah. Tambahkan kombinasi huruf dan angka.";
+  if (password !== confirmation) return "Konfirmasi password tidak sama.";
+  if (!/^\d{6}$/.test(transactionPin)) return "PIN transaksi harus tepat 6 digit.";
+  if (transactionPin !== confirmTransactionPin) return "Konfirmasi PIN transaksi tidak sama.";
+  if (new Set(transactionPin.split("")).size === 1) return "Jangan gunakan PIN yang semua angkanya sama.";
 
-  if (!validatePhone(phone)) {
-    return "Nomor WhatsApp tidak valid. Gunakan format 08xxxxxxxxxx.";
-  }
-
-  if (city.length < 2) {
-    return "Kota atau kabupaten wajib diisi.";
-  }
-
-  if (address.length < 8) {
-    return "Alamat domisili terlalu singkat.";
-  }
-
-  if (password.length < 8) {
-    return "Password minimal 8 karakter.";
-  }
-
-  if (passwordScore(password) < 2) {
-    return "Password terlalu lemah. Tambahkan kombinasi huruf dan angka.";
-  }
-
-  if (password !== confirmation) {
-    return "Konfirmasi password tidak sama.";
-  }
-
-  if (!/^\d{6}$/.test(transactionPin)) {
-    return "PIN transaksi harus tepat 6 digit.";
-  }
-
-  if (transactionPin !== confirmTransactionPin) {
-    return "Konfirmasi PIN transaksi tidak sama.";
-  }
-
-  if (new Set(transactionPin.split("")).size === 1) {
-    return "Jangan gunakan PIN yang semua angkanya sama.";
-  }
-
-  if (!form.elements.terms.checked) {
-    return "Setujui penggunaan data profil untuk melanjutkan.";
-  }
-
+  const terms = form?.elements?.terms;
+  if (terms && !terms.checked) return "Setujui penggunaan data profil untuk melanjutkan.";
   return "";
 }
 
 async function saveImmediateProfile(userId, profile) {
-  const { error } = await supabase.rpc("complete_my_profile", {
-    p_profile: profile
-  });
-
-  // Trigger database tetap menjadi mekanisme utama saat konfirmasi email aktif.
-  if (error) {
-    console.warn("Profil akan disinkronkan oleh trigger:", error.message);
-  }
+  if (!userId) return;
+  const { error } = await supabase.rpc("complete_my_profile", { p_profile: profile });
+  if (error) console.warn("Profil akan disinkronkan oleh trigger:", error.message);
 }
 
 async function register(values) {
@@ -233,9 +190,7 @@ async function register(values) {
   const { data, error } = await supabase.auth.signUp({
     email: String(values.email || "").trim().toLowerCase(),
     password: String(values.password || ""),
-    options: {
-      data: profile
-    }
+    options: { data: profile }
   });
 
   if (error) throw error;
@@ -243,36 +198,42 @@ async function register(values) {
   if (data.session && data.user) {
     await saveImmediateProfile(data.user.id, profile);
     const { error: pinError } = await supabase.rpc("set_transaction_pin", { p_pin: transactionPin });
-    if (pinError) throw pinError;
-    message(messageBox, "Akun berhasil dibuat. Silakan lanjut.", "success");
+    if (pinError) {
+      console.warn("PIN transaksi belum tersimpan:", pinError.message);
+      showMessage("Akun berhasil dibuat, tetapi PIN transaksi belum tersimpan. Login tetap dapat digunakan.", "warning");
+    } else {
+      showMessage("Akun berhasil dibuat. Silakan lanjut.", "success");
+    }
+    setTimeout(() => { location.href = nextPage; }, 450);
     return;
   }
 
-  throw new Error("Akun dibuat tetapi sesi belum tersedia. Matikan Confirm email di Supabase → Authentication → Sign In / Providers → Email, lalu daftar lagi.");
+  // Supabase dapat mewajibkan konfirmasi email. Jangan menganggap pendaftaran gagal.
+  showMessage("Akun berhasil dibuat. Silakan cek email untuk konfirmasi, lalu login.", "success");
+  setMode("login");
+  if (form?.elements?.email) form.elements.email.value = String(values.email || "").trim().toLowerCase();
+  if (passwordInput) passwordInput.value = "";
 }
 
 async function login(values) {
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: String(values.email || "").trim().toLowerCase(),
     password: String(values.password || "")
   });
-
   if (error) throw error;
-
-  // Login email/password tidak memakai kode 6 digit.
-  // PIN pengguna hanya diverifikasi saat checkout melalui verify_transaction_pin.
-  message(messageBox, "Login berhasil.", "success");
+  if (!data?.session) throw new Error("Login belum menghasilkan sesi. Silakan coba lagi.");
+  showMessage("Login berhasil.", "success");
   setTimeout(() => { location.href = nextPage; }, 250);
 }
 
 function oauthRedirectUrl() {
-  // OAuth Google harus kembali langsung ke halaman utama AOC.
-  // Menggunakan URL relatif menjaga path /src/ saat AOC dipasang di GitHub Pages.
-  return new URL("index.html", window.location.href).toString();
+  const url = new URL("login.html", window.location.href);
+  if (nextPage && nextPage !== "index.html") url.searchParams.set("next", nextPage);
+  return url.toString();
 }
 
 async function signInWithSocial(provider, button) {
-  socialButtons.forEach(item => { item.disabled = true; });
+  socialButtons.forEach((item) => { item.disabled = true; });
   const original = button.innerHTML;
   button.classList.add("is-loading");
   button.querySelector("small")?.replaceChildren(document.createTextNode("Membuka login..."));
@@ -282,71 +243,63 @@ async function signInWithSocial(provider, button) {
       provider,
       options: {
         redirectTo: oauthRedirectUrl(),
-        queryParams: provider === "google" ? { access_type: "offline", prompt: "select_account" } : undefined
+        ...(provider === "google" ? { queryParams: { access_type: "offline", prompt: "select_account" } } : {})
       }
     });
     if (error) throw error;
   } catch (error) {
-    message(messageBox, error.message || `Login ${provider} gagal.`, "error");
+    showMessage(error?.message || `Login ${provider} gagal.`, "error");
     button.innerHTML = original;
     button.classList.remove("is-loading");
-    socialButtons.forEach(item => { item.disabled = false; });
+    socialButtons.forEach((item) => { item.disabled = false; });
   }
 }
 
-socialButtons.forEach(button => {
+socialButtons.forEach((button) => {
   button.addEventListener("click", () => {
     if (mode !== "login") setMode("login");
     signInWithSocial(button.dataset.oauthProvider, button);
   });
 });
 
-form.addEventListener("submit", async event => {
+form?.addEventListener("submit", async (event) => {
   event.preventDefault();
-
-  if (isSubmitting) return;
-
+  if (isSubmitting || !form) return;
   clearMessage();
-
   if (!form.reportValidity()) return;
 
   const values = Object.fromEntries(new FormData(form));
-
   if (mode === "register") {
     const validationError = validateRegistration(values);
-
     if (validationError) {
-      message(messageBox, validationError, "error");
+      showMessage(validationError, "error");
       return;
     }
   }
 
   isSubmitting = true;
-  submitButton.disabled = true;
-  submitButton.textContent =
-    mode === "register" ? "Membuat Akun..." : "Memeriksa Akun...";
-
-  message(messageBox, "Memproses data akun...", "warning");
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = mode === "register" ? "Membuat Akun..." : "Memeriksa Akun...";
+  }
+  showMessage("Memproses data akun...", "warning");
 
   try {
     if (mode === "register") await register(values);
     else await login(values);
   } catch (error) {
-    message(messageBox, error.message || "Proses akun gagal.", "error");
+    showMessage(error?.message || "Proses akun gagal.", "error");
   } finally {
     isSubmitting = false;
-    submitButton.disabled = false;
-    submitButton.textContent =
-      mode === "register" ? "Buat Akun" : "Login";
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = mode === "register" ? "Buat Akun" : "Login";
+    }
   }
 });
 
-toggleButton.addEventListener("click", () => {
-  setMode(mode === "login" ? "register" : "login");
-});
-
-passwordInput.addEventListener("input", updatePasswordStrength);
-
+toggleButton?.addEventListener("click", () => setMode(mode === "login" ? "register" : "login"));
+passwordInput?.addEventListener("input", updatePasswordStrength);
 
 [transactionPinInput, confirmTransactionPinInput].forEach((input) => {
   input?.addEventListener("input", () => {
@@ -354,31 +307,32 @@ passwordInput.addEventListener("input", updatePasswordStrength);
   });
 });
 
-document.querySelectorAll("[data-password-toggle]").forEach(button => {
+document.querySelectorAll("[data-password-toggle]").forEach((button) => {
   button.addEventListener("click", () => {
     const input = document.getElementById(button.dataset.passwordToggle);
+    if (!input) return;
     const willShow = input.type === "password";
-
     input.type = willShow ? "text" : "password";
     button.textContent = willShow ? "Sembunyi" : "Lihat";
-    button.setAttribute(
-      "aria-label",
-      willShow ? "Sembunyikan password" : "Tampilkan password"
-    );
+    button.setAttribute("aria-label", willShow ? "Sembunyikan password" : "Tampilkan password");
   });
 });
 
-
-window.addEventListener("beforeunload", () => {
-  // Do not persist a successful verification flag in localStorage/sessionStorage.
-});
-
-const { data: { user } } = await supabase.auth.getUser();
-
-if (user) {
-  // Sesi aktif langsung diteruskan; tidak ada kode keamanan login.
+async function initAuth() {
   setMode("login");
-  setTimeout(() => { location.href = nextPage; }, 150);
-} else {
-  setMode("login");
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.warn("Auth session check:", error.message);
+      return;
+    }
+    if (data?.user) {
+      setTimeout(() => { location.href = nextPage; }, 150);
+    }
+  } catch (error) {
+    console.warn("Auth initialization failed:", error);
+    showMessage("Layanan autentikasi belum siap. Periksa koneksi internet dan konfigurasi Supabase.", "error");
+  }
 }
+
+initAuth();

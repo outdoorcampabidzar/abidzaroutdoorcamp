@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#050d17" name="theme-color"/>
-<title>Verifikasi Akun — AbidzarOutdoorcamp</title>
+<title>Masuk &amp; Daftar — AbidzarOutdoorcamp</title>
 <meta content="Masuk atau daftar akun AbidzarOutdoorcamp." name="description"/>
 <link href="styles.css" rel="stylesheet"/>
 </head>
@@ -206,23 +206,6 @@
 </div>
 </label>
 </div>
-<div class="two auth-pin-grid">
-<label aria-hidden="true" class="field hidden" id="transactionPinField">
-<span>PIN transaksi *</span>
-<div class="password-input">
-<input autocomplete="new-password" class="input" data-register-required="" id="transactionPin" inputmode="numeric" maxlength="6" minlength="6" name="transaction_pin" pattern="[0-9]{6}" placeholder="6 digit" type="password"/>
-<button aria-label="Tampilkan PIN transaksi" class="password-toggle" data-password-toggle="transactionPin" type="button">Lihat</button>
-</div>
-<small class="muted">PIN ini digunakan untuk mengonfirmasi transaksi checkout.</small>
-</label>
-<label aria-hidden="true" class="field hidden" id="confirmTransactionPinField">
-<span>Konfirmasi PIN *</span>
-<div class="password-input">
-<input autocomplete="new-password" class="input" data-register-required="" id="confirmTransactionPin" inputmode="numeric" maxlength="6" minlength="6" name="confirm_transaction_pin" pattern="[0-9]{6}" placeholder="Ulangi PIN" type="password"/>
-<button aria-label="Tampilkan konfirmasi PIN" class="password-toggle" data-password-toggle="confirmTransactionPin" type="button">Lihat</button>
-</div>
-</label>
-</div>
 <div aria-live="polite" class="password-strength hidden" id="passwordStrength">
 <div aria-hidden="true" class="password-strength-bars">
 <span></span><span></span><span></span><span></span>
@@ -243,29 +226,25 @@
         </button>
 </form>
 <div class="notice hidden" id="authMessage"></div>
-
 <div class="auth-divider">
-<span>atau</span>
+<span>atau lanjut dengan</span>
+</div>
+<div class="auth-social-grid" aria-label="Login dengan akun sosial">
+  <button class="auth-social auth-social-google" data-oauth-provider="google" type="button">
+    <span class="auth-social-icon" aria-hidden="true">G</span>
+    <span><strong>Google</strong><small>Lanjut dengan Google</small></span>
+  </button>
 </div>
 <button class="btn secondary auth-switch" id="authToggle" type="button">
         Belum punya akun? Daftar
       </button>
 <p class="auth-security-note">
-        🔒 Password dikelola oleh Supabase Auth. PIN transaksi disimpan sebagai hash dan diverifikasi di server. PIN transaksi digunakan hanya saat checkout.
+        🔒 Password dikelola oleh Supabase Auth dan tidak disimpan di file website. PIN transaksi hanya digunakan saat checkout.
       </p>
 </section>
 </main>
-<!-- AOC AUTH LOCK: seluruh halaman terkunci sampai kode random diverifikasi -->
-<div aria-hidden="true" aria-label="Verifikasi kode keamanan" class="auth-lock-overlay hidden" id="authLockOverlay">
-  <div class="auth-lock-backdrop"></div>
-  <section class="card auth-lock-card" role="dialog" aria-modal="true" aria-labelledby="authLockTitle">
-    <div class="auth-lock-icon" aria-hidden="true">🔐</div>
-    <span class="badge">VERIFIKASI WAJIB</span>
-    <h2 id="authLockTitle">Verifikasi Kode Keamanan</h2>
-</section>
-</div>
 
-<script src="auth.js" type="module"></script>
+<script src="auth.js?v=20260926-authfix-v19" type="module"></script>
 <a aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp" class="customer-service-float" href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan." rel="noopener noreferrer" target="_blank" title="Hubungi CS: +62 895-0934-9428">
 <span aria-hidden="true" class="customer-service-icon">
 <svg viewbox="0 0 24 24">

@@ -1,0 +1,4 @@
+AOC V22 FULL REBUILD
+Admin: no transaction PIN. Reset Omzet retains 2-step 6-digit verification.
+Announcements integrated into Admin tab; standalone page no longer uses ESM.
+Removed admin-bundle-v21.
