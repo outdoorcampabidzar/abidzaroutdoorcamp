@@ -350,8 +350,10 @@ async function login(values) {
 
   if (error) throw error;
 
-  await issueCode("login");
-  message(messageBox, "Password benar. Masukkan kode login 6 digit untuk melanjutkan.", "success");
+  // Login email/password tidak memakai kode 6 digit.
+  // PIN pengguna hanya diverifikasi saat checkout melalui verify_transaction_pin.
+  message(messageBox, "Login berhasil.", "success");
+  setTimeout(() => { location.href = nextPage; }, 250);
 }
 
 function oauthRedirectUrl() {
@@ -482,13 +484,9 @@ window.addEventListener("beforeunload", () => {
 const { data: { user } } = await supabase.auth.getUser();
 
 if (user) {
+  // Sesi aktif langsung diteruskan; tidak ada kode keamanan login.
   setMode("login");
-  try {
-    await issueCode("login");
-  } catch (error) {
-    console.warn("Kode login otomatis gagal:", error.message);
-    message(messageBox, "Sesi ditemukan. Silakan login ulang untuk mendapatkan kode 6 digit.", "warning");
-  }
+  setTimeout(() => { location.href = nextPage; }, 150);
 } else {
   setMode("login");
 }
