@@ -730,6 +730,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { key: "reports.view", label: "Laporan", description: "Melihat laporan operasional", icon: "📊" },
         { key: "admin.manage", label: "Administrator", description: "Menambah dan mengatur petugas", icon: "👥" },
         { key: "audit.view", label: "Log Aktivitas", description: "Melihat audit log administrator", icon: "🛡️" },
+        { key: "gallery.download", label: "Download Galeri", description: "Melihat dan mengunduh file Galeri Komunitas dari Admin Panel", icon: "📸" },
       ];
 
       function permissionLabels(list) {
@@ -840,6 +841,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (can("notifications.manage")) return "notifications";
         if (can("admin.manage")) return "administrators";
         if (can("audit.view")) return "activity_logs";
+        if (can("gallery.download")) return "gallery";
         return "administrators";
       }
       let siteSettings = { ...DEFAULT_SITE_SETTINGS };
@@ -1156,7 +1158,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       async function ensureAdminDataForTab(tab) {
-        if (tab === "announcements") return;
+        if (["announcements", "gallery"].includes(tab)) return;
         if (["rental", "trips", "locations"].includes(tab)) {
           await loadItemsData();
           return;
@@ -1238,6 +1240,15 @@ document.addEventListener("DOMContentLoaded", () => {
               title="Kelola pengumuman beranda"
             >
               📢 Pengumuman
+            </button>
+
+            <button
+              class="admin-tab ${activeTab === "gallery" ? "active" : ""} ${can("gallery.download") ? "" : "hidden"}"
+              data-admin-tab="gallery"
+              type="button"
+              title="Lihat dan download file Galeri Komunitas"
+            >
+              📸 Galeri
             </button>
 
             <button class="admin-tab ${activeTab === "finance" ? "active" : ""} ${can("finance.manage") ? "" : "hidden"}" data-admin-tab="finance" type="button" title="Omzet, transaksi, refund dan performa toko">💰 Omzet & Keuangan</button>
@@ -1357,7 +1368,7 @@ document.addEventListener("DOMContentLoaded", () => {
               vouchers: "vouchers.manage", shop: "coinshop.manage", settings: "settings.manage",
               schedule: "warehouse.manage", payment_logs: "finance.manage", customers: "customers.view",
               reviews: "reviews.manage", notifications: "notifications.manage", administrators: "admin.manage",
-              activity_logs: "audit.view"
+              activity_logs: "audit.view", gallery: "gallery.download"
             }[requestedTab];
             if (requestedPermission && !can(requestedPermission)) return;
             activeTab = requestedTab;
@@ -1710,6 +1721,7 @@ document.addEventListener("DOMContentLoaded", () => {
           else if (tab === "rental_returns") renderRentalReturnsTab();
           else if (tab === "rental_reminders") renderRentalRemindersTab();
           else if (tab === "announcements") await renderAnnouncementsTab();
+          else if (tab === "gallery") await renderGalleryTab();
           else if (tab === "finance") renderFinanceTab();
           else if (tab === "trips") renderTripTab();
           else if (tab === "orders") renderOrdersTab();
@@ -6143,6 +6155,79 @@ document.addEventListener("DOMContentLoaded", () => {
 
         administrators = data || [];
         renderAdministratorContent();
+      }
+
+      function galleryFileSize(bytes) {
+        const n = Number(bytes || 0);
+        if (!n) return "0 B";
+        const units = ["B", "KB", "MB", "GB"];
+        const i = Math.min(Math.floor(Math.log(n) / Math.log(1024)), units.length - 1);
+        return `${(n / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+      }
+
+      function galleryDownloadName(name) {
+        const raw = String(name || "gallery-file").trim() || "gallery-file";
+        return raw.replace(/[\\/:*?"<>|]+/g, "_").slice(0, 180);
+      }
+
+      async function downloadGalleryFile(fileUrl, fileName, button) {
+        if (!fileUrl) return;
+        const original = button?.textContent || "Download";
+        if (button) { button.disabled = true; button.textContent = "Mengunduh..."; }
+        try {
+          const response = await fetch(fileUrl, { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = objectUrl;
+          anchor.download = galleryDownloadName(fileName);
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+          showAdminMessage(`File ${galleryDownloadName(fileName)} berhasil diunduh.`, "success");
+        } catch (error) {
+          window.open(fileUrl, "_blank", "noopener,noreferrer");
+          showAdminMessage("Download langsung diblokir browser. File dibuka di tab baru; gunakan Simpan/Download dari browser.", "warning");
+        } finally {
+          if (button) { button.disabled = false; button.textContent = original; }
+        }
+      }
+
+      async function renderGalleryTab() {
+        const content = document.getElementById("adminContent");
+        if (!content) return;
+        content.innerHTML = `<section class="card" style="padding:20px"><div class="admin-list-heading"><div><span class="badge">GALLERY</span><h3>📸 Galeri Komunitas</h3><p class="muted">Admin terpilih dengan izin <b>Download Galeri</b> dapat melihat dan mengunduh file yang diunggah pengguna.</p></div><button id="refreshGalleryAdmin" class="btn secondary small" type="button">↻ Muat Ulang</button></div><div id="galleryAdminList" style="margin-top:16px"><div class="notice">Memuat galeri...</div></div></section>`;
+        const list = document.getElementById("galleryAdminList");
+
+        const { data, error } = await supabase
+          .from("community_gallery")
+          .select("id,user_id,file_name,file_path,file_url,mime_type,file_size,caption,created_at")
+          .order("created_at", { ascending: false })
+          .limit(300);
+        if (error) {
+          list.innerHTML = `<div class="notice error">Gagal memuat Galeri: ${esc(error.message || "Unknown error")}</div>`;
+          return;
+        }
+
+        const rows = data || [];
+        if (!rows.length) {
+          list.innerHTML = `<div class="notice">Belum ada file yang diunggah ke Galeri Komunitas.</div>`;
+        } else {
+          list.innerHTML = `<div class="admin-gallery-grid">${rows.map((file) => {
+            const isImage = /^image\//i.test(file.mime_type || "");
+            const preview = isImage
+              ? `<img src="${esc(file.file_url)}" alt="${esc(file.file_name)}" loading="lazy" class="admin-gallery-thumb">`
+              : `<div class="admin-gallery-file-icon">${/^video\//i.test(file.mime_type || "") ? "🎬" : "📄"}</div>`;
+            return `<article class="card admin-gallery-card"><div class="admin-gallery-preview">${preview}</div><div class="admin-gallery-copy"><div class="admin-gallery-name" title="${esc(file.file_name)}">${esc(file.file_name)}</div><div class="muted">${esc(file.mime_type || "file")} · ${galleryFileSize(file.file_size)}</div><div class="muted">${file.created_at ? new Date(file.created_at).toLocaleString("id-ID") : "-"}</div>${file.caption ? `<p>${esc(file.caption)}</p>` : ""}<small class="muted">Uploader: ${esc(file.user_id || "-")}</small><button class="btn primary small gallery-download-button" type="button" data-gallery-url="${esc(file.file_url)}" data-gallery-name="${esc(file.file_name)}">⬇ Download</button></div></article>`;
+          }).join("")}</div>`;
+        }
+
+        document.getElementById("refreshGalleryAdmin")?.addEventListener("click", () => renderGalleryTab());
+        list.querySelectorAll(".gallery-download-button").forEach((button) => {
+          button.addEventListener("click", () => downloadGalleryFile(button.dataset.galleryUrl, button.dataset.galleryName, button));
+        });
       }
 
       async function renderActivityLogsTab() {
