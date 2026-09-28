@@ -35,8 +35,8 @@ form?.addEventListener("submit",async e=>{
     const {data,error}=await supabase.rpc("set_home_security_pin",{p_pin:a});
     if(error)throw error;
     if(!data?.success)throw new Error(data?.message||"PIN gagal disimpan.");
-    const verify=await supabase.rpc("verify_home_security_pin",{p_pin:a});
-    if(verify.error || !verify.data?.success) throw (verify.error || new Error(verify.data?.message || "PIN gagal diverifikasi."));
+    // PIN hanya dibuat di sini. Beranda tetap akan meminta PIN lagi saat pertama dibuka.
+    // Tidak ada sesi unlock otomatis.
     setStatus("PIN berhasil dibuat. Lanjut mengisi identitas...","pin-success");
     setTimeout(()=>location.replace(`identity.html?next=${encodeURIComponent(safeNext())}`),350);
   }catch(err){
