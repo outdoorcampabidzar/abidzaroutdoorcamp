@@ -79,7 +79,13 @@ export async function mountAnnouncements({containerId="announcementList",section
   const box=document.getElementById(containerId), section=document.getElementById(sectionId);
   try{
     const rows=await loadAnnouncements();
-    if(!rows.length){ section?.classList.add("hidden"); return; }
+    if(!rows.length){
+      if(section) section.classList.remove("hidden");
+      if(box) box.innerHTML = `<div class="notice">Belum ada pengumuman aktif saat ini.</div>`;
+      const banner=document.getElementById("announcementBanner");
+      if(banner) banner.classList.add("hidden");
+      return;
+    }
     if(box) {
       box.innerHTML=rows.map(a=>{
         const image=safeUrl(a.image_url), url=safeUrl(a.action_url), label=LABELS[a.category]||"Pengumuman";
@@ -103,7 +109,13 @@ export async function mountAnnouncements({containerId="announcementList",section
       },{once:true}));
     }
     renderBanner(rows); showPopup(rows[0]);
-  }catch(e){ console.error("Announcement load:",e); section?.classList.add("hidden"); }
+  }catch(e){
+    console.error("Announcement load:",e);
+    if(section) section.classList.remove("hidden");
+    if(box) box.innerHTML = `<div class="notice error">Pengumuman belum dapat dimuat. Silakan coba lagi nanti.</div>`;
+    const banner=document.getElementById("announcementBanner");
+    if(banner) banner.classList.add("hidden");
+  }
 }
 
 export async function listAllAnnouncements(){

@@ -9,7 +9,7 @@ export function mountHomeSecurityCode(){
    const {data,error}=await supabase.auth.getUser();
    if(error||!data?.user){location.replace(`login.html?next=${encodeURIComponent("index.html")}`);return false;}
    const {data:has,error:hasError}=await supabase.rpc("has_home_security_pin");
-   if(hasError){status.textContent="Sistem PIN belum siap. Jalankan PATCH-HOME-SECURITY-PIN-V32.sql di Supabase.";return false;}
+   if(hasError){status.textContent="Sistem PIN belum siap. Jalankan DATABASE-V36-FINAL-PATCH.sql di Supabase.";return false;}
    if(has!==true){location.replace("pin.html?next=index.html");return false;}
    // KONSEP V34: setiap kali beranda dibuka, PIN wajib dimasukkan.
    // Tidak ada lagi sesi unlock 10 menit yang dapat melewati PIN.

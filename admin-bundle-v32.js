@@ -1661,7 +1661,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const load = async () => {
           list.innerHTML = '<div class="notice">Memuat pengumuman...</div>';
           const result = await supabase.from("site_announcements").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false });
-          if (result.error) { list.innerHTML = '<div class="notice error">' + esc(result.error.message) + '<br><small>Pastikan ANNOUNCEMENTS-SYSTEM.sql sudah dijalankan.</small></div>'; return []; }
+          if (result.error) { list.innerHTML = '<div class="notice error">' + esc(result.error.message) + '<br><small>Pastikan DATABASE-V36-FINAL-PATCH.sql sudah dijalankan.</small></div>'; return []; }
           rows = result.data || [];
           list.innerHTML = rows.length ? rows.map((a) => '<article class="card" style="padding:16px;margin:10px 0"><div class="row"><div><span class="badge">' + (a.is_active ? "🟢 Aktif" : "⚪ Nonaktif") + ' · ' + esc(a.category || "info") + '</span><h3>' + esc(a.title || "Tanpa judul") + '</h3><p class="muted">' + esc(a.content || "") + '</p><small>' + (a.starts_at ? new Date(a.starts_at).toLocaleString("id-ID") : "Sekarang") + (a.ends_at ? " — " + new Date(a.ends_at).toLocaleString("id-ID") : "") + '</small></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary small" type="button" data-ann-edit="' + esc(a.id) + '">Edit</button><button class="btn danger small" type="button" data-ann-del="' + esc(a.id) + '">Hapus</button></div></div></article>').join("") : '<div class="notice">Belum ada pengumuman.</div>';
           return rows;

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#050d17"><title>Galeri Komunitas — AbidzarOutdoorcamp</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.gallery-hero{padding:34px 0 18px}.gallery-hero h1{margin:8px 0}.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:18px}.gallery-card{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.035);box-shadow:0 12px 30px rgba(0,0,0,.12)}.gallery-preview{display:block;aspect-ratio:4/3;background:#07111d;overflow:hidden}.gallery-media{width:100%;height:100%;object-fit:cover;display:block}.gallery-file-icon{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:48px;gap:8px}.gallery-file-icon strong{font-size:13px}.gallery-card-body{padding:13px;display:flex;flex-direction:column;gap:5px}.gallery-card-body small{color:var(--muted);line-height:1.45}.gallery-delete{align-self:flex-start;margin-top:7px}.upload-box{margin-top:16px}.upload-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}@media(max-width:700px){.upload-row{grid-template-columns:1fr}.gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-shell">
+<a class="brand" href="index.html">Abidzar<span>Outdoorcamp</span></a>
+<button aria-expanded="false" aria-label="Buka menu navigasi" class="nav-toggle" data-nav-toggle type="button"><span aria-hidden="true">☰</span></button>
+<div class="nav-menu" data-nav-menu><div class="nav-primary">
+<a class="nav-link" href="index.html">Beranda</a><a class="nav-link" href="rental.html">Sewa Item</a><a class="nav-link" href="sale.html">Jual Item</a><a class="nav-link" href="trips.html">Open Trip</a><a class="nav-link active" href="gallery.html">📸 Galeri</a><a class="nav-link" href="shop.html">🪙 Coin Shop</a><a class="nav-cart" href="cart.html">Keranjang</a>
+</div></div>
+<div class="nav-account"><a class="btn nav-login" href="login.html">Login</a></div>
+</div></nav>
+<main class="container section">
+<section class="gallery-hero"><span class="badge">📸 GALERI KOMUNITAS</span><h1>Galeri AbidzarOutdoorcamp</h1><p class="muted">Bagikan foto, video, atau PDF pengalaman outdoor. Semua file yang diunggah akun pengguna dapat dilihat bersama.</p></section>
+<section id="uploadBox" class="card upload-box" style="padding:18px">
+<h2 style="margin-top:0">Upload File</h2><p class="muted">Format: JPG, PNG, WEBP, GIF, MP4, WEBM, PDF · Maks. 15 MB/file · Maks. 10 file sekali upload.</p>
+<form id="uploadForm"><div class="upload-row"><label class="field"><span>File</span><input class="input" id="galleryFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,application/pdf" required></label><label class="field"><span>Keterangan (opsional)</span><input class="input" id="galleryCaption" maxlength="180" placeholder="Contoh: Camping Ranu Kumbolo"></label><button id="uploadBtn" class="btn primary" type="submit">📤 Upload ke Galeri</button></div></form>
+<div id="galleryMsg" class="notice hidden" style="margin-top:12px"></div></section>
+<div id="loginHint" class="notice hidden" style="margin-top:16px">Silakan <a href="login.html?next=gallery.html">login/daftar</a> untuk mengunggah file. Galeri tetap dapat dilihat oleh semua orang.</div>
+<section><div id="galleryList" class="gallery-grid"><div class="notice">Memuat galeri...</div></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script type="module">import './app.js?v=20260928-v36'; import './gallery.js?v=20260928-v36';</script>
+</body></html>
