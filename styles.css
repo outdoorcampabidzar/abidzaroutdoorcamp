@@ -8679,3 +8679,17 @@ body.auth-locked { overflow: hidden !important; }
 .home-security-gate-card #homeSecuritySubmit{width:100%}
 .home-security-gate .is-closing{opacity:0;transform:scale(.98);transition:opacity .18s ease,transform .18s ease}
 body.home-security-locked{overflow:hidden}
+
+
+/* V29 - per-user feature permissions */
+.admin-permission-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:8px 0 10px; flex-wrap:wrap; }
+.admin-feature-permission-grid { grid-template-columns:1fr 1fr; }
+.admin-feature-check { align-items:flex-start; min-height:72px; }
+.admin-feature-check > span { display:grid; gap:4px; }
+.admin-feature-check small { color:var(--muted); line-height:1.35; }
+.admin-permission-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+.admin-permission-chip { display:inline-flex; padding:4px 7px; border:1px solid var(--line); border-radius:999px; font-size:10px; color:var(--text); background:rgba(255,255,255,.035); }
+.admin-permission-chip.active { border-color:rgba(74,222,128,.4); color:var(--brand); }
+.admin-permission-chip.muted-chip { color:var(--muted); }
+.admin-user-actions { display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+@media (max-width:700px) { .admin-feature-permission-grid { grid-template-columns:1fr; } .admin-user-actions { grid-column:1 / -1; justify-content:stretch; } .admin-user-actions .btn { flex:1; } }
