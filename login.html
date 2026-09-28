@@ -156,27 +156,6 @@
         </p>
 </header>
 <form class="form auth-form" id="authForm" novalidate="">
-<div aria-hidden="true" class="auth-register-fields hidden" id="registerFields">
-<div class="two">
-<label class="field">
-<span>Nama lengkap *</span>
-<input autocomplete="name" class="input" data-register-required="" maxlength="120" name="full_name" placeholder="Nama sesuai identitas" type="text"/>
-</label>
-<label class="field">
-<span>Nomor WhatsApp *</span>
-<input autocomplete="tel" class="input" data-register-required="" inputmode="tel" maxlength="20" name="phone" placeholder="Contoh: 081234567890" type="tel"/>
-</label>
-</div>
-<div class="two">
-<label class="field">
-<span>Kota/Kabupaten *</span>
-<input autocomplete="address-level2" class="input" data-register-required="" maxlength="100" name="city" placeholder="Contoh: Bandung" type="text"/>
-</label>
-<label class="field">
-<span>Kode pos</span>
-<input autocomplete="postal-code" class="input" inputmode="numeric" maxlength="10" name="postal_code" placeholder="Contoh: 40123" type="text"/>
-</label>
-</div>
 <label class="field">
 <span>Alamat domisili *</span>
 <textarea autocomplete="street-address" class="input auth-address" data-register-required="" maxlength="500" name="address" placeholder="Nama jalan, nomor rumah, kecamatan, dan keterangan lokasi"></textarea>
@@ -203,23 +182,6 @@
 <button aria-label="Tampilkan konfirmasi password" class="password-toggle" data-password-toggle="confirmPassword" type="button">
                 Lihat
               </button>
-</div>
-</label>
-</div>
-<div class="two auth-pin-grid">
-<label aria-hidden="true" class="field hidden" id="transactionPinField">
-<span>PIN transaksi *</span>
-<div class="password-input">
-<input autocomplete="new-password" class="input" data-register-required="" id="transactionPin" inputmode="numeric" maxlength="6" minlength="6" name="transaction_pin" pattern="[0-9]{6}" placeholder="6 digit" type="password"/>
-<button aria-label="Tampilkan PIN transaksi" class="password-toggle" data-password-toggle="transactionPin" type="button">Lihat</button>
-</div>
-<small class="muted">PIN ini digunakan untuk mengonfirmasi transaksi checkout.</small>
-</label>
-<label aria-hidden="true" class="field hidden" id="confirmTransactionPinField">
-<span>Konfirmasi PIN *</span>
-<div class="password-input">
-<input autocomplete="new-password" class="input" data-register-required="" id="confirmTransactionPin" inputmode="numeric" maxlength="6" minlength="6" name="confirm_transaction_pin" pattern="[0-9]{6}" placeholder="Ulangi PIN" type="password"/>
-<button aria-label="Tampilkan konfirmasi PIN" class="password-toggle" data-password-toggle="confirmTransactionPin" type="button">Lihat</button>
 </div>
 </label>
 </div>
@@ -261,7 +223,7 @@
 </section>
 </main>
 
-<script src="auth.js?v=20260926-authfix-v19" type="module"></script>
+<script src="auth.js?v=20260928-v33" type="module"></script>
 <a aria-label="Hubungi CS AbidzarOutdoorcamp melalui WhatsApp" class="customer-service-float" href="https://wa.me/6289509349428?text=Halo%20CS%20AbidzarOutdoorcamp%2C%20saya%20ingin%20bertanya%20mengenai%20layanan." rel="noopener noreferrer" target="_blank" title="Hubungi CS: +62 895-0934-9428">
 <span aria-hidden="true" class="customer-service-icon">
 <svg viewbox="0 0 24 24">

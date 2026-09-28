@@ -38,6 +38,16 @@ function safeNextPage() {
 
 const nextPage = safeNextPage();
 
+async function redirectAfterAuth(){
+  try{
+    const {data:hasPin,error:pinError}=await supabase.rpc("has_home_security_pin");
+    if(!pinError && hasPin!==true){ location.href=`pin.html?next=${encodeURIComponent(nextPage)}`; return; }
+    const {data:hasIdentity,error:identityError}=await supabase.rpc("has_complete_identity");
+    if(!identityError && hasIdentity!==true){ location.href=`identity.html?next=${encodeURIComponent(nextPage)}`; return; }
+  }catch(err){ console.warn("Onboarding check failed:",err); }
+  location.href=nextPage;
+}
+
 function clearMessage() {
   if (!messageBox) return;
   messageBox.textContent = "";
@@ -110,13 +120,15 @@ function setMode(nextMode) {
   const isRegister = mode === "register";
 
   page?.classList.toggle("is-register", isRegister);
-  toggleOptionalField(registerFields, !isRegister);
+  toggleOptionalField(registerFields, true);
   toggleOptionalField(confirmPasswordField, !isRegister);
   toggleOptionalField(termsField, !isRegister);
   toggleOptionalField(strengthBox, !isRegister);
-  toggleOptionalField(transactionPinField, !isRegister);
-  toggleOptionalField(confirmTransactionPinField, !isRegister);
-  setRegisterRequired(isRegister);
+  toggleOptionalField(transactionPinField, true);
+  toggleOptionalField(confirmTransactionPinField, true);
+  setRegisterRequired(false);
+  if (confirmPasswordInput) confirmPasswordInput.required=isRegister;
+  const terms=form?.elements?.terms; if(terms) terms.required=isRegister;
   clearMessage();
 
   if (title) title.textContent = isRegister ? "Daftar Akun" : "Masuk ke Akun";
@@ -140,7 +152,7 @@ function setMode(nextMode) {
   }
 
   requestAnimationFrame(() => {
-    const target = isRegister ? form?.elements?.full_name : form?.elements?.email;
+    const target = form?.elements?.email;
     target?.focus?.();
   });
 }
@@ -204,7 +216,7 @@ async function register(values) {
     } else {
       showMessage("Akun berhasil dibuat. Silakan lanjut.", "success");
     }
-    setTimeout(() => { location.href = nextPage; }, 450);
+    setTimeout(() => { redirectAfterAuth(); }, 450);
     return;
   }
 
@@ -223,7 +235,7 @@ async function login(values) {
   if (error) throw error;
   if (!data?.session) throw new Error("Login belum menghasilkan sesi. Silakan coba lagi.");
   showMessage("Login berhasil.", "success");
-  setTimeout(() => { location.href = nextPage; }, 250);
+  setTimeout(() => { redirectAfterAuth(); }, 250);
 }
 
 function oauthRedirectUrl() {
@@ -327,7 +339,7 @@ async function initAuth() {
       return;
     }
     if (data?.user) {
-      setTimeout(() => { location.href = nextPage; }, 150);
+      setTimeout(() => { redirectAfterAuth(); }, 150);
     }
   } catch (error) {
     console.warn("Auth initialization failed:", error);
