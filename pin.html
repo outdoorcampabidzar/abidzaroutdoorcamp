@@ -13,11 +13,11 @@
 <main class="pin-page">
 <section class="pin-card">
 <span class="badge">🔐 Keamanan Akun</span>
-<h1 class="pin-title">Buat PIN Keamanan Beranda</h1>
-<p class="muted pin-note">PIN ini <strong>berbeda</strong> dari PIN transaksi. PIN ini dipakai untuk membuka Beranda dan disimpan sebagai hash di server.</p>
+<h1 class="pin-title">Buat Kode Keamanan Beranda & Checkout</h1>
+<p class="muted pin-note">Kode ini digunakan bersama untuk membuka Beranda dan mengonfirmasi Checkout. Kode disimpan sebagai hash di server.</p>
 <form id="homePinForm" autocomplete="off" novalidate>
-<label class="field"><span>PIN keamanan beranda</span><input id="homePin" class="input pin-input" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" placeholder="••••••" required></label>
-<label class="field"><span>Konfirmasi PIN</span><input id="homePinConfirm" class="input pin-input" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" placeholder="••••••" required></label>
+<label class="field"><span>Kode keamanan Beranda & Checkout</span><input id="homePin" class="input pin-input" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" placeholder="••••••" required></label>
+<label class="field"><span>Konfirmasi Kode</span><input id="homePinConfirm" class="input pin-input" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" placeholder="••••••" required></label>
 <div class="pin-strength">Hindari 000000, 123456, angka berulang, atau pola mudah ditebak.</div>
 <div id="pinStatus" class="pin-status" role="status" aria-live="polite"></div>
 <div class="pin-actions"><button id="saveHomePin" class="btn primary" type="submit">Simpan PIN</button><a id="cancelPin" class="btn secondary" href="login.html">Kembali</a></div>

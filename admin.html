@@ -151,7 +151,8 @@
   setInterval(cleanLegacyPinNotice,1500);
 })();
 </script>
-<script src="./admin-bundle-v32.js?build=20260928-v37-gallery" defer onload="window.__AOC_ADMIN_MODULE_LOADED__=true" onerror="window.__AOC_ADMIN_SHOW_BOOT_ERROR__&&window.__AOC_ADMIN_SHOW_BOOT_ERROR__('Admin Panel gagal dimuat','File admin-bundle-v32.js tidak dapat dimuat. Pastikan file ini ikut di-upload.')"></script>
+<script src="./admin-security.js?build=20260928-v38-admin-pin" defer></script>
+<script src="./admin-bundle-v32.js?build=20260928-v38-admin-pin" defer onload="window.__AOC_ADMIN_MODULE_LOADED__=true" onerror="window.__AOC_ADMIN_SHOW_BOOT_ERROR__&&window.__AOC_ADMIN_SHOW_BOOT_ERROR__('Admin Panel gagal dimuat','File admin-bundle-v32.js tidak dapat dimuat. Pastikan file ini ikut di-upload.')"></script>
 
 
 <div id="aocRentalConditionModal" class="aoc-condition-modal" hidden role="dialog" aria-modal="true" aria-labelledby="aocRentalConditionTitle">
@@ -200,5 +201,30 @@
 <small>WhatsApp</small>
 </span>
 </a>
+
+<div id="aocAdminSecurityModal" class="aoc-admin-security-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aocAdminSecurityTitle">
+  <div class="aoc-admin-security-backdrop"></div>
+  <div class="aoc-admin-security-card">
+    <div class="aoc-admin-security-icon">🛡️</div>
+    <div id="aocAdminSecurityVerify">
+      <span class="aoc-admin-security-label">PROTEKSI PERUBAHAN ADMIN</span>
+      <h2 id="aocAdminSecurityTitle">Masukkan Kode Admin</h2>
+      <p>Perubahan penting membutuhkan Kode Admin. Kode ini dibuat oleh SUPERADMIN dan berbeda dari PIN Beranda/Checkout.</p>
+      <input id="aocAdminSecurityCode" class="input" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="••••••••" aria-label="Kode keamanan admin">
+      <button id="aocAdminSecurityVerifyBtn" class="btn primary" type="button">Verifikasi & Lanjutkan</button>
+      <button id="aocAdminSecurityCancelBtn" class="btn secondary" type="button">Batal</button>
+    </div>
+    <div id="aocAdminSecuritySetup" class="hidden">
+      <span class="aoc-admin-security-label">PENGATURAN KEAMANAN ADMIN</span>
+      <h2>Buat Kode Admin</h2>
+      <p>Buat kode 8 digit. Kode ini berbeda dari PIN Beranda dan PIN Checkout.</p>
+      <input id="aocAdminSecurityNewCode" class="input" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="8 digit kode">
+      <input id="aocAdminSecurityConfirmCode" class="input" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="Ulangi 8 digit kode">
+      <button id="aocAdminSecuritySetupBtn" class="btn primary" type="button">Simpan Kode Admin</button>
+      <button id="aocAdminSecuritySetupCancelBtn" class="btn secondary" type="button">Batal</button>
+    </div>
+    <div id="aocAdminSecurityStatus" class="aoc-admin-security-status" role="status" aria-live="polite"></div>
+  </div>
+</div>
 </body>
 </html>

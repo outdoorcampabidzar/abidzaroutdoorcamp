@@ -8704,3 +8704,27 @@ body.home-security-locked{overflow:hidden}
 .admin-gallery-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .admin-gallery-copy .gallery-download-button{margin-top:8px;width:100%}
 @media (max-width:640px){.admin-gallery-grid{grid-template-columns:1fr 1fr}.admin-gallery-copy{padding:10px}.admin-gallery-name{font-size:14px}}
+
+/* AOC ADMIN SECURITY CODE */
+.aoc-admin-security-modal{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px}
+.aoc-admin-security-modal.hidden{display:none}
+.aoc-admin-security-backdrop{position:absolute;inset:0;background:rgba(2,8,18,.78);backdrop-filter:blur(8px)}
+.aoc-admin-security-card{position:relative;width:min(430px,100%);padding:26px;border:1px solid rgba(255,255,255,.12);border-radius:22px;background:#0b1420;box-shadow:0 25px 80px rgba(0,0,0,.5);color:#fff}
+.aoc-admin-security-icon{width:54px;height:54px;display:grid;place-items:center;border-radius:16px;background:rgba(255,255,255,.08);font-size:25px;margin-bottom:15px}
+.aoc-admin-security-label{font-size:11px;letter-spacing:.14em;opacity:.65;font-weight:800}
+.aoc-admin-security-card h2{margin:7px 0 8px}
+.aoc-admin-security-card p{color:rgba(255,255,255,.68);line-height:1.55;margin:0 0 17px}
+.aoc-admin-security-card .input{width:100%;margin:7px 0}
+.aoc-admin-security-card .btn{width:100%;margin-top:9px}
+.aoc-admin-security-status{min-height:22px;margin-top:13px;font-size:13px}
+.aoc-admin-security-status.error{color:#ff8d8d}
+.aoc-admin-security-status.success{color:#8ff0bd}
+
+/* AOC Admin PIN management */
+.admin-security-settings-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:4px 0}
+.admin-security-settings-row>div{min-width:0}
+.admin-security-settings-row strong{display:block;margin-bottom:6px}
+.admin-security-settings-row p{max-width:760px;margin:0 0 8px}
+.admin-security-settings-row .success{color:#16803c}
+.admin-security-settings-row .warning{color:#a16207}
+@media (max-width:700px){.admin-security-settings-row{flex-direction:column;align-items:stretch}.admin-security-settings-row .btn{width:100%}}

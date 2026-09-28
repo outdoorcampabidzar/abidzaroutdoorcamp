@@ -222,12 +222,12 @@
   <section class="aoc-pin-card" role="dialog" aria-modal="true" aria-labelledby="transactionPinTitle">
     <div class="aoc-pin-icon" aria-hidden="true">🔐</div>
     <span class="badge">KEAMANAN TRANSAKSI</span>
-    <h3 id="transactionPinTitle">Konfirmasi dengan PIN</h3>
-    <p class="muted">Masukkan PIN transaksi 6 digit untuk melanjutkan pembuatan pesanan.</p>
+    <h3 id="transactionPinTitle">Konfirmasi dengan Kode Keamanan</h3>
+    <p class="muted">Masukkan kode keamanan 6 digit yang sama dengan kode Beranda untuk melanjutkan pembuatan pesanan.</p>
     <div class="aoc-pin-total"><span>Total transaksi</span><strong id="transactionPinTotal">Rp0</strong></div>
     <label class="field">
-      <span>PIN Transaksi</span>
-      <input class="input aoc-pin-input" id="transactionPinCheckout" inputmode="numeric" maxlength="6" minlength="6" autocomplete="off" pattern="[0-9]{6}" placeholder="••••••" type="password"/>
+      <span>Kode Keamanan</span>
+      <input class="input aoc-pin-input" id="sharedSecurityCodeCheckout" inputmode="numeric" maxlength="6" minlength="6" autocomplete="off" pattern="[0-9]{6}" placeholder="••••••" type="password"/>
     </label>
     <div class="notice hidden aoc-pin-error" id="transactionPinError"></div>
     <div class="aoc-pin-actions">
@@ -414,7 +414,7 @@
 
       function requestTransactionPin() {
         const modal = document.getElementById("transactionPinModal");
-        const input = document.getElementById("transactionPinCheckout");
+        const input = document.getElementById("sharedSecurityCodeCheckout");
         const errorBox = document.getElementById("transactionPinError");
         const confirmButton = document.getElementById("transactionPinConfirm");
         const cancelButton = document.getElementById("transactionPinCancel");
@@ -449,16 +449,16 @@
           confirmButton.onclick = async () => {
             const pin = String(input.value || "");
             if (!/^\d{6}$/.test(pin)) {
-              message(errorBox, "Masukkan tepat 6 digit PIN transaksi.", "error");
+              message(errorBox, "Masukkan tepat 6 digit kode keamanan.", "error");
               return;
             }
             confirmButton.disabled = true;
             errorBox.classList.add("hidden");
             try {
-              const { data, error } = await supabase.rpc("verify_transaction_pin", { p_pin: pin });
+              const { data, error } = await supabase.rpc("verify_home_security_pin", { p_pin: pin });
               if (error) throw error;
               if (!data?.success) {
-                message(errorBox, data?.message || "PIN transaksi tidak valid.", "error");
+                message(errorBox, data?.message || "Kode keamanan tidak valid.", "error");
                 confirmButton.disabled = false;
                 input.select();
                 return;

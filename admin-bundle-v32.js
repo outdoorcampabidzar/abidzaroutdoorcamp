@@ -235,6 +235,11 @@ const aocConfirm = (message, options={}) => openAocDialog({mode:'confirm', messa
 const aocPrompt = (message, value='', options={}) => openAocDialog({mode:'prompt', message:String(message||''), value, ...options});
 const aocAlert = (message, options={}) => openAocDialog({mode:'alert', message:String(message||''), cancelText:'Tutup', confirmText:'Mengerti', ...options});
 
+async function requireAdminChangeCode(){
+  if(window.aocAdminSecurity?.ensure) return await window.aocAdminSecurity.ensure();
+  return true;
+}
+
 const CART_KEY = "tripkita_cart";
 const LEGACY_CART_KEYS = [
   "tripkita_cart_v3",
@@ -2334,6 +2339,20 @@ document.addEventListener("DOMContentLoaded", () => {
             <button id="saveSiteSettings" class="btn" type="submit">Simpan Pengaturan</button>
           </div>
 
+          <section class="card admin-settings-section admin-security-settings-card">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Keamanan</span><h3>PIN Admin</h3></div>
+            </div>
+            <div class="admin-security-settings-row">
+              <div>
+                <strong>PIN untuk perubahan penting</strong>
+                <p class="muted">PIN ini hanya digunakan saat mengubah item, item jual, Open Trip, pengaturan penting, atau data administrator. Melihat data Admin tidak memerlukan PIN.</p>
+                <div id="aocAdminPinStatus" class="muted">Memeriksa status PIN...</div>
+              </div>
+              <button id="aocManageAdminPin" class="btn primary" type="button">Buat / Ubah PIN Admin</button>
+            </div>
+          </section>
+
           <section class="card admin-settings-section">
             <div class="admin-editor-heading">
               <div><span class="badge">Logo Header</span><h3>Logo Website</h3></div>
@@ -2507,6 +2526,18 @@ document.addEventListener("DOMContentLoaded", () => {
         document
           .getElementById("siteSettingsForm")
           .addEventListener("submit", saveSiteSettings);
+        const adminPinButton = document.getElementById("aocManageAdminPin");
+        adminPinButton?.addEventListener("click", async () => {
+          adminPinButton.disabled = true;
+          try {
+            const ok = await window.aocAdminSecurity?.setup?.();
+            if (ok) showAdminMessage("PIN Admin berhasil disimpan.", "success");
+            await window.aocAdminSecurity?.refreshStatus?.();
+          } finally {
+            adminPinButton.disabled = false;
+          }
+        });
+        window.aocAdminSecurity?.refreshStatus?.();
         document.getElementById("uploadSiteLogo")?.addEventListener("click", uploadSiteLogo);
         document.getElementById("removeSiteLogo")?.addEventListener("click", removeSiteLogo);
         document
@@ -2610,6 +2641,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       async function saveSiteSettings(event) {
         event.preventDefault();
+        if (!(await requireAdminChangeCode())) return;
         const form = event.currentTarget;
         const button = document.getElementById("saveSiteSettings");
         const values = Object.fromEntries(new FormData(form));
@@ -3943,6 +3975,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const file = event.target.files?.[0];
         if (!file) return;
         try {
+          if (!(await requireAdminChangeCode())) return;
           const rows = parseCsv(await file.text());
           if (!rows.length) throw new Error("CSV tidak memiliki data.");
           let processed = 0;
@@ -4006,6 +4039,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       async function duplicateRental(id) {
+        if (!(await requireAdminChangeCode())) return;
         const source = rentalItems().find((item) => item.id === id);
         if (!source) return;
         const suffix = Date.now().toString().slice(-6);
@@ -4074,6 +4108,7 @@ document.addEventListener("DOMContentLoaded", () => {
           .addEventListener("click", renderRentalTab);
         document.querySelectorAll("[data-restore-item]").forEach((button) =>
           button.addEventListener("click", async () => {
+            if (!(await requireAdminChangeCode())) return;
             const { error: restoreError } = await supabase
               .from("items")
               .update({ archived_at: null, is_active: false })
@@ -4390,6 +4425,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
+        if (!(await requireAdminChangeCode())) return;
         button.disabled = true;
         button.textContent = wasEditing ? "Menyimpan perubahan..." : "Menambahkan item...";
 
@@ -4938,6 +4974,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
+        if (!(await requireAdminChangeCode())) return;
         button.disabled = true;
         button.textContent = "Menyimpan...";
 
@@ -5011,6 +5048,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       async function toggleItem(id, expectedType) {
+        if (!(await requireAdminChangeCode())) return;
         const item = items.find((entry) => entry.id === id);
         if (
           !item ||
@@ -5051,6 +5089,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
         if (!confirmed) return;
+        if (!(await requireAdminChangeCode())) return;
 
         const { error } = await supabase
           .from("items")
@@ -6352,6 +6391,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const button = document.getElementById("addAdministratorButton");
         if (!email) return showAdminMessage("Pilih akun pengguna terlebih dahulu.", "error");
         if (!permissions.length) return showAdminMessage("Pilih minimal satu fitur yang boleh diakses.", "error");
+        if (!(await requireAdminChangeCode())) return;
         button.disabled = true; button.textContent = "Menyimpan...";
         const { error } = await supabase.rpc("secure_set_staff_permissions", { a: email, b: fullName, c: permissions });
         button.disabled = false; button.textContent = editingId ? "Simpan Perubahan" : "Simpan Hak Akses";
@@ -6375,6 +6415,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
         if (!confirmed) return;
+        if (!(await requireAdminChangeCode())) return;
 
         const { error } = await supabase.rpc("secure_remove_staff_role", {
           a: userId,
