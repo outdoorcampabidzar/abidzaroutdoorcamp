@@ -120,6 +120,7 @@
         pending: "Menunggu",
         confirmed: "Dikonfirmasi",
         paid: "Dibayar",
+        rented: "Disewa",
         completed: "Selesai",
         returned: "Dikembalikan",
         cancelled: "Dibatalkan",
@@ -199,8 +200,8 @@
                 ? `
               <div class="notice compact-rental-period">
                 <b>📅 Periode sewa</b>
-                <span>${esc(rentalDate(order.rental_start))} — ${esc(rentalDate(order.rental_end))}</span>
-                <small>${Number(order.rental_days || 1)} hari</small>
+                <span>${order.rental_start_at ? `Mulai ${new Date(order.rental_start_at).toLocaleString("id-ID")}` : `${esc(rentalDate(order.rental_start))} — ${esc(rentalDate(order.rental_end))}`}</span>
+                <small>${Number(order.rental_days || 1)} × 28 jam${order.rental_due_at ? ` · Batas kembali ${new Date(order.rental_due_at).toLocaleString("id-ID")}` : ""}</small>
               </div>
             `
                 : ""
