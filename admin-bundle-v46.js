@@ -2930,7 +2930,7 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           </details>`;
         };
-        return `<section class="card rental-incoming-section"><div class="admin-list-heading"><div><span class="badge">CHECKOUT → SEWA</span><h3>Pesanan Sewa Masuk</h3><p class="muted">${active.length} operasional · ${completed.length} selesai · ${allRentalOrders.length} total.</p></div><button id="refreshRentalOrders" class="btn secondary small" type="button">Muat Ulang</button></div><div class="rental-return-tabs" role="tablist"><button class="btn small ${rentalReturnCategory === "operational" ? "primary" : "secondary"}" data-rental-return-category="operational" type="button">🟡 Operasional (${active.length})</button><button class="btn small ${rentalReturnCategory === "completed" ? "primary" : "secondary"}" data-rental-return-category="completed" type="button">✅ Pesanan Selesai (${completed.length})</button><button class="btn small ${rentalReturnCategory === "all" ? "primary" : "secondary"}" data-rental-return-category="all" type="button">📋 Semua (${allRentalOrders.length})</button></div>${renderStoreCategoryBar()}<div class="rental-workflow-note"><b>Alur:</b> Checkout → Dibayar → Sewa → Barang kembali → <b>Checklist semua barang</b> → Dikembalikan → <b>Selesai</b></div><div class="rental-incoming-list">${rentalOrders.map(card).join("") || '<div class="notice">Tidak ada pesanan pada kategori ini.</div>'}</div></section>`;
+        return `<section class="card rental-incoming-section"><div class="admin-list-heading"><div><span class="badge">CHECKOUT → SEWA</span><h3>Pesanan Sewa Masuk</h3><p class="muted">${active.length} operasional · ${completed.length} selesai · ${allRentalOrders.length} total.</p></div><button id="refreshRentalOrders" class="btn secondary small" type="button">Muat Ulang</button></div><div class="rental-return-tabs" role="tablist"><button class="btn small ${rentalReturnCategory === "operational" ? "primary" : "secondary"}" data-rental-return-category="operational" type="button">🟡 Operasional (${active.length})</button><button class="btn small ${rentalReturnCategory === "completed" ? "primary" : "secondary"}" data-rental-return-category="completed" type="button">✅ Pesanan Selesai (${completed.length})</button><button class="btn small ${rentalReturnCategory === "all" ? "primary" : "secondary"}" data-rental-return-category="all" type="button">📋 Semua (${allRentalOrders.length})</button></div>${renderStoreCategoryBar()}<div class="rental-workflow-note"><b>Alur:</b> Checkout → Dibayar → Sewa → Barang kembali → <b>Checklist semua barang</b> → <b>Otomatis Selesai</b></div><div class="rental-incoming-list">${rentalOrders.map(card).join("") || '<div class="notice">Tidak ada pesanan pada kategori ini.</div>'}</div></section>`;
       }
       function bindRentalConditionPicker(content) {
         const modal = document.getElementById("aocRentalConditionModal");
@@ -3008,8 +3008,22 @@ document.addEventListener("DOMContentLoaded", () => {
           if(!confirmed) return;
           btn.disabled=true;btn.textContent="Menyimpan semua...";
           const {error}=await supabase.rpc("secure_admin_bulk_return_inspection",{p_order_id:order.id,p_items:inspections});
-          if(error){btn.disabled=false;btn.textContent="Simpan Semua Pengembalian";return showAdminMessage(`${error.message}. Jalankan PATCH-BULK-RETURN-INSPECTION.sql.`,"error");}
-          await refreshOrders();showAdminMessage(`${order.order_number}: semua kondisi barang berhasil disimpan dalam satu transaksi dan pesanan dikembalikan.`,"success");
+          if(error){btn.disabled=false;btn.textContent="Simpan Semua Pengembalian";return showAdminMessage(`${error.message}. Pastikan fungsi pengembalian database sudah memakai versi V49.`,"error");}
+
+          // Setelah seluruh checklist pengembalian tersimpan, langsung finalisasi menjadi SELESAI.
+          // Tidak perlu klik tombol Finalisasi terpisah.
+          const {error:finalizeError}=await supabase.rpc("secure_admin_finalize_rental",{
+            p_order_id:order.id,
+            p_admin_notes:"Semua barang dikembalikan, diperiksa, dan pesanan otomatis diselesaikan."
+          });
+          if(finalizeError){
+            btn.disabled=false;
+            btn.textContent="Simpan Semua Pengembalian";
+            await refreshOrders();
+            return showAdminMessage(`Checklist berhasil disimpan, tetapi pesanan belum otomatis selesai: ${finalizeError.message}`,"error");
+          }
+          await refreshOrders();
+          showAdminMessage(`${order.order_number}: pengembalian berhasil disimpan dan pesanan otomatis menjadi SELESAI.` ,"success");
         }));
         content.querySelectorAll("[data-finalize-rental]").forEach(btn=>btn.addEventListener("click",async()=>{const order=orders.find(o=>String(o.id)===String(btn.dataset.finalizeRental));if(!order||order.status!=="returned"||!rentalOrderIsComplete(order))return showAdminMessage("Checklist pengembalian belum lengkap.","error");const confirmed=await window.aocReminderConfirm({icon:"✅",title:"Finalisasi Pesanan?",confirmText:"Finalisasi",message:`Pesanan <strong>${esc(order.order_number)}</strong> akan diubah menjadi <strong>Selesai</strong>. Pastikan seluruh checklist pengembalian sudah benar.`});if(!confirmed)return;btn.disabled=true;const {data,error}=await supabase.rpc("secure_admin_finalize_rental",{p_order_id:order.id,p_admin_notes:"Semua barang dikembalikan dan diperiksa."});if(error){btn.disabled=false;return showAdminMessage(error.message,"error");}await refreshOrders();showAdminMessage(`${order.order_number} selesai. Denda keterlambatan 100% dihitung server-side dan finalisasi tidak memakai voucher.` ,"success");}));
         content.querySelectorAll("[data-delete-rental-order]").forEach(btn=>btn.addEventListener("click",async()=>{
