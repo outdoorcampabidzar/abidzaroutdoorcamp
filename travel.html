@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#050d17"/>
+<title>Travel — AbidzarOutdoorcamp</title>
+<meta name="description" content="Paket Travel AbidzarOutdoorcamp."/>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+.travel-card{display:flex;flex-direction:column;height:100%}.travel-card img{width:100%;height:210px;object-fit:cover}.travel-card .body{display:flex;flex-direction:column;height:100%}.travel-route{font-size:18px;font-weight:900;margin:8px 0 4px}.travel-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.travel-info span{border:1px solid var(--line);background:rgba(255,255,255,.025);border-radius:12px;padding:9px;font-size:12px;color:var(--muted)}.travel-price{font-size:23px;font-weight:900;margin:12px 0}.travel-price small{font-size:12px;color:var(--muted);font-weight:700}.travel-search{max-width:460px;margin-top:22px}.travel-category-filter{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.travel-category-filter .btn.active{border-color:rgba(99,230,170,.8);background:var(--accent,#63e6aa);color:#06120d}.travel-category-badge{display:inline-flex;align-items:center;gap:6px;margin-bottom:4px}.travel-empty{grid-column:1/-1}.travel-card .actions{margin-top:auto}.travel-card .actions .btn{width:100%;justify-content:center}@media(max-width:700px){.travel-info{grid-template-columns:1fr}.travel-card img{height:190px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+<div class="nav-shell">
+<a class="brand" href="index.html"> Abidzar<span>Outdoorcamp</span> </a>
+<button aria-expanded="false" aria-label="Buka menu navigasi" class="nav-toggle" data-nav-toggle="" type="button">
+<span aria-hidden="true">☰</span>
+</button>
+<div class="nav-menu" data-nav-menu="">
+<div class="nav-primary">
+<a class="nav-link" href="index.html">Beranda</a>
+<a class="nav-link" href="rental.html">Sewa Item</a>
+<a class="nav-link" href="sale.html">Jual Item</a>
+<a class="nav-link" href="trips.html">Open Trip</a><a class="nav-link active" href="travel.html">🚐 Travel</a>
+<a class="nav-link" href="private-trip.html">🔒 Private Trip</a>
+<a class="nav-cart" href="cart.html">
+              Keranjang
+              <span class="cart-count hidden" data-cart-count="">0</span>
+</a><a aria-label="Lihat status pesanan" class="nav-notification hidden" data-notification="" href="orders.html" title="Status pesanan">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+<path d="M10 21h4"></path>
+</svg>
+<span class="notification-label">Status pesanan</span>
+<span class="notification-dot hidden" data-notification-dot=""></span>
+</a></div>
+
+</div><div class="nav-account">
+
+
+<a class="btn nav-login" data-login="" href="login.html"> Login </a>
+<div class="account-menu hidden" data-account-menu="">
+<button aria-expanded="false" aria-haspopup="menu" class="account-trigger" data-user-menu-toggle="" type="button">
+<span class="account-avatar" data-user-avatar="">U</span>
+<span class="account-trigger-copy">
+<strong data-user-name="">Halo, Pengguna</strong>
+<small data-user-role="">Akun</small>
+</span>
+<svg aria-hidden="true" class="account-chevron" viewbox="0 0 24 24">
+<path d="m7 10 5 5 5-5"></path>
+</svg>
+</button>
+<div aria-hidden="true" class="account-dropdown" data-user-dropdown="" role="menu">
+<div class="account-dropdown-head">
+<span class="account-avatar account-avatar-large" data-user-avatar="">U</span>
+<div>
+<strong data-user-full-name="">Pengguna</strong>
+<small data-user-email="">email@pengguna.com</small>
+</div>
+</div>
+<div class="account-dropdown-list">
+<a class="account-dropdown-item" href="profile.html" role="menuitem">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M20 21a8 8 0 0 0-16 0"></path>
+<circle cx="12" cy="7" r="4"></circle>
+</svg>
+<span>Profil Saya</span>
+</a>
+<a class="account-dropdown-item" href="orders.html" role="menuitem">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M6 2h9l3 3v17H6z"></path>
+<path d="M14 2v4h4"></path>
+<path d="M9 12h6M9 16h6"></path>
+</svg>
+<span>Pesanan Saya</span>
+</a>
+<a class="account-dropdown-item" href="cart.html#voucher" role="menuitem">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"></path>
+<path d="M13 7v12"></path>
+</svg>
+<span>Voucher &amp; Checkout</span>
+</a>
+<a aria-hidden="true" class="account-dropdown-item hidden" data-admin="" href="admin.html" role="menuitem">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="3"></circle>
+<path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z"></path>
+</svg>
+<span>Admin Panel</span>
+</a>
+</div>
+<div class="account-dropdown-footer">
+<button class="account-dropdown-item account-logout hidden" data-logout="" role="menuitem" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M10 17l5-5-5-5"></path>
+<path d="M15 12H3"></path>
+<path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"></path>
+</svg>
+<span>Keluar</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<main>
+  <section class="catalog-page-hero">
+    <div class="container">
+      <div class="kicker">KATALOG TRAVEL</div>
+      <h1>Temukan perjalanan yang tepat.</h1>
+      <p class="muted">Pilih rute dan paket travel yang tersedia. Harga yang ditampilkan adalah <b>harga per paket</b>, bukan per orang.</p>
+      <div class="catalog-switcher">
+<a class="btn secondary" href="rental.html">🎒 Sewa Item</a>
+<a class="btn secondary" href="sale.html">🛒 Jual Item</a>
+<a class="btn secondary" href="trips.html">🏔️ Open Trip</a>
+<a class="btn" href="travel.html">🚐 Travel</a>
+<a class="btn secondary" href="private-trip.html">🔒 Private Trip</a>
+</div>
+      <input id="travelSearch" class="input travel-search" placeholder="Cari rute, tujuan, kendaraan..." aria-label="Cari paket Travel"/>
+    </div>
+  </section>
+  <section class="container section">
+    <div class="row catalog-section-heading">
+      <div><h2>Paket Travel</h2><p class="muted">Paket transportasi dan perjalanan yang dapat dipesan.</p></div>
+      <a class="btn secondary" href="cart.html">Keranjang <span class="cart-count hidden" data-cart-count="">0</span></a>
+    </div>
+    <div class="grid" id="travelGrid"><div class="notice travel-empty">Memuat paket Travel...</div></div>
+    <div class="notice hidden" id="travelMsg"></div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  const cfg={SUPABASE_URL:"https://radrtmyrckylvvmdhgqs.supabase.co",SUPABASE_ANON_KEY:"sb_publishable_ad-kaXlIwFlCmV3cR3yDpA_Iq2oWMKk",WHATSAPP_NUMBER:"6289509349428"};
+  const sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  const grid=document.getElementById('travelGrid'),msg=document.getElementById('travelMsg'),search=document.getElementById('travelSearch');let rows=[];
+  const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const rupiah=v=>`Rp ${Number(v||0).toLocaleString('id-ID')}`;
+  function render(){
+    const q=search.value.trim().toLowerCase();
+    const list=rows.filter(r=>!q||[r.title,r.origin,r.destination,r.vehicle_type,r.vehicle_name,r.pickup_points,r.dropoff_points].some(v=>String(v||'').toLowerCase().includes(q)));
+    grid.innerHTML=list.length?list.map(r=>{
+      const status=r.status==='full'?'Penuh':r.status==='closed'?'Ditutup':'Tersedia';
+      const wa=`https://wa.me/${String(cfg.WHATSAPP_NUMBER).replace(/\D/g,'')}?text=${encodeURIComponent(`Halo, saya ingin memesan Travel ${r.title} (${r.origin} → ${r.destination}).`)}`;
+      return `<article class="card item-card travel-card">${r.image_url?`<img src="${esc(r.image_url)}" alt="${esc(r.title)}" loading="lazy">`:''}<div class="body"><span class="badge travel-category-badge">🚐 Travel</span><span class="badge">${status}</span><div class="travel-route">${esc(r.origin)} → ${esc(r.destination)}</div><h3>${esc(r.title)}</h3><p class="muted">${esc(r.description||'')}</p><div class="travel-info"><span>🚐 ${esc(r.vehicle_name||r.vehicle_type||'Travel')}</span><span>🪑 ${Number(r.capacity||0)} kursi</span><span>🕐 Berangkat ${esc(r.departure_time||'-')}</span><span>📍 ${esc(r.pickup_points||'-')}</span></div><div class="travel-price">${rupiah(r.price)} <small>/ paket</small></div><div class="actions"><a class="btn primary" href="${wa}" target="_blank" rel="noopener noreferrer">Pesan via WhatsApp</a></div></div></article>`;
+    }).join(''):`<div class="notice travel-empty">Belum ada paket Travel yang tersedia.</div>`;
+  }
+  async function load(){const {data,error}=await sb.from('travel_packages').select('*').eq('category','travel').eq('is_active',true).neq('status','draft').order('sort_order').order('created_at',{ascending:false});if(error){msg.textContent='Travel belum dapat dimuat: '+error.message;msg.className='notice error';return}rows=data||[];render()}
+  search.addEventListener('input',render);load();
+})();
+</script>
+<script type="module" src="app.js?v=2026093001"></script>
+</body>
+</html>

@@ -10,6 +10,12 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Admin Panel — AbidzarOutdoorcamp</title>
 <link href="styles.css" rel="stylesheet"/>
+
+<style id="aoc-v50-admin-business-modules">
+.admin-permission-section-title{display:flex;gap:12px;align-items:flex-start;margin:18px 0 10px}.admin-permission-section-title>div{display:flex;flex-direction:column;gap:3px}.admin-permission-section-title small{color:var(--muted,#8b949e)}
+.admin-business-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}.admin-business-module-card{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:16px;border:1px solid rgba(71,209,150,.22);border-radius:16px;background:rgba(17,24,29,.82);cursor:pointer;transition:.18s ease}.admin-business-module-card:hover{border-color:rgba(71,209,150,.5);transform:translateY(-1px)}.admin-business-module-card input{position:absolute;opacity:0;pointer-events:none}.admin-business-module-card:has(input:checked){border-color:rgba(71,209,150,.85);box-shadow:0 0 0 1px rgba(71,209,150,.18),0 8px 24px rgba(0,0,0,.16)}.admin-business-module-icon{font-size:30px}.admin-business-module-copy{display:flex;flex-direction:column;gap:4px}.admin-business-module-copy b{font-size:15px}.admin-business-module-copy small{color:var(--muted,#8b949e);line-height:1.45}.admin-business-module-check{opacity:.25;font-weight:900;font-size:20px}.admin-business-module-card:has(input:checked) .admin-business-module-check{opacity:1}.admin-support-permissions{margin-top:10px;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.02)}.admin-support-permissions summary{cursor:pointer;font-weight:700;padding:4px}.admin-support-permissions[open] summary{margin-bottom:10px}
+@media(max-width:700px){.admin-business-module-grid{grid-template-columns:1fr}.admin-business-module-card{padding:14px}}
+</style>
 </head>
 <body>
 <nav class="nav">
@@ -23,7 +29,7 @@
 <a class="nav-link" href="index.html">Beranda</a>
 <a class="nav-link" href="rental.html">Sewa Item</a>
 <a class="nav-link" href="sale.html">Jual Item</a>
-<a class="nav-link" href="trips.html">Open Trip</a>
+<a class="nav-link" href="trips.html">Open Trip</a><a class="nav-link" href="travel.html">🚐 Travel</a>
 <a class="nav-cart" href="cart.html">
               Keranjang
               <span class="cart-count hidden" data-cart-count="">0</span>
@@ -151,8 +157,8 @@
   setInterval(cleanLegacyPinNotice,1500);
 })();
 </script>
-<script src="./admin-security-v46.js?build=20260929-v46-28h-rental" defer></script>
-<script src="./admin-bundle-v46.js?build=20260929-v46-28h-rental" defer onload="window.__AOC_ADMIN_MODULE_LOADED__=true" onerror="window.__AOC_ADMIN_SHOW_BOOT_ERROR__&&window.__AOC_ADMIN_SHOW_BOOT_ERROR__('Admin Panel gagal dimuat','File admin-bundle-v46.js tidak dapat dimuat. Pastikan file ini ikut di-upload.')"></script>
+<script src="./admin-security-v50.js?build=20260930-v50-multi-admin-travel" defer></script>
+<script src="./admin-bundle-v50.js?build=20260930-v50-multi-admin-travel-private-trip" defer onload="window.__AOC_ADMIN_MODULE_LOADED__=true" onerror="window.__AOC_ADMIN_SHOW_BOOT_ERROR__&&window.__AOC_ADMIN_SHOW_BOOT_ERROR__('Admin Panel gagal dimuat','File admin-bundle-v50.js tidak dapat dimuat. Pastikan file ini ikut di-upload.')"></script>
 
 
 <div id="aocRentalConditionModal" class="aoc-condition-modal" hidden role="dialog" aria-modal="true" aria-labelledby="aocRentalConditionTitle">

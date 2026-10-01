@@ -8728,3 +8728,15 @@ body.home-security-locked{overflow:hidden}
 .admin-security-settings-row .success{color:#16803c}
 .admin-security-settings-row .warning{color:#a16207}
 @media (max-width:700px){.admin-security-settings-row{flex-direction:column;align-items:stretch}.admin-security-settings-row .btn{width:100%}}
+
+/* Private Trip */
+.private-trip-card .badge{letter-spacing:.02em}
+
+/* V55: semua katalog selalu tersedia di switcher */
+.catalog-switcher { display:flex; flex-wrap:wrap; gap:10px; }
+.catalog-switcher .btn { flex:1 1 150px; min-width:0; text-align:center; white-space:nowrap; }
+@media (max-width:700px){
+  .catalog-switcher { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .catalog-switcher .btn { width:100%; min-width:0; padding-left:6px; padding-right:6px; font-size:11px; }
+  .catalog-switcher .btn:last-child { grid-column:1/-1; }
+}
