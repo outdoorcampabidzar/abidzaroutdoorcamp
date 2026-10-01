@@ -122,21 +122,63 @@
   </div>
 </section>
 <section class="container membership-card-section hidden" id="membershipCardSection">
-<div class="membership-card" data-membership-tier="Bronze" id="membershipCard">
-<div class="membership-card-top">
-<span class="membership-card-brand">AbidzarOutdoorcamp</span>
-<span class="membership-card-tier" id="membershipCardTier">Bronze</span>
-</div>
-<div class="membership-card-body">
-<div class="membership-card-info">
-<small>Nama Anggota</small>
-<strong id="membershipCardName">-</strong>
-<small class="membership-card-number" id="membershipCardNumber">-</small>
-</div>
-<div class="membership-card-qr" id="membershipCardQr" title="Tunjukkan QR ini ke kasir untuk verifikasi cepat"></div>
-</div>
-<div class="membership-card-hint">Tunjukkan QR di atas ke admin toko untuk verifikasi cepat saat transaksi.</div>
-</div>
+  <div class="membership-card-heading">
+    <div>
+      <span class="badge">KARTU MEMBER</span>
+      <h2>Kartu Member Saya</h2>
+      <p class="muted">Ketuk kartu atau tombol di bawah untuk melihat sisi belakang.</p>
+    </div>
+    <button class="btn secondary membership-card-flip-btn" id="membershipCardFlip" type="button" aria-controls="membershipCard" aria-label="Balik kartu member">↻ Balik Kartu</button>
+  </div>
+  <div class="membership-card-scene" id="membershipCardScene">
+    <div class="membership-card" data-membership-tier="Bronze" id="membershipCard" tabindex="0" role="button" aria-label="Kartu member. Ketuk untuk membalik kartu." aria-pressed="false">
+      <div class="membership-card-inner">
+        <article class="membership-card-face membership-card-front">
+          <div class="membership-card-top">
+            <div class="membership-card-brand-wrap">
+              <img class="membership-card-logo hidden" id="membershipCardLogo" alt="Logo AbidzarOutdoorcamp">
+              <span class="membership-card-brand">AbidzarOutdoorcamp</span>
+            </div>
+            <span class="membership-card-tier" id="membershipCardTier">Bronze</span>
+          </div>
+          <div class="membership-card-body">
+            <div class="membership-card-info">
+              <small>Nama Anggota</small>
+              <strong id="membershipCardName">-</strong>
+              <small class="membership-card-number" id="membershipCardNumber">-</small>
+            </div>
+            <div class="membership-card-qr" id="membershipCardQr" title="Tunjukkan QR ini ke kasir untuk verifikasi cepat"></div>
+          </div>
+          <div class="membership-card-hint">Tunjukkan QR ke admin untuk verifikasi cepat.</div>
+          <span class="membership-card-side-label">DEPAN</span>
+        </article>
+
+        <article class="membership-card-face membership-card-back">
+          <div class="membership-card-back-head">
+            <span class="membership-card-back-title">KARTU ANGGOTA</span>
+            <span class="membership-card-back-brand">AOC</span>
+          </div>
+          <div class="membership-card-magnetic"></div>
+          <div class="membership-card-back-content">
+            <div>
+              <small>Nomor Member</small>
+              <strong id="membershipCardBackNumber">-</strong>
+            </div>
+            <div>
+              <small>Status</small>
+              <strong id="membershipCardBackTier">Aktif · Bronze</strong>
+            </div>
+          </div>
+          <div class="membership-card-back-note">
+            <strong>AbidzarOutdoorcamp</strong>
+            <span>Kartu ini digunakan untuk identifikasi member dan verifikasi transaksi.</span>
+            <span>Simpan kartu dengan baik. Jangan berikan data akun kepada orang lain.</span>
+          </div>
+          <span class="membership-card-side-label">BELAKANG</span>
+        </article>
+      </div>
+    </div>
+  </div>
 </section>
 <div id="homeSecurityGate" class="home-security-gate" aria-modal="true" aria-hidden="false" role="dialog" aria-labelledby="homeSecurityGateTitle">
   <div class="home-security-gate-card">
@@ -323,7 +365,7 @@
 <script type="module">
     import { mountCatalog } from "./catalog.js";
     import { mountWebsiteRating } from "./website-rating.js?v=20260723-5";
-    import { mountMembershipCard } from "./app.js?v=202609210800";
+    import { mountMembershipCard } from "./app.js?v=20261001-membercardflip";
     import { mountAnnouncements } from "./announcements.js?v=20260928-v36";
     import { mountHomeSecurityCode } from "./home-security-code.js?v=20260928-v36";
     mountHomeSecurityCode();

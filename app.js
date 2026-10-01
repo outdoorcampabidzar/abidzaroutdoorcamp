@@ -399,12 +399,51 @@ export async function mountMembershipCard(sectionId = "membershipCardSection") {
     const nameEl = document.getElementById("membershipCardName");
     const numberEl = document.getElementById("membershipCardNumber");
     const tierEl = document.getElementById("membershipCardTier");
+    const backNumberEl = document.getElementById("membershipCardBackNumber");
+    const backTierEl = document.getElementById("membershipCardBackTier");
     const cardEl = document.getElementById("membershipCard");
     const qrEl = document.getElementById("membershipCardQr");
-    if (nameEl) nameEl.textContent = profile?.full_name?.trim() || user.email || "Anggota";
+    const logoEl = document.getElementById("membershipCardLogo");
+    const flipBtn = document.getElementById("membershipCardFlip");
+    const tierLabel = MEMBERSHIP_TIER_LABEL[card.tier] || card.tier;
+    const name = profile?.full_name?.trim() || user.email || "Anggota";
+    if (nameEl) nameEl.textContent = name;
     if (numberEl) numberEl.textContent = card.card_number;
-    if (tierEl) tierEl.textContent = MEMBERSHIP_TIER_LABEL[card.tier] || card.tier;
+    if (tierEl) tierEl.textContent = tierLabel;
+    if (backNumberEl) backNumberEl.textContent = card.card_number;
+    if (backTierEl) backTierEl.textContent = `Aktif · ${card.tier || "Bronze"}`;
     if (cardEl) cardEl.dataset.membershipTier = card.tier;
+
+    try {
+      const settings = await loadSiteSettings();
+      const logoUrl = String(settings?.site_logo_url || "").trim();
+      if (logoEl && logoUrl) {
+        logoEl.src = logoUrl;
+        logoEl.classList.remove("hidden");
+      }
+    } catch (_) {}
+
+    const flipCard = () => {
+      if (!cardEl) return;
+      const flipped = cardEl.classList.toggle("is-flipped");
+      cardEl.setAttribute("aria-pressed", String(flipped));
+      if (flipBtn) flipBtn.textContent = flipped ? "↻ Lihat Depan" : "↻ Balik Kartu";
+    };
+    if (cardEl && !cardEl.dataset.flipBound) {
+      cardEl.addEventListener("click", flipCard);
+      cardEl.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          flipCard();
+        }
+      });
+      cardEl.dataset.flipBound = "1";
+    }
+    if (flipBtn && !flipBtn.dataset.flipBound) {
+      flipBtn.addEventListener("click", flipCard);
+      flipBtn.dataset.flipBound = "1";
+    }
+
     if (qrEl && window.QRCode) {
       qrEl.innerHTML = "";
       new window.QRCode(qrEl, {
