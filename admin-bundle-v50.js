@@ -236,8 +236,17 @@ const aocPrompt = (message, value='', options={}) => openAocDialog({mode:'prompt
 const aocAlert = (message, options={}) => openAocDialog({mode:'alert', message:String(message||''), cancelText:'Tutup', confirmText:'Mengerti', ...options});
 
 async function requireAdminChangeCode(){
-  if(window.aocAdminSecurity?.ensure) return await window.aocAdminSecurity.ensure();
-  return true;
+  try{
+    if(window.aocAdminSecurity?.ensure) {
+      const ok = await window.aocAdminSecurity.ensure();
+      if(!ok) showAdminMessage("Perubahan dibatalkan. Verifikasi PIN Admin diperlukan.","warning");
+      return ok;
+    }
+    return true;
+  }catch(err){
+    showAdminMessage(err?.message || "Verifikasi PIN Admin gagal.","error");
+    return false;
+  }
 }
 
 const CART_KEY = "tripkita_cart";
@@ -738,6 +747,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { key: "settings.manage", label: "Pengaturan & Pengumuman", description: "Pengaturan website dan pengumuman", icon: "⚙️" },
         { key: "customers.view", label: "Pelanggan", description: "Melihat data pelanggan", icon: "👤" },
         { key: "customers.manage", label: "Kelola Pelanggan", description: "Verifikasi, blokir, dan catatan pelanggan", icon: "🛡️" },
+        { key: "members.manage", label: "Data Anggota & ID Card", description: "Membuat, mengubah, foto, barcode, dan ID Card anggota", icon: "🪪" },
         { key: "reviews.manage", label: "Ulasan", description: "Moderasi ulasan pelanggan", icon: "⭐" },
         { key: "notifications.manage", label: "Notifikasi & Pengingat", description: "Notifikasi dan pengingat customer", icon: "🔔" },
         { key: "trip_participants.manage", label: "Peserta Open Trip", description: "Mengelola peserta open trip", icon: "🏔️" },
@@ -1369,6 +1379,14 @@ document.addEventListener("DOMContentLoaded", () => {
             </button>
 
             <button
+              class="admin-tab ${activeTab === "members" ? "active" : ""} ${can("members.manage") ? "" : "hidden"}"
+              data-admin-tab="members"
+              type="button"
+            >
+              🪪 Data Anggota
+            </button>
+
+            <button
               class="admin-tab ${activeTab === "reviews" ? "active" : ""} ${can("reviews.manage") ? "" : "hidden"}"
               data-admin-tab="reviews"
               type="button"
@@ -1409,7 +1427,7 @@ document.addEventListener("DOMContentLoaded", () => {
               rental_orders: "orders.view", orders: "orders.view", rental_returns: "warehouse.manage",
               rental_reminders: "notifications.manage", announcements: "settings.manage", finance: "finance.manage",
               vouchers: "vouchers.manage", shop: "coinshop.manage", settings: "settings.manage",
-              schedule: "warehouse.manage", payment_logs: "finance.manage", customers: "customers.view",
+              schedule: "warehouse.manage", payment_logs: "finance.manage", customers: "customers.view", members: "members.manage",
               reviews: "reviews.manage", notifications: "notifications.manage", administrators: "admin.manage",
               activity_logs: "audit.view", gallery: "gallery.download"
             }[requestedTab];
@@ -1789,6 +1807,7 @@ document.addEventListener("DOMContentLoaded", () => {
           else if (tab === "schedule") renderRentalScheduleTab();
           else if (tab === "payment_logs") await renderPaymentLogsTab();
           else if (tab === "customers") await renderCustomersTab();
+          else if (tab === "members") await renderMemberDataTab();
           else if (tab === "reviews") await renderReviewsTab();
           else if (tab === "notifications") await renderNotificationsTab();
           else if (tab === "activity_logs") await renderActivityLogsTab();
@@ -6347,6 +6366,134 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         modal.querySelector("#aocMembershipDownloadFront")?.addEventListener("click", e => exportSide("front", e.currentTarget));
         modal.querySelector("#aocMembershipDownloadBack")?.addEventListener("click", e => exportSide("back", e.currentTarget));
+      }
+
+      const AOC_MEMBER_MOUNTAIN_BG = "https://images.unsplash.com/photo-1788877667927-671cc0d34091?auto=format&fit=crop&fm=jpg&q=90&w=2400";
+
+      function memberPublicUrl(code) {
+        const url = new URL("member.html", window.location.href);
+        url.searchParams.set("member", String(code || ""));
+        return url.href;
+      }
+
+      function ensureMemberIdCardStyles() {
+        if (document.getElementById("aocMemberIdCardStyles")) return;
+        const style = document.createElement("style");
+        style.id = "aocMemberIdCardStyles";
+        style.textContent = `
+          .aoc-idcard-preview{width:min(760px,100%);aspect-ratio:1.586/1;border-radius:24px;overflow:hidden;position:relative;color:#fff;background:#17222c url('${AOC_MEMBER_MOUNTAIN_BG}') center/cover no-repeat;box-shadow:0 24px 70px rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.28)}
+          .aoc-idcard-preview:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,rgba(5,13,20,.9) 0%,rgba(5,13,20,.52) 48%,rgba(5,13,20,.2) 100%)}
+          .aoc-idcard-inner{position:absolute;inset:0;padding:28px;display:grid;grid-template-columns:170px 1fr 170px;gap:22px;align-items:center}
+          .aoc-id-photo{width:154px;height:190px;border-radius:16px;object-fit:cover;border:3px solid rgba(255,255,255,.85);background:rgba(255,255,255,.12);box-shadow:0 12px 28px rgba(0,0,0,.3)}
+          .aoc-id-photo.empty{display:flex;align-items:center;justify-content:center;font-size:58px;font-weight:800}
+          .aoc-id-title{font-size:12px;letter-spacing:.22em;font-weight:800;opacity:.82}.aoc-id-name{font-size:34px;font-weight:900;line-height:1.05;margin:9px 0}.aoc-id-role{font-size:15px;font-weight:700}.aoc-id-meta{display:grid;gap:8px;margin-top:18px}.aoc-id-meta div{display:flex;gap:10px}.aoc-id-meta small{opacity:.66;min-width:82px}.aoc-id-meta b{font-size:14px}
+          .aoc-id-codes{display:grid;gap:12px;justify-items:center}.aoc-id-qr{background:#fff;border-radius:12px;padding:8px;width:130px;height:130px;display:grid;place-items:center}.aoc-id-barcode{background:#fff;border-radius:10px;padding:8px;width:160px}.aoc-id-barcode svg{width:100%;height:52px}.aoc-id-code-label{font-size:11px;letter-spacing:.12em;font-weight:800;opacity:.75;text-align:center}
+          @media(max-width:760px){.aoc-idcard-inner{grid-template-columns:100px 1fr 110px;padding:18px;gap:12px}.aoc-id-photo{width:92px;height:116px}.aoc-id-name{font-size:22px}.aoc-id-meta{margin-top:10px}.aoc-id-qr{width:92px;height:92px}.aoc-id-barcode{width:108px}.aoc-id-barcode svg{height:42px}}
+        `;
+        document.head.appendChild(style);
+      }
+
+      function memberIdCardMarkup(card, logoUrl = "", forExport = false) {
+        const name = String(card.full_name || "Anggota");
+        const code = String(card.member_code || "-");
+        const photo = String(card.photo_url || "").trim();
+        const qr = memberPublicUrl(code);
+        return `<div class="aoc-idcard-preview" id="aocMemberIdExportCard" style="${forExport ? "width:1200px;min-width:1200px" : ""}">
+          <div class="aoc-idcard-inner">
+            <div>${photo ? `<img class="aoc-id-photo" src="${esc(photo)}" crossorigin="anonymous" alt="Foto ${esc(name)}">` : `<div class="aoc-id-photo empty">${esc(name.slice(0,1).toUpperCase())}</div>`}</div>
+            <div>
+              <div class="aoc-id-title">ID CARD ANGGOTA · ABIDZAROUTDOORCAMP</div>
+              <div class="aoc-id-name">${esc(name)}</div>
+              <div class="aoc-id-role">${esc(card.position || "Anggota")}${card.department ? ` · ${esc(card.department)}` : ""}</div>
+              <div class="aoc-id-meta"><div><small>ID Anggota</small><b>${esc(code)}</b></div><div><small>Status</small><b>${card.status === "active" ? "AKTIF" : String(card.status || "").toUpperCase()}</b></div><div><small>Bergabung</small><b>${card.join_date ? new Date(card.join_date + "T00:00:00").toLocaleDateString("id-ID", {day:"2-digit",month:"long",year:"numeric"}) : "-"}</b></div></div>
+            </div>
+            <div class="aoc-id-codes"><div class="aoc-id-qr" data-member-qr="${esc(qr)}"></div><div class="aoc-id-barcode"><svg data-member-barcode="${esc(code)}"></svg></div><div class="aoc-id-code-label">SCAN ID ANGGOTA</div></div>
+          </div>
+        </div>`;
+      }
+
+      async function renderMemberDataTab() {
+        if (!can("members.manage")) return;
+        ensureMemberIdCardStyles();
+        const content = document.getElementById("adminContent");
+        content.innerHTML = '<div class="notice">Memuat Data Anggota...</div>';
+        let rows = [];
+        let customersLocal = [];
+        const [{ data: members, error: memberError }, { data: customerData, error: customerError }] = await Promise.all([
+          supabase.from("member_id_cards").select("*").order("updated_at", { ascending: false }),
+          supabase.rpc("secure_list_customers")
+        ]);
+        if (memberError) return content.innerHTML = `<div class="notice error">${esc(memberError.message)}<br><small>Jalankan MEMBER-ID-CARD-MIGRATION.sql terlebih dahulu.</small></div>`;
+        rows = members || [];
+        customersLocal = customerData || [];
+        const customerMap = Object.fromEntries(customersLocal.map(c => [String(c.user_id), c]));
+        const empty = `<div class="notice">Belum ada ID Card anggota. Buat dari tombol <b>+ Buat ID Card</b>.</div>`;
+        content.innerHTML = `<div class="admin-list-heading"><div><h3>🪪 Data Anggota</h3><p class="muted">ID Card ini <b>berbeda dari Membership Card</b>. Hanya administrator dengan hak Data Anggota yang dapat membuat atau mengubahnya.</p></div><div class="actions"><button class="btn primary small" id="aocNewMemberId">＋ Buat ID Card</button><button class="btn secondary small" id="aocScanMemberId">📷 Scan Anggota</button></div></div>
+          <div class="field" style="margin-bottom:12px"><span>🔍 Cari nama / ID anggota</span><input class="input" id="aocMemberIdSearch" placeholder="AOC-MBR-XXXXXXXX"></div>
+          <div class="customer-admin-grid" id="aocMemberIdGrid">${rows.map(card => { const c=customerMap[String(card.user_id)]||{}; return `<details class="card customer-admin-card" data-member-row data-key="${esc((card.full_name+" "+card.member_code).toLowerCase())}"><summary><div><strong>${esc(card.full_name)}</strong><small>${esc(card.member_code)} · ${esc(card.position || "Anggota")}</small></div><div class="customer-badges"><span class="badge">${card.status === "active" ? "🟢 Aktif" : "🟠 "+esc(card.status)}</span></div></summary><div class="customer-detail"><div class="data-grid"><div class="data"><b>ID Anggota</b><br>${esc(card.member_code)}</div><div class="data"><b>Jabatan</b><br>${esc(card.position||"-")}</div><div class="data"><b>Departemen</b><br>${esc(card.department||"-")}</div><div class="data"><b>Foto</b><br>${card.photo_url ? "✓ Ada" : "— Belum ada"}</div></div><div class="actions" style="margin-top:12px"><a class="btn secondary small" href="member.html?member=${encodeURIComponent(card.member_code)}" target="_blank" rel="noopener">🌐 Buka HTML Member</a><button class="btn primary small" data-edit-member-id="${esc(card.id)}">✏️ Ubah Data</button><button class="btn small" data-export-member-id="${esc(card.id)}">⬇ PNG SUPER HD</button></div><p class="muted" style="margin-top:10px">${esc(c.email || "")}</p></div></details>`; }).join("") || empty}</div>`;
+        document.getElementById("aocMemberIdSearch")?.addEventListener("input", e => { const q=String(e.target.value||"").toLowerCase().trim(); document.querySelectorAll("[data-member-row]").forEach(el => el.classList.toggle("hidden", q && !String(el.dataset.key||"").includes(q))); });
+        document.getElementById("aocNewMemberId")?.addEventListener("click", () => openMemberIdEditor(null, customersLocal));
+        document.getElementById("aocScanMemberId")?.addEventListener("click", openMemberIdScanner);
+        document.querySelectorAll("[data-edit-member-id]").forEach(btn => btn.addEventListener("click", () => openMemberIdEditor(rows.find(x=>String(x.id)===String(btn.dataset.editMemberId)), customersLocal)));
+        document.querySelectorAll("[data-export-member-id]").forEach(btn => btn.addEventListener("click", () => openMemberIdExport(rows.find(x=>String(x.id)===String(btn.dataset.exportMemberId)))));
+      }
+
+      async function openMemberIdEditor(card, customerList) {
+        if (!can("members.manage")) return showAdminMessage("Akses Data Anggota hanya untuk administrator.", "error");
+        const modal = document.createElement("div"); modal.id="aocMemberIdEditor"; modal.style.cssText="position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto";
+        const c = card ? (customerList||[]).find(x=>String(x.user_id)===String(card.user_id)) : null;
+        modal.innerHTML=`<div style="width:min(760px,100%);background:#101820;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><span class="badge">ADMIN ONLY</span><h2 style="margin:7px 0 2px">${card?"Ubah":"Buat"} ID Card Anggota</h2><p class="muted">Beda dari Membership Card. Foto dan data ini dipakai pada HTML member publik.</p></div><button class="btn small" id="aocMemberIdEditorClose">Tutup</button></div><form id="aocMemberIdForm" class="form" style="margin-top:14px"><input type="hidden" name="id" value="${esc(card?.id||"")}"><label class="field"><span>Anggota</span><select class="input" name="user_id" required ${card?"disabled":""}>${(customerList||[]).map(x=>`<option value="${esc(x.user_id)}" ${String(x.user_id)===String(card?.user_id||"")?"selected":""}>${esc(x.full_name||x.email||x.user_id)} · ${esc(x.email||"")}</option>`).join("")}</select></label><label class="field"><span>Nama pada ID Card</span><input class="input" name="full_name" value="${esc(card?.full_name||c?.full_name||"")}" required></label><label class="field"><span>Jabatan / Posisi</span><input class="input" name="position" placeholder="Contoh: Staff Persewaan" value="${esc(card?.position||"")}"></label><label class="field"><span>Departemen</span><input class="input" name="department" placeholder="Contoh: Operasional" value="${esc(card?.department||"")}"></label><label class="field"><span>Tanggal Bergabung</span><input class="input" name="join_date" type="date" value="${esc(card?.join_date||"")}"></label><label class="field"><span>Status</span><select class="input" name="status"><option value="active" ${card?.status==="active"?"selected":""}>Aktif</option><option value="inactive" ${card?.status==="inactive"?"selected":""}>Nonaktif</option><option value="suspended" ${card?.status==="suspended"?"selected":""}>Ditangguhkan</option></select></label><label class="field"><span>Foto Member</span><input class="input" name="photo" type="file" accept="image/*"><small class="muted">Gunakan foto wajah formal. Foto asli akan dipasang sebagai foto ID Card, tanpa dibuat AI.</small></label><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn primary" type="submit">💾 Simpan ID Card</button></div></form></div>`;
+        document.body.appendChild(modal);
+        modal.querySelector("#aocMemberIdEditorClose")?.addEventListener("click",()=>modal.remove());
+        modal.addEventListener("click",e=>{if(e.target===modal)modal.remove()});
+        modal.querySelector("form")?.addEventListener("submit", async e=>{
+          e.preventDefault();
+          const form=e.currentTarget, btn=form.querySelector("button[type=submit]");
+          if (!form) return;
+          btn.disabled=true; btn.textContent="Menyimpan...";
+          try{
+            const userField = form.querySelector('[name="user_id"]');
+            const userId = card?.user_id || userField?.value;
+            if (!userId) throw new Error("Pilih anggota terlebih dahulu.");
+            let photoUrl = card?.photo_url || null;
+            const file=form.photo.files?.[0];
+            if(file){ const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg"; const path=`${userId}/${crypto.randomUUID()}.${ext}`; const bucket=supabase.storage.from("member-photos"); const up=await bucket.upload(path,file,{upsert:false,contentType:file.type||"image/jpeg",cacheControl:"31536000"}); if(up.error) throw new Error(`Upload foto gagal: ${up.error.message||up.error}`); const publicUrl=bucket.getPublicUrl(path)?.data?.publicUrl; if(!publicUrl) throw new Error("URL foto member gagal dibuat."); photoUrl=publicUrl; }
+            const payload={user_id:userId,full_name:String(form.full_name.value||"").trim(),position:String(form.position.value||"").trim(),department:String(form.department.value||"").trim(),join_date:form.join_date.value||null,status:form.status.value,photo_url:photoUrl};
+            const {data,error}=await supabase.rpc("secure_admin_upsert_member_id_card",{p_id:card?.id||null,p_payload:payload});
+            if(error) throw new Error(error.message || "Gagal menyimpan ID Card.");
+            const saved = Array.isArray(data) ? data[0] : data;
+            showAdminMessage(`ID Card ${saved?.member_code||"anggota"} berhasil disimpan.` ,"success");
+            modal.remove();
+            await renderMemberDataTab();
+          }catch(err){showAdminMessage(err?.message||"Gagal menyimpan ID Card.","error");}finally{btn.disabled=false;btn.textContent="💾 Simpan ID Card";}
+        });
+      }
+
+      async function openMemberIdExport(card) {
+        if (!card || !can("members.manage")) return;
+        ensureMemberIdCardStyles();
+        const modal=document.createElement("div"); modal.id="aocMemberIdExportModal"; modal.style.cssText="position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.84);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto";
+        modal.innerHTML=`<div style="width:min(1240px,100%);background:#101820;color:#fff;border-radius:22px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><div><span class="badge">ADMIN ONLY</span><h2 style="margin:7px 0 2px">ID Card · ${esc(card.full_name)}</h2><p class="muted">Foto gunung menggunakan foto Bromo asli, bukan gambar AI.</p></div><button class="btn small" id="aocMemberIdExportClose">Tutup</button></div><div style="overflow:auto;padding:16px 0"><div id="aocMemberIdExportWrap">${memberIdCardMarkup(card,"",true)}</div></div><div class="actions" style="justify-content:center"><button class="btn primary" id="aocMemberIdDownload">⬇ Download ID Card PNG · SUPER HD</button><a class="btn secondary" href="${esc(memberPublicUrl(card.member_code))}" target="_blank" rel="noopener">🌐 Buka HTML Member</a></div></div>`;
+        document.body.appendChild(modal);
+        const cardEl=modal.querySelector("#aocMemberIdExportCard");
+        modal.querySelectorAll("[data-member-qr]").forEach(el=>{ if(window.QRCode) new window.QRCode(el,{text:el.dataset.memberQr,width:112,height:112,colorDark:"#0b1120",colorLight:"#fff"}); });
+        modal.querySelectorAll("[data-member-barcode]").forEach(el=>{ if(window.JsBarcode) window.JsBarcode(el,el.dataset.memberBarcode,{format:"CODE128",displayValue:true,fontSize:12,height:48,margin:0}); });
+        modal.querySelector("#aocMemberIdExportClose")?.addEventListener("click",()=>modal.remove());
+        modal.addEventListener("click",e=>{if(e.target===modal)modal.remove()});
+        modal.querySelector("#aocMemberIdDownload")?.addEventListener("click",async e=>{const btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent="⏳ Membuat PNG SUPER HD...";try{await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const canvas=await window.html2canvas(cardEl,{scale:3,useCORS:true,allowTaint:false,backgroundColor:null,logging:false,width:1200,height:Math.round(1200/1.586)});canvas.toBlob(blob=>{if(!blob)return;const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=`ID-Card-${String(card.full_name).replace(/[^a-z0-9]+/gi,"-")}-${card.member_code}-SUPER-HD.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500)},"image/png")}catch(err){console.error(err);showAdminMessage("Gagal membuat PNG. Periksa foto member/CORS.","error")}finally{btn.disabled=false;btn.textContent=old}});
+      }
+
+      async function openMemberIdScanner(){
+        if(!can("members.manage")) return;
+        if(!navigator.mediaDevices?.getUserMedia || !window.BarcodeDetector) return showAdminMessage("Scanner memerlukan Chrome/Edge terbaru dan HTTPS/localhost.","error");
+        const supported=await BarcodeDetector.getSupportedFormats?.() || [];
+        const formats=["qr_code","code_128"].filter(x=>supported.includes(x));
+        if(!formats.length) return showAdminMessage("Browser tidak mendukung QR/Code128 scanner.","error");
+        document.getElementById("aocMemberIdScanner")?.remove();
+        const modal=document.createElement("div");modal.id="aocMemberIdScanner";modal.style.cssText="position:fixed;inset:0;z-index:100003;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:16px";
+        modal.innerHTML=`<div class="aoc-member-scan-card"><div class="aoc-member-scan-head"><div><span class="badge">DATA ANGGOTA</span><h3>Scan ID Card</h3><small class="muted">Bisa membaca QR dan Code128.</small></div><button class="aoc-member-scan-close" id="aocMemberIdScannerClose">×</button></div><div class="aoc-member-camera"><video id="aocMemberIdVideo" autoplay muted playsinline></video><div class="aoc-member-scan-frame"></div><div class="aoc-member-scan-line"></div></div><div class="aoc-member-scan-status" id="aocMemberIdStatus">Menyalakan kamera...</div></div>`;
+        document.body.appendChild(modal); modal.querySelector("#aocMemberIdScannerClose")?.addEventListener("click",()=>{modal.querySelector("video")?.srcObject?.getTracks().forEach(t=>t.stop());modal.remove()});
+        try{const video=modal.querySelector("video"),status=modal.querySelector("#aocMemberIdStatus");const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:1280}},audio:false});video.srcObject=stream;await video.play();const detector=new BarcodeDetector({formats});let running=true;const scan=async()=>{if(!running||!document.body.contains(modal))return;try{if(video.readyState>=2){const codes=await detector.detect(video);if(codes?.length){const raw=String(codes[0].rawValue||"").trim();let code=raw;try{const u=new URL(raw);code=u.searchParams.get("member")||u.searchParams.get("id")||raw}catch(_){}status.textContent="Terbaca: "+code;const {data}=await supabase.rpc("get_public_member_id_card",{p_member_code:code});if(data?.[0]){running=false;stream.getTracks().forEach(t=>t.stop());window.open(memberPublicUrl(data[0].member_code),"_blank","noopener");modal.remove();return}status.textContent="Kode terbaca, tetapi anggota tidak ditemukan.";}}}catch(_){}if(running)setTimeout(scan,180)};scan()}catch(err){modal.querySelector("#aocMemberIdStatus").textContent="Kamera gagal: "+(err?.message||"izin ditolak")}
       }
 
       async function renderCustomersTab() {
