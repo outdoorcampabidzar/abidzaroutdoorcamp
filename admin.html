@@ -150,6 +150,8 @@
 </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer onerror="window.__AOC_ADMIN_SHOW_BOOT_ERROR__&&window.__AOC_ADMIN_SHOW_BOOT_ERROR__('Admin Panel gagal dimuat','Library Supabase gagal dimuat. Periksa koneksi internet lalu refresh.')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function(){
   function cleanLegacyPinNotice(){var root=document.getElementById('adminRoot');if(!root)return;root.querySelectorAll('.notice,[role="alert"]').forEach(function(el){var t=String(el.textContent||'').trim().toLowerCase();if(t==='pin transaksi wajib diverifikasi untuk tindakan ini.'||t==='pin transaksi wajib diverifikasi untuk tindakan ini')el.remove();});}

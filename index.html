@@ -128,7 +128,9 @@
       <h2>Kartu Member Saya</h2>
       <p class="muted">Ketuk kartu atau tombol di bawah untuk melihat sisi belakang.</p>
     </div>
-    <button class="btn secondary membership-card-flip-btn" id="membershipCardFlip" type="button" aria-controls="membershipCard" aria-label="Balik kartu member">↻ Balik Kartu</button>
+    <div class="membership-card-actions">
+      <button class="btn secondary membership-card-flip-btn" id="membershipCardFlip" type="button" aria-controls="membershipCard" aria-label="Balik kartu member">↻ Balik Kartu</button>
+    </div>
   </div>
   <div class="membership-card-scene" id="membershipCardScene">
     <div class="membership-card" data-membership-tier="Bronze" id="membershipCard" tabindex="0" role="button" aria-label="Kartu member. Ketuk untuk membalik kartu." aria-pressed="false">
@@ -362,6 +364,7 @@
 </div>
 </section>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="module">
     import { mountCatalog } from "./catalog.js";
     import { mountWebsiteRating } from "./website-rating.js?v=20260723-5";

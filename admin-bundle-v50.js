@@ -6282,6 +6282,63 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
+      async function openMembershipCardDesigner(customer, card) {
+        if (!card) return showAdminMessage("Pelanggan belum memiliki kartu membership.", "error");
+        document.getElementById("aocMembershipDesigner")?.remove();
+        const tier = String(card.tier || "Bronze");
+        const tierLabel = { Bronze:"🥉 Bronze", Silver:"🥈 Silver", Gold:"🥇 Gold", Platinum:"💎 Platinum" }[tier] || tier;
+        let logoUrl = "";
+        try { logoUrl = String((await loadSiteSettings())?.site_logo_url || "").trim(); } catch (_) {}
+        const name = String(customer.full_name || customer.email || "Anggota");
+        const modal = document.createElement("div");
+        modal.id = "aocMembershipDesigner";
+        modal.style.cssText = "position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto";
+        modal.innerHTML = `
+          <div style="width:min(900px,100%);background:#101820;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:18px;box-shadow:0 30px 100px rgba(0,0,0,.55)">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px">
+              <div><span class="badge">ADMIN ONLY</span><h2 style="margin:7px 0 2px">Kartu Member — ${esc(name)}</h2><p class="muted" style="margin:0">Buat/export kartu dari Admin Panel. Resolusi PNG 3600px.</p></div>
+              <button class="btn small" id="aocMembershipDesignerClose" type="button">Tutup</button>
+            </div>
+            <div style="display:flex;justify-content:center;overflow:auto;padding:8px 0 16px">
+              <div id="aocMembershipExportCard" class="membership-card" data-membership-tier="${esc(tier)}" style="width:760px;min-width:760px;aspect-ratio:1.586/1;cursor:default">
+                <div class="membership-card-inner">
+                  <article class="membership-card-face membership-card-front">
+                    <div class="membership-card-top"><div class="membership-card-brand-wrap">${logoUrl ? `<img class="membership-card-logo" src="${esc(logoUrl)}" crossorigin="anonymous" alt="Logo">` : ""}<span class="membership-card-brand">AbidzarOutdoorcamp</span></div><span class="membership-card-tier">${esc(tierLabel)}</span></div>
+                    <div class="membership-card-body"><div class="membership-card-info"><small>Nama Anggota</small><strong>${esc(name)}</strong><small class="membership-card-number">${esc(card.card_number || "-")}</small></div><div class="membership-card-qr" id="aocMembershipExportQr"></div></div>
+                    <div class="membership-card-hint">Tunjukkan QR ke admin untuk verifikasi cepat.</div><span class="membership-card-side-label">DEPAN</span>
+                  </article>
+                  <article class="membership-card-face membership-card-back"><div class="membership-card-back-head"><span class="membership-card-back-title">KARTU ANGGOTA</span><span class="membership-card-back-brand">AOC</span></div><div class="membership-card-magnetic"></div><div class="membership-card-back-content"><div><small>Nomor Member</small><strong>${esc(card.card_number || "-")}</strong></div><div><small>Status</small><strong>Aktif · ${esc(tier)}</strong></div></div><div class="membership-card-back-note"><strong>AbidzarOutdoorcamp</strong><span>Kartu ini digunakan untuk identifikasi member dan verifikasi transaksi.</span><span>Simpan kartu dengan baik. Jangan berikan data akun kepada orang lain.</span></div><span class="membership-card-side-label">BELAKANG</span></article>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px">
+              <button class="btn primary" id="aocMembershipDownloadFront" type="button">⬇ Download PNG Depan • SUPER HD</button>
+              <button class="btn primary" id="aocMembershipDownloadBack" type="button">⬇ Download PNG Belakang • SUPER HD</button>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+        modal.querySelector("#aocMembershipDesignerClose")?.addEventListener("click", () => modal.remove());
+        modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
+        const exportCard = modal.querySelector("#aocMembershipExportCard");
+        if (window.QRCode) new window.QRCode(modal.querySelector("#aocMembershipExportQr"), { text: String(card.card_number || card.id || ""), width: 108, height: 108, colorDark: "#0b1120", colorLight: "#ffffff" });
+        const exportSide = async (side, btn) => {
+          const old = btn.textContent; btn.disabled = true; btn.textContent = "⏳ Membuat PNG SUPER HD...";
+          const inner = exportCard.querySelector(".membership-card-inner");
+          try {
+            exportCard.classList.remove("is-flipped");
+            if (side === "back") exportCard.classList.add("is-flipped");
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+            const rect = exportCard.getBoundingClientRect();
+            const scale = Math.max(1, 3600 / Math.max(1, rect.width));
+            const canvas = await window.html2canvas(exportCard, { scale, useCORS:true, allowTaint:false, backgroundColor:null, logging:false, width:Math.round(rect.width), height:Math.round(rect.height) });
+            canvas.toBlob(blob => { if (!blob) return; const u=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=u; a.download=`Kartu-Member-${name.replace(/[^a-z0-9]+/gi,"-")}-${String(card.card_number||"member").replace(/[^a-z0-9]+/gi,"-")}-${side}-SUPER-HD.png`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500); }, "image/png");
+          } catch (e) { console.error(e); showAdminMessage("PNG gagal dibuat. Periksa CORS logo jika logo tidak ikut.", "error"); }
+          finally { exportCard.classList.remove("is-flipped"); btn.disabled=false; btn.textContent=old; }
+        };
+        modal.querySelector("#aocMembershipDownloadFront")?.addEventListener("click", e => exportSide("front", e.currentTarget));
+        modal.querySelector("#aocMembershipDownloadBack")?.addEventListener("click", e => exportSide("back", e.currentTarget));
+      }
+
       async function renderCustomersTab() {
         const content = document.getElementById("adminContent");
         if (!ordersLoaded) {
@@ -6312,7 +6369,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 Number(customer.total_spent) >= 1000000;
               const card = membershipByUser[customer.user_id];
               const searchKey = [customer.full_name, customer.email, customer.phone, card?.card_number].filter(Boolean).join(" ").toLowerCase();
-              return `<details class="card customer-admin-card" data-search-key="${esc(searchKey)}"><summary><div><strong>${esc(customer.full_name || customer.email)}</strong><small>${esc(customer.email)} · ${esc(customer.phone || "Belum ada HP")}</small></div><div class="customer-badges">${card ? `<span class="badge">${tierIcon[card.tier] || "🎫"} ${esc(card.tier)}</span>` : ""}${loyal ? '<span class="badge">Langganan</span>' : ""}${customer.is_verified ? '<span class="admin-active">Terverifikasi</span>' : '<span class="admin-inactive">Belum verifikasi</span>'}${customer.is_blocked ? '<span class="status-danger">Diblokir</span>' : ""}</div></summary><div class="customer-detail"><div class="data-grid"><div class="data"><b>Total pesanan</b><br>${customer.total_orders}</div><div class="data"><b>Total transaksi</b><br>${rupiah(customer.total_spent)}</div><div class="data"><b>Pembatalan</b><br>${customer.cancelled_orders}</div><div class="data"><b>Terakhir transaksi</b><br>${customer.last_order_at ? new Date(customer.last_order_at).toLocaleString("id-ID") : "-"}</div></div><div class="order-subsection"><h4>🎫 Kartu Membership</h4>${card ? `<p>Nomor: <b>${esc(card.card_number)}</b> · Tier: <b>${tierIcon[card.tier] || ""} ${esc(card.tier)}</b></p>` : '<p class="muted">Belum punya kartu membership.</p>'}<button class="btn small" data-issue-membership="${customer.user_id}" type="button">🎫 ${card ? "Ubah Tier" : "Buat Kartu Membership"}</button></div><label class="admin-check"><input type="checkbox" data-customer-verified="${customer.user_id}" ${customer.is_verified ? "checked" : ""}><span>Pelanggan terverifikasi</span></label><label class="admin-check"><input type="checkbox" data-customer-blocked="${customer.user_id}" ${customer.is_blocked ? "checked" : ""}><span>Blokir pelanggan</span></label><label class="field"><span>Alasan blokir</span><input class="input" data-customer-reason="${customer.user_id}" value="${esc(customer.blocked_reason || "")}"></label><label class="field"><span>Catatan internal</span><textarea class="input" data-customer-notes="${customer.user_id}">${esc(customer.internal_notes || "")}</textarea></label><button class="btn small" data-save-customer="${customer.user_id}" type="button">Simpan Pelanggan</button><section class="order-subsection"><h4>Riwayat transaksi & pembatalan</h4>${history.map((order) => `<div class="order-line"><span>${esc(order.order_number)} · ${new Date(order.created_at).toLocaleDateString("id-ID")}<small>${esc(statusLabels[order.status] || order.status)}</small></span><b>${rupiah(order.total)}</b></div>`).join("") || '<p class="muted">Belum ada transaksi.</p>'}</section></div></details>`;
+              return `<details class="card customer-admin-card" data-search-key="${esc(searchKey)}"><summary><div><strong>${esc(customer.full_name || customer.email)}</strong><small>${esc(customer.email)} · ${esc(customer.phone || "Belum ada HP")}</small></div><div class="customer-badges">${card ? `<span class="badge">${tierIcon[card.tier] || "🎫"} ${esc(card.tier)}</span>` : ""}${loyal ? '<span class="badge">Langganan</span>' : ""}${customer.is_verified ? '<span class="admin-active">Terverifikasi</span>' : '<span class="admin-inactive">Belum verifikasi</span>'}${customer.is_blocked ? '<span class="status-danger">Diblokir</span>' : ""}</div></summary><div class="customer-detail"><div class="data-grid"><div class="data"><b>Total pesanan</b><br>${customer.total_orders}</div><div class="data"><b>Total transaksi</b><br>${rupiah(customer.total_spent)}</div><div class="data"><b>Pembatalan</b><br>${customer.cancelled_orders}</div><div class="data"><b>Terakhir transaksi</b><br>${customer.last_order_at ? new Date(customer.last_order_at).toLocaleString("id-ID") : "-"}</div></div><div class="order-subsection"><h4>🎫 Kartu Membership</h4>${card ? `<p>Nomor: <b>${esc(card.card_number)}</b> · Tier: <b>${tierIcon[card.tier] || ""} ${esc(card.tier)}</b></p>` : '<p class="muted">Belum punya kartu membership.</p>'}<div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn small" data-issue-membership="${customer.user_id}" type="button">🎫 ${card ? "Ubah Tier" : "Buat Kartu Membership"}</button>${card ? `<button class="btn small" data-design-membership="${customer.user_id}" type="button">🪪 Buat / Download PNG SUPER HD</button>` : ""}</div></div><label class="admin-check"><input type="checkbox" data-customer-verified="${customer.user_id}" ${customer.is_verified ? "checked" : ""}><span>Pelanggan terverifikasi</span></label><label class="admin-check"><input type="checkbox" data-customer-blocked="${customer.user_id}" ${customer.is_blocked ? "checked" : ""}><span>Blokir pelanggan</span></label><label class="field"><span>Alasan blokir</span><input class="input" data-customer-reason="${customer.user_id}" value="${esc(customer.blocked_reason || "")}"></label><label class="field"><span>Catatan internal</span><textarea class="input" data-customer-notes="${customer.user_id}">${esc(customer.internal_notes || "")}</textarea></label><button class="btn small" data-save-customer="${customer.user_id}" type="button">Simpan Pelanggan</button><section class="order-subsection"><h4>Riwayat transaksi & pembatalan</h4>${history.map((order) => `<div class="order-line"><span>${esc(order.order_number)} · ${new Date(order.created_at).toLocaleDateString("id-ID")}<small>${esc(statusLabels[order.status] || order.status)}</small></span><b>${rupiah(order.total)}</b></div>`).join("") || '<p class="muted">Belum ada transaksi.</p>'}</section></div></details>`;
             })
             .join("") || '<div class="notice">Belum ada pelanggan.</div>'
         }</div>`;
@@ -6361,6 +6418,12 @@ document.addEventListener("DOMContentLoaded", () => {
               await renderCustomersTab();
             }),
         );
+        document.querySelectorAll("[data-design-membership]").forEach((button) => (button.onclick = async () => {
+          const id = button.dataset.designMembership;
+          const customer = customers.find((c) => String(c.user_id) === String(id));
+          const card = membershipCardsCache.find((c) => String(c.user_id) === String(id));
+          if (customer && card) await openMembershipCardDesigner(customer, card);
+        }));
         document.querySelectorAll("[data-save-customer]").forEach(
           (button) =>
             (button.onclick = async () => {
