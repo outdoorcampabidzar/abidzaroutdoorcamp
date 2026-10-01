@@ -8740,3 +8740,114 @@ body.home-security-locked{overflow:hidden}
   .catalog-switcher .btn { width:100%; min-width:0; padding-left:6px; padding-right:6px; font-size:11px; }
   .catalog-switcher .btn:last-child { grid-column:1/-1; }
 }
+
+/* V57 HOME REDESIGN — cleaner, balanced, mobile-first */
+.catalog-home-hero{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:30px!important;
+  width:min(1180px,calc(100% - 28px))!important;
+  margin:24px auto 0!important;
+  padding:34px!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  border-radius:28px!important;
+  background:linear-gradient(145deg,rgba(11,22,30,.98),rgba(7,14,20,.98))!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.28)!important;
+}
+.catalog-home-hero::before{display:none!important}
+.catalog-home-hero>div:first-child{max-width:900px!important}
+.catalog-home-hero .hero-eyebrow{margin-bottom:14px!important}
+.catalog-home-hero h1{
+  font-size:clamp(42px,6vw,76px)!important;
+  line-height:.98!important;
+  letter-spacing:-.045em!important;
+  margin:0 0 18px!important;
+  max-width:900px!important;
+}
+.catalog-home-hero .muted{
+  max-width:760px!important;
+  font-size:15px!important;
+  line-height:1.75!important;
+}
+.catalog-home-hero .hero-actions{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:10px!important;
+  max-width:760px!important;
+  margin-top:24px!important;
+}
+.catalog-home-hero .hero-actions .btn:first-child{grid-column:auto!important}
+.hero-proof{
+  max-width:760px!important;
+  margin-top:24px!important;
+  padding-top:18px!important;
+  border-top:1px solid rgba(255,255,255,.08)!important;
+}
+.category-choice-grid{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:12px!important;
+  width:100%!important;
+}
+.category-choice-card{
+  min-height:190px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  padding:20px!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  border-radius:20px!important;
+  background:linear-gradient(145deg,rgba(17,28,36,.9),rgba(9,17,23,.96))!important;
+  transition:transform .2s ease,border-color .2s ease,background .2s ease!important;
+}
+.category-choice-card:hover{
+  transform:translateY(-3px)!important;
+  border-color:rgba(94,226,168,.35)!important;
+  background:linear-gradient(145deg,rgba(18,38,39,.95),rgba(9,18,24,.98))!important;
+}
+.category-choice-icon{
+  width:48px!important;height:48px!important;flex:none!important;
+  display:grid!important;place-items:center!important;
+  border-radius:14px!important;
+  margin:0 0 18px!important;
+  background:rgba(255,255,255,.045)!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  font-size:23px!important;
+}
+.category-choice-card .badge{width:max-content!important}
+.category-choice-card h2{font-size:21px!important;margin:9px 0 7px!important;letter-spacing:-.02em!important}
+.category-choice-card p{font-size:12px!important;line-height:1.55!important;margin:0!important;color:#8f9ca5!important}
+.category-choice-action{margin-top:auto!important;padding-top:18px!important;font-size:11px!important;font-weight:800!important}
+/* Make the fifth service a deliberate full-width feature instead of an awkward leftover. */
+.category-choice-card.private-trip-choice{grid-column:1/-1!important;min-height:125px!important;display:grid!important;grid-template-columns:52px 1fr auto!important;grid-template-rows:auto auto auto!important;column-gap:16px!important;align-items:center!important}
+.category-choice-card.private-trip-choice .category-choice-icon{grid-row:1/4;margin:0!important}
+.category-choice-card.private-trip-choice .badge{grid-column:2;grid-row:1}
+.category-choice-card.private-trip-choice h2{grid-column:2;grid-row:2;margin:4px 0!important}
+.category-choice-card.private-trip-choice p{grid-column:2;grid-row:3}
+.category-choice-card.private-trip-choice .category-choice-action{grid-column:3;grid-row:1/4;margin:0;padding:0}
+@media(max-width:850px){
+  .catalog-home-hero{padding:25px!important;border-radius:23px!important}
+  .category-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .category-choice-card.private-trip-choice{grid-column:1/-1!important}
+}
+@media(max-width:560px){
+  .catalog-home-hero{width:calc(100% - 18px)!important;margin-top:12px!important;padding:20px 16px!important;border-radius:20px!important}
+  .catalog-home-hero h1{font-size:38px!important;line-height:1.01!important}
+  .catalog-home-hero .muted{font-size:13px!important;line-height:1.6!important}
+  .catalog-home-hero .hero-actions{grid-template-columns:1fr!important}
+  .catalog-home-hero .hero-actions .btn{min-height:44px!important}
+  .hero-proof{margin-top:18px!important}
+  .category-choice-grid{grid-template-columns:1fr!important;gap:9px!important}
+  .category-choice-card{min-height:0!important;padding:15px!important;display:grid!important;grid-template-columns:44px 1fr auto!important;grid-template-rows:auto auto auto!important;column-gap:12px!important}
+  .category-choice-card .category-choice-icon{grid-row:1/4;width:44px!important;height:44px!important;margin:0!important;font-size:20px!important}
+  .category-choice-card .badge{grid-column:2;grid-row:1}
+  .category-choice-card h2{grid-column:2;grid-row:2;font-size:17px!important;margin:4px 0!important}
+  .category-choice-card p{grid-column:2;grid-row:3;font-size:11px!important;display:block!important}
+  .category-choice-card .category-choice-action{grid-column:3;grid-row:1/4;margin:0!important;padding:0!important;align-self:center!important;white-space:nowrap!important}
+  .category-choice-card.private-trip-choice{grid-column:auto!important}
+  .category-choice-card.private-trip-choice .category-choice-icon{grid-row:1/4!important}
+  .category-choice-card.private-trip-choice .badge{grid-column:2!important;grid-row:1!important}
+  .category-choice-card.private-trip-choice h2{grid-column:2!important;grid-row:2!important}
+  .category-choice-card.private-trip-choice p{grid-column:2!important;grid-row:3!important}
+  .category-choice-card.private-trip-choice .category-choice-action{grid-column:3!important;grid-row:1/4!important}
+}
