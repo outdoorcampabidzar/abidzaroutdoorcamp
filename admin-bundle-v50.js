@@ -6325,15 +6325,25 @@ document.addEventListener("DOMContentLoaded", () => {
           const old = btn.textContent; btn.disabled = true; btn.textContent = "⏳ Membuat PNG SUPER HD...";
           const inner = exportCard.querySelector(".membership-card-inner");
           try {
-            exportCard.classList.remove("is-flipped");
-            if (side === "back") exportCard.classList.add("is-flipped");
+            // Jangan export keadaan 3D flip secara langsung. html2canvas dapat merender
+            // rotateY(180deg) sebagai gambar mirror. Untuk export, render satu sisi
+            // secara datar (tanpa transform) agar teks/logo/QR selalu terbaca normal.
+            exportCard.classList.remove("is-flipped", "membership-export-front", "membership-export-back");
+            exportCard.classList.add(side === "back" ? "membership-export-back" : "membership-export-front");
             await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
             const rect = exportCard.getBoundingClientRect();
             const scale = Math.max(1, 3600 / Math.max(1, rect.width));
-            const canvas = await window.html2canvas(exportCard, { scale, useCORS:true, allowTaint:false, backgroundColor:null, logging:false, width:Math.round(rect.width), height:Math.round(rect.height) });
+            const canvas = await window.html2canvas(exportCard, { scale, useCORS:true, allowTaint:false, backgroundColor:null, logging:false, width:Math.round(rect.width), height:Math.round(rect.height),
+              onclone: (doc) => {
+                const clone = doc.getElementById("aocMembershipExportCard");
+                if (!clone) return;
+                clone.classList.remove("is-flipped");
+                clone.classList.add(side === "back" ? "membership-export-back" : "membership-export-front");
+              }
+            });
             canvas.toBlob(blob => { if (!blob) return; const u=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=u; a.download=`Kartu-Member-${name.replace(/[^a-z0-9]+/gi,"-")}-${String(card.card_number||"member").replace(/[^a-z0-9]+/gi,"-")}-${side}-SUPER-HD.png`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500); }, "image/png");
           } catch (e) { console.error(e); showAdminMessage("PNG gagal dibuat. Periksa CORS logo jika logo tidak ikut.", "error"); }
-          finally { exportCard.classList.remove("is-flipped"); btn.disabled=false; btn.textContent=old; }
+          finally { exportCard.classList.remove("is-flipped", "membership-export-front", "membership-export-back"); btn.disabled=false; btn.textContent=old; }
         };
         modal.querySelector("#aocMembershipDownloadFront")?.addEventListener("click", e => exportSide("front", e.currentTarget));
         modal.querySelector("#aocMembershipDownloadBack")?.addEventListener("click", e => exportSide("back", e.currentTarget));

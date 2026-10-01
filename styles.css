@@ -8502,6 +8502,14 @@ body.auth-locked { overflow: hidden !important; }
 .membership-card-back-content strong{font-size:13px;word-break:break-word}
 .membership-card-back-note{position:relative;z-index:1;display:grid;gap:4px;padding:12px 14px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);border-radius:12px;font-size:10px;line-height:1.45;color:rgba(255,255,255,.7)}
 .membership-card-back-note strong{font-size:12px;color:#fff}
+
+/* Export PNG: jangan gunakan rotateY/3D karena html2canvas dapat membuat sisi belakang mirror. */
+.membership-card.membership-export-front .membership-card-inner,
+.membership-card.membership-export-back .membership-card-inner{transform:none!important}
+.membership-card.membership-export-front .membership-card-front,
+.membership-card.membership-export-back .membership-card-back{display:flex!important;transform:none!important;backface-visibility:visible!important;-webkit-backface-visibility:visible!important}
+.membership-card.membership-export-front .membership-card-back,
+.membership-card.membership-export-back .membership-card-front{display:none!important;transform:none!important}
 @media(max-width:600px){
   .membership-card-heading{align-items:stretch;flex-direction:column}
   .membership-card-actions{display:grid;grid-template-columns:1fr;gap:8px}.membership-card-actions .btn{width:100%}
