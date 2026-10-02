@@ -6622,7 +6622,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let logoUrl = "";
         try { logoUrl = String((await loadSiteSettings())?.site_logo_url || "").trim(); } catch (_) {}
         const modal=document.createElement("div"); modal.id="aocMemberIdExportModal"; modal.style.cssText="position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.84);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto";
-        modal.innerHTML=`<div style="width:min(1280px,100%);background:#101820;color:#fff;border-radius:22px;padding:18px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><span class="badge">ADMIN ONLY</span><h2 style="margin:7px 0 2px">ID Card · ${esc(card.full_name)}</h2><p class="muted" style="margin:0">Design depan & belakang. Logo mengikuti logo yang digunakan pada Header Website.</p></div><button class="btn small" id="aocMemberIdExportClose" type="button">Tutup</button></div><div class="aoc-id-export-scroll" style="overflow:auto;padding:16px 0"><div class="aoc-id-export-grid"><div>${memberIdCardMarkup(card,logoUrl,"front",true)}</div><div>${memberIdCardMarkup(card,logoUrl,"back",true)}</div></div></div><div class="aoc-id-download-actions"><button class="btn primary" id="aocMemberIdDownloadFront" type="button">⬇ Download Depan · SUPER HD</button><button class="btn primary" id="aocMemberIdDownloadBack" type="button">⬇ Download Belakang · SUPER HD</button><button class="btn" id="aocMemberIdDownloadBoth" type="button">⬇ Download Depan + Belakang</button><a class="btn secondary" href="${esc(memberPublicUrl(card.member_code))}" target="_blank" rel="noopener">🌐 Buka HTML Member</a></div></div>`;
+        modal.innerHTML=`<div style="width:min(1280px,100%);background:#101820;color:#fff;border-radius:22px;padding:18px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><span class="badge">ADMIN ONLY</span><h2 style="margin:7px 0 2px">ID Card · ${esc(card.full_name)}</h2><p class="muted" style="margin:0">2 tampilan kartu: DEPAN + BELAKANG. Logo mengikuti logo yang digunakan pada Header Website.</p></div><button class="btn small" id="aocMemberIdExportClose" type="button">Tutup</button></div><div class="aoc-id-export-scroll" style="overflow:auto;padding:16px 0"><div class="aoc-id-export-grid"><div>${memberIdCardMarkup(card,logoUrl,"front",true)}</div><div>${memberIdCardMarkup(card,logoUrl,"back",true)}</div></div></div><div class="aoc-id-download-actions"><button class="btn primary" id="aocMemberIdDownloadFront" type="button">⬇ Download Depan · SUPER HD</button><button class="btn primary" id="aocMemberIdDownloadBack" type="button">⬇ Download Belakang · SUPER HD</button><button class="btn" id="aocMemberIdDownloadBoth" type="button">⬇ Download 2 Tampilan · Depan + Belakang</button><a class="btn secondary" href="${esc(memberPublicUrl(card.member_code))}" target="_blank" rel="noopener">🌐 Buka HTML Member</a></div></div>`;
         document.body.appendChild(modal);
         const frontEl=modal.querySelector("#aocMemberIdExportCardFront");
         const backEl=modal.querySelector("#aocMemberIdExportCardBack");
@@ -6643,11 +6643,42 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         modal.querySelector("#aocMemberIdDownloadFront")?.addEventListener("click",e=>downloadCard(frontEl,"depan",e.currentTarget));
         modal.querySelector("#aocMemberIdDownloadBack")?.addEventListener("click",e=>downloadCard(backEl,"belakang",e.currentTarget));
-        modal.querySelector("#aocMemberIdDownloadBoth")?.addEventListener("click",async e=>{
-          const btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent="⏳ Membuat 2 PNG...";
-          try{await downloadCard(frontEl,"depan",btn);await downloadCard(backEl,"belakang",btn);}
-          finally{btn.disabled=false;btn.textContent=old}
-        });
+        const downloadBoth = async (btn) => {
+          if(!frontEl || !backEl) return;
+          const old=btn.textContent; btn.disabled=true; btn.textContent="⏳ Membuat 2 tampilan...";
+          try{
+            await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+            const capture = async (target) => {
+              const rect=target.getBoundingClientRect();
+              const scale=Math.max(1,3600/Math.max(1,rect.width));
+              return await window.html2canvas(target,{scale,useCORS:true,allowTaint:false,backgroundColor:null,logging:false,width:Math.round(rect.width),height:Math.round(rect.height)});
+            };
+            const [frontCanvas,backCanvas]=await Promise.all([capture(frontEl),capture(backEl)]);
+            const gap=80, pad=40;
+            const cardW=Math.max(frontCanvas.width,backCanvas.width);
+            const cardH=Math.max(frontCanvas.height,backCanvas.height);
+            const out=document.createElement("canvas");
+            out.width=cardW*2+gap+pad*2;
+            out.height=cardH+pad*2;
+            const ctx=out.getContext("2d");
+            ctx.clearRect(0,0,out.width,out.height);
+            ctx.drawImage(frontCanvas,pad,pad,cardW,cardH);
+            ctx.drawImage(backCanvas,pad+cardW+gap,pad,cardW,cardH);
+            await new Promise((resolve,reject)=>out.toBlob(blob=>{
+              if(!blob) return reject(new Error("PNG gabungan kosong"));
+              const u=URL.createObjectURL(blob);
+              const a=document.createElement("a");
+              a.href=u;
+              a.download=`ID-Card-${String(card.full_name).replace(/[^a-z0-9]+/gi,"-")}-${card.member_code}-DEPAN-BELAKANG-SUPER-HD.png`;
+              document.body.appendChild(a); a.click(); a.remove();
+              setTimeout(()=>{URL.revokeObjectURL(u);resolve()},1200);
+            },"image/png"));
+          }catch(err){
+            console.error(err);
+            showAdminMessage("Gagal membuat PNG gabungan depan + belakang. Periksa foto/logo dan CORS.","error");
+          }finally{btn.disabled=false;btn.textContent=old}
+        };
+        modal.querySelector("#aocMemberIdDownloadBoth")?.addEventListener("click",e=>downloadBoth(e.currentTarget));
       }
 
       async function openMemberIdScanner(){
