@@ -17,6 +17,7 @@ export const DEFAULT_SITE_SETTINGS = Object.freeze({
   admin_2_whatsapp: "",
   admin_3_name: "Admin 3",
   admin_3_whatsapp: "",
+  customer_services: [],
   address: "",
   business_hours: "",
   google_maps_url: "",
@@ -135,16 +136,77 @@ export function applySiteSettings(settings) {
     if (element && text) element.textContent = text;
   });
 
-  document.querySelectorAll(".customer-service-float").forEach((link) => {
-    if (!whatsapp) {
-      link.classList.add("hidden");
+  // Customer Service multi-number: jika >1 nomor, tombol membuka daftar CS.
+  const legacy = [1,2,3].map(i => ({
+    id: `legacy-${i}`,
+    name: String(value[`admin_${i}_name`] || `CS ${i}`).trim(),
+    phone: String(value[`admin_${i}_whatsapp`] || "").replace(/\D/g, ""),
+    category: "Customer Service",
+    message: whatsappText,
+    active: true,
+  })).filter(x => x.phone);
+  const configured = Array.isArray(value.customer_services) ? value.customer_services : [];
+  const services = configured.map((x,i) => ({
+    id: String(x?.id || `cs-${i+1}`),
+    name: String(x?.name || `CS ${i+1}`).trim(),
+    phone: String(x?.phone || "").replace(/\D/g, ""),
+    category: String(x?.category || "Customer Service").trim(),
+    message: String(x?.message || whatsappText).trim(),
+    active: x?.active !== false,
+  })).filter(x => x.active && x.phone);
+  const finalServices = services.length ? services : legacy.length ? legacy : (whatsapp ? [{id:"main",name:"Customer Service",phone:whatsapp,category:"Umum",message:whatsappText,active:true}] : []);
+
+  let panel = document.getElementById("aocCustomerServicePanel");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "aocCustomerServicePanel";
+    panel.className = "aoc-cs-panel hidden";
+    panel.innerHTML = `<div class="aoc-cs-backdrop" data-aoc-cs-close></div><section class="aoc-cs-sheet" role="dialog" aria-modal="true" aria-labelledby="aocCsTitle"><div class="aoc-cs-head"><div><span class="aoc-cs-kicker">CUSTOMER SERVICE</span><h3 id="aocCsTitle">Hubungi Admin</h3><p>Pilih nomor WhatsApp yang ingin dihubungi.</p></div><button type="button" class="aoc-cs-close" data-aoc-cs-close aria-label="Tutup">×</button></div><div class="aoc-cs-list" id="aocCsList"></div></section>`;
+    document.body.append(panel);
+    panel.querySelectorAll("[data-aoc-cs-close]").forEach(el => el.addEventListener("click", () => panel.classList.add("hidden")));
+  }
+  const listEl = panel.querySelector("#aocCsList");
+  listEl.innerHTML = finalServices.map(cs => `<a class="aoc-cs-item" href="https://wa.me/${cs.phone}?text=${encodeURIComponent(cs.message || whatsappText)}" target="_blank" rel="noopener noreferrer"><span class="aoc-cs-avatar">💬</span><span class="aoc-cs-info"><strong>${escCs(cs.name)}</strong><small>${escCs(cs.category)} · +${escCs(cs.phone)}</small></span><span class="aoc-cs-arrow">›</span></a>`).join("");
+  window.aocCustomerServices = finalServices;
+  window.aocOpenCustomerService = (message = "") => {
+    if (finalServices.length === 1) {
+      const cs = finalServices[0];
+      window.open(`https://wa.me/${cs.phone}?text=${encodeURIComponent(message || cs.message || whatsappText)}`, "_blank", "noopener");
       return;
     }
-
-    link.href = `https://wa.me/${whatsapp}?text=${encodeURIComponent(whatsappText)}`;
-    link.title = `Hubungi CS: +${whatsapp}`;
-    link.setAttribute("aria-label", `Hubungi CS ${siteName} melalui WhatsApp`);
+    if (message) panel.dataset.customMessage = message;
+    panel.classList.remove("hidden");
+  };
+  listEl.querySelectorAll(".aoc-cs-item").forEach((item, index) => {
+    item.addEventListener("click", (event) => {
+      const customMessage = panel.dataset.customMessage || "";
+      if (!customMessage) return;
+      event.preventDefault();
+      const cs = finalServices[index];
+      window.open(`https://wa.me/${cs.phone}?text=${encodeURIComponent(customMessage)}`, "_blank", "noopener");
+      panel.dataset.customMessage = "";
+      panel.classList.add("hidden");
+    });
   });
+
+  document.querySelectorAll(".customer-service-float").forEach((link) => {
+    if (!finalServices.length) { link.classList.add("hidden"); return; }
+    link.classList.remove("hidden");
+    if (finalServices.length === 1) {
+      const cs = finalServices[0];
+      link.href = `https://wa.me/${cs.phone}?text=${encodeURIComponent(cs.message || whatsappText)}`;
+      link.onclick = null;
+      link.title = `Hubungi ${cs.name}`;
+      link.setAttribute("aria-label", `Hubungi ${cs.name} melalui WhatsApp`);
+    } else {
+      link.href = "#customer-service";
+      link.title = `Pilih Customer Service (${finalServices.length} nomor)`;
+      link.setAttribute("aria-label", `Pilih Customer Service, ${finalServices.length} nomor tersedia`);
+      link.onclick = (event) => { event.preventDefault(); panel.classList.remove("hidden"); };
+    }
+  });
+
+  function escCs(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 
   document.documentElement.dataset.maintenance = String(
     Boolean(value.maintenance_mode),

@@ -29,6 +29,7 @@ const DEFAULT_SITE_SETTINGS = Object.freeze({
   admin_2_whatsapp: "",
   admin_3_name: "Admin 3",
   admin_3_whatsapp: "",
+  customer_services: [],
   address: "",
   business_hours: "",
   google_maps_url: "",
@@ -147,16 +148,56 @@ function applySiteSettings(settings) {
     if (element && text) element.textContent = text;
   });
 
-  document.querySelectorAll(".customer-service-float").forEach((link) => {
-    if (!whatsapp) {
-      link.classList.add("hidden");
-      return;
-    }
+  // Customer Service multi-number: jika >1 nomor, tombol membuka daftar CS.
+  const legacy = [1,2,3].map(i => ({
+    id: `legacy-${i}`,
+    name: String(value[`admin_${i}_name`] || `CS ${i}`).trim(),
+    phone: String(value[`admin_${i}_whatsapp`] || "").replace(/\D/g, ""),
+    category: "Customer Service",
+    message: whatsappText,
+    active: true,
+  })).filter(x => x.phone);
+  const configured = Array.isArray(value.customer_services) ? value.customer_services : [];
+  const services = configured.map((x,i) => ({
+    id: String(x?.id || `cs-${i+1}`),
+    name: String(x?.name || `CS ${i+1}`).trim(),
+    phone: String(x?.phone || "").replace(/\D/g, ""),
+    category: String(x?.category || "Customer Service").trim(),
+    message: String(x?.message || whatsappText).trim(),
+    active: x?.active !== false,
+  })).filter(x => x.active && x.phone);
+  const finalServices = services.length ? services : legacy.length ? legacy : (whatsapp ? [{id:"main",name:"Customer Service",phone:whatsapp,category:"Umum",message:whatsappText,active:true}] : []);
 
-    link.href = `https://wa.me/${whatsapp}?text=${encodeURIComponent(whatsappText)}`;
-    link.title = `Hubungi CS: +${whatsapp}`;
-    link.setAttribute("aria-label", `Hubungi CS ${siteName} melalui WhatsApp`);
+  let panel = document.getElementById("aocCustomerServicePanel");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "aocCustomerServicePanel";
+    panel.className = "aoc-cs-panel hidden";
+    panel.innerHTML = `<div class="aoc-cs-backdrop" data-aoc-cs-close></div><section class="aoc-cs-sheet" role="dialog" aria-modal="true" aria-labelledby="aocCsTitle"><div class="aoc-cs-head"><div><span class="aoc-cs-kicker">CUSTOMER SERVICE</span><h3 id="aocCsTitle">Hubungi Admin</h3><p>Pilih nomor WhatsApp yang ingin dihubungi.</p></div><button type="button" class="aoc-cs-close" data-aoc-cs-close aria-label="Tutup">×</button></div><div class="aoc-cs-list" id="aocCsList"></div></section>`;
+    document.body.append(panel);
+    panel.querySelectorAll("[data-aoc-cs-close]").forEach(el => el.addEventListener("click", () => panel.classList.add("hidden")));
+  }
+  const listEl = panel.querySelector("#aocCsList");
+  listEl.innerHTML = finalServices.map(cs => `<a class="aoc-cs-item" href="https://wa.me/${cs.phone}?text=${encodeURIComponent(cs.message || whatsappText)}" target="_blank" rel="noopener noreferrer"><span class="aoc-cs-avatar">💬</span><span class="aoc-cs-info"><strong>${escCs(cs.name)}</strong><small>${escCs(cs.category)} · +${escCs(cs.phone)}</small></span><span class="aoc-cs-arrow">›</span></a>`).join("");
+
+  document.querySelectorAll(".customer-service-float").forEach((link) => {
+    if (!finalServices.length) { link.classList.add("hidden"); return; }
+    link.classList.remove("hidden");
+    if (finalServices.length === 1) {
+      const cs = finalServices[0];
+      link.href = `https://wa.me/${cs.phone}?text=${encodeURIComponent(cs.message || whatsappText)}`;
+      link.onclick = null;
+      link.title = `Hubungi ${cs.name}`;
+      link.setAttribute("aria-label", `Hubungi ${cs.name} melalui WhatsApp`);
+    } else {
+      link.href = "#customer-service";
+      link.title = `Pilih Customer Service (${finalServices.length} nomor)`;
+      link.setAttribute("aria-label", `Pilih Customer Service, ${finalServices.length} nomor tersedia`);
+      link.onclick = (event) => { event.preventDefault(); panel.classList.remove("hidden"); };
+    }
   });
+
+  function escCs(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 
   document.documentElement.dataset.maintenance = String(
     Boolean(value.maintenance_mode),
@@ -2398,6 +2439,59 @@ document.addEventListener("DOMContentLoaded", () => {
         </label>`;
       }
 
+      function normalizeCustomerServicesForEditor() {
+        const configured = Array.isArray(siteSettings.customer_services) ? siteSettings.customer_services : [];
+        if (configured.length) return configured.map((x, i) => ({
+          id: String(x?.id || `cs-${i + 1}`),
+          name: String(x?.name || `CS ${i + 1}`),
+          phone: String(x?.phone || "").replace(/\D/g, ""),
+          category: String(x?.category || "Customer Service"),
+          message: String(x?.message || siteSettings.whatsapp_message || ""),
+          active: x?.active !== false,
+        }));
+        return [1, 2, 3].map(i => ({
+          id: `legacy-${i}`,
+          name: String(siteSettings[`admin_${i}_name`] || `CS ${i}`),
+          phone: String(siteSettings[`admin_${i}_whatsapp`] || "").replace(/\D/g, ""),
+          category: "Customer Service",
+          message: String(siteSettings.whatsapp_message || ""),
+          active: true,
+        })).filter(x => x.phone);
+      }
+
+      function renderCustomerServiceEditor() {
+        const wrap = document.getElementById("aocCustomerServicesEditor");
+        if (!wrap) return;
+        const rows = normalizeCustomerServicesForEditor();
+        wrap.innerHTML = rows.map((x, i) => `
+          <div class="aoc-cs-admin-row" data-cs-row>
+            <div class="aoc-cs-admin-row-head"><strong>CS ${i + 1}</strong><button type="button" class="btn danger small" data-cs-remove>Hapus</button></div>
+            <div class="three aoc-cs-admin-grid">
+              <label class="field"><span>Nama / label</span><input class="input" data-cs-name value="${esc(x.name)}" maxlength="80" placeholder="CS Sewa"></label>
+              <label class="field"><span>Nomor WhatsApp</span><input class="input" data-cs-phone value="${esc(x.phone)}" inputmode="numeric" maxlength="20" placeholder="62812..."></label>
+              <label class="field"><span>Bagian / layanan</span><input class="input" data-cs-category value="${esc(x.category)}" maxlength="60" placeholder="Sewa / Jual / Travel"></label>
+              <label class="field aoc-cs-message-field"><span>Pesan awal</span><input class="input" data-cs-message value="${esc(x.message)}" maxlength="500" placeholder="Halo, saya ingin bertanya..."></label>
+              <label class="admin-check aoc-cs-active"><input type="checkbox" data-cs-active ${x.active !== false ? "checked" : ""}><span>Aktif</span></label>
+              <input type="hidden" data-cs-id value="${esc(x.id)}">
+            </div>
+          </div>`).join("");
+        wrap.querySelectorAll("[data-cs-remove]").forEach(btn => btn.addEventListener("click", () => {
+          btn.closest("[data-cs-row]")?.remove();
+          Array.from(wrap.querySelectorAll("[data-cs-row]")).forEach((row, idx) => { const h=row.querySelector(".aoc-cs-admin-row-head strong"); if(h) h.textContent=`CS ${idx+1}`; });
+        }));
+      }
+
+      function collectCustomerServicesFromEditor() {
+        return Array.from(document.querySelectorAll("#aocCustomerServicesEditor [data-cs-row]")).map((row, i) => ({
+          id: row.querySelector("[data-cs-id]")?.value || `cs-${Date.now()}-${i}`,
+          name: String(row.querySelector("[data-cs-name]")?.value || `CS ${i + 1}`).trim(),
+          phone: String(row.querySelector("[data-cs-phone]")?.value || "").replace(/\D/g, ""),
+          category: String(row.querySelector("[data-cs-category]")?.value || "Customer Service").trim(),
+          message: String(row.querySelector("[data-cs-message]")?.value || siteSettings.whatsapp_message || "").trim(),
+          active: !!row.querySelector("[data-cs-active]")?.checked,
+        })).filter(x => x.name && x.phone);
+      }
+
       function renderSettingsTab() {
         const content = document.getElementById("adminContent");
 
@@ -2457,9 +2551,8 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
             <div class="two admin-settings-grid">
               ${settingInput("site_name", "Nama website *", { required: true })}
-              ${settingInput("whatsapp_number", "Nomor WhatsApp *", {
-                required: true,
-                hint: "Gunakan format internasional tanpa tanda +, contoh 62812...",
+              ${settingInput("whatsapp_number", "Nomor WhatsApp Utama", {
+                hint: "Opsional jika Anda menggunakan daftar CS di bawah. Format internasional tanpa tanda +, contoh 62812...",
               })}
               ${settingInput("address", "Alamat toko", { type: "textarea", wide: true })}
               ${settingInput("business_hours", "Jam operasional")}
@@ -2478,6 +2571,16 @@ document.addEventListener("DOMContentLoaded", () => {
               ${settingInput("admin_3_name", "Nama Admin 3")}
               ${settingInput("admin_3_whatsapp", "WhatsApp Admin 3", { hint: "Boleh dikosongkan jika tidak digunakan." })}
             </div>
+          </section>
+
+          <section class="card admin-settings-section aoc-cs-admin-section">
+            <div class="admin-editor-heading">
+              <div><span class="badge">Customer Service</span><h3>Nomor WhatsApp CS</h3><p class="muted">Tambahkan 2 nomor, 3 nomor, atau sebanyak yang dibutuhkan. Pelanggan akan memilih CS dari tombol WhatsApp di website.</p></div>
+              <button class="btn primary small" id="aocAddCustomerService" type="button">＋ Tambah CS</button>
+            </div>
+            <div id="aocCustomerServicesEditor"></div>
+            <input type="hidden" name="customer_services_json" id="customerServicesJson">
+            <p class="muted">Contoh: CS Sewa, CS Jual, CS Travel, CS Open Trip. Setiap CS bisa memiliki pesan pembuka berbeda.</p>
           </section>
 
           <section class="card admin-settings-section">
@@ -2595,6 +2698,18 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </form>`;
 
+        renderCustomerServiceEditor();
+        document.getElementById("aocAddCustomerService")?.addEventListener("click", () => {
+          const wrap = document.getElementById("aocCustomerServicesEditor");
+          if (!wrap) return;
+          const rows = Array.from(wrap.querySelectorAll("[data-cs-row]"));
+          const row = document.createElement("div");
+          row.className = "aoc-cs-admin-row";
+          row.setAttribute("data-cs-row", "");
+          row.innerHTML = `<div class="aoc-cs-admin-row-head"><strong>CS ${rows.length + 1}</strong><button type="button" class="btn danger small" data-cs-remove>Hapus</button></div><div class="three aoc-cs-admin-grid"><label class="field"><span>Nama / label</span><input class="input" data-cs-name value="CS ${rows.length + 1}" maxlength="80"></label><label class="field"><span>Nomor WhatsApp</span><input class="input" data-cs-phone inputmode="numeric" maxlength="20" placeholder="62812..."></label><label class="field"><span>Bagian / layanan</span><input class="input" data-cs-category value="Customer Service" maxlength="60"></label><label class="field aoc-cs-message-field"><span>Pesan awal</span><input class="input" data-cs-message value="${esc(siteSettings.whatsapp_message || "")}" maxlength="500"></label><label class="admin-check aoc-cs-active"><input type="checkbox" data-cs-active checked><span>Aktif</span></label><input type="hidden" data-cs-id value="cs-${Date.now()}"></div>`;
+          wrap.appendChild(row);
+          row.querySelector("[data-cs-remove]")?.addEventListener("click", () => row.remove());
+        });
         document
           .getElementById("siteSettingsForm")
           .addEventListener("submit", saveSiteSettings);
@@ -2740,8 +2855,11 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           }
 
+          values.customer_services = collectCustomerServicesFromEditor();
+          delete values.customer_services_json;
           values.site_name = String(values.site_name ?? "").trim();
           values.whatsapp_number = String(values.whatsapp_number ?? "").replace(/\D/g, "");
+          if (!values.whatsapp_number && values.customer_services.length) values.whatsapp_number = values.customer_services[0].phone;
           ["admin_1_whatsapp", "admin_2_whatsapp", "admin_3_whatsapp"].forEach((key) => {
             values[key] = String(values[key] ?? "").replace(/\D/g, "");
           });
@@ -2750,7 +2868,7 @@ document.addEventListener("DOMContentLoaded", () => {
           values.payment_timeout_minutes = Math.max(5, Math.min(60, Number(values.payment_timeout_minutes) || 15));
 
           if (!values.site_name || !values.whatsapp_number) {
-            showAdminMessage("Nama website dan nomor WhatsApp wajib diisi.", "error");
+            showAdminMessage("Nama website wajib diisi dan minimal satu nomor WhatsApp CS harus tersedia.", "error");
             return;
           }
 
@@ -6381,28 +6499,57 @@ document.addEventListener("DOMContentLoaded", () => {
         const style = document.createElement("style");
         style.id = "aocMemberIdCardStyles";
         style.textContent = `
-          .aoc-idcard-preview{width:min(760px,100%);aspect-ratio:1.586/1;border-radius:24px;overflow:hidden;position:relative;color:#fff;background:#17222c url('${AOC_MEMBER_MOUNTAIN_BG}') center/cover no-repeat;box-shadow:0 24px 70px rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.28)}
-          .aoc-idcard-preview:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,rgba(5,13,20,.9) 0%,rgba(5,13,20,.52) 48%,rgba(5,13,20,.2) 100%)}
-          .aoc-idcard-inner{position:absolute;inset:0;padding:28px;display:grid;grid-template-columns:170px 1fr 170px;gap:22px;align-items:center}
+          .aoc-id-export-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start;min-width:0}
+          .aoc-idcard-preview{width:100%;aspect-ratio:1.586/1;border-radius:24px;overflow:hidden;position:relative;color:#fff;background:#17222c url('${AOC_MEMBER_MOUNTAIN_BG}') center/cover no-repeat;box-shadow:0 24px 70px rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.28)}
+          .aoc-idcard-preview.aoc-id-back{background-image:linear-gradient(120deg,rgba(3,10,16,.9),rgba(3,10,16,.35)),url('${AOC_MEMBER_MOUNTAIN_BG}')}
+          .aoc-idcard-preview:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,rgba(5,13,20,.91) 0%,rgba(5,13,20,.56) 48%,rgba(5,13,20,.18) 100%);pointer-events:none}
+          .aoc-idcard-inner{position:absolute;inset:0;padding:28px;display:grid;grid-template-columns:170px 1fr 170px;gap:22px;align-items:center;z-index:1}
           .aoc-id-photo{width:154px;height:190px;border-radius:16px;object-fit:cover;border:3px solid rgba(255,255,255,.85);background:rgba(255,255,255,.12);box-shadow:0 12px 28px rgba(0,0,0,.3)}
           .aoc-id-photo.empty{display:flex;align-items:center;justify-content:center;font-size:58px;font-weight:800}
-          .aoc-id-title{font-size:12px;letter-spacing:.22em;font-weight:800;opacity:.82}.aoc-id-name{font-size:34px;font-weight:900;line-height:1.05;margin:9px 0}.aoc-id-role{font-size:15px;font-weight:700}.aoc-id-meta{display:grid;gap:8px;margin-top:18px}.aoc-id-meta div{display:flex;gap:10px}.aoc-id-meta small{opacity:.66;min-width:82px}.aoc-id-meta b{font-size:14px}
-          .aoc-id-codes{display:grid;gap:12px;justify-items:center}.aoc-id-qr{background:#fff;border-radius:12px;padding:8px;width:130px;height:130px;display:grid;place-items:center}.aoc-id-barcode{background:#fff;border-radius:10px;padding:8px;width:160px}.aoc-id-barcode svg{width:100%;height:52px}.aoc-id-code-label{font-size:11px;letter-spacing:.12em;font-weight:800;opacity:.75;text-align:center}
-          @media(max-width:760px){.aoc-idcard-inner{grid-template-columns:100px 1fr 110px;padding:18px;gap:12px}.aoc-id-photo{width:92px;height:116px}.aoc-id-name{font-size:22px}.aoc-id-meta{margin-top:10px}.aoc-id-qr{width:92px;height:92px}.aoc-id-barcode{width:108px}.aoc-id-barcode svg{height:42px}}
+          .aoc-id-logo{width:92px;height:92px;object-fit:contain;border-radius:16px;background:rgba(255,255,255,.92);padding:10px;box-shadow:0 12px 28px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.55)}
+          .aoc-id-logo.small{width:76px;height:76px;border-radius:14px;padding:8px}
+          .aoc-id-title{font-size:13px;letter-spacing:.22em;font-weight:800;opacity:.82}.aoc-id-name{font-size:40px;font-weight:900;line-height:1.05;margin-top:7px;text-shadow:0 4px 16px rgba(0,0,0,.25)}
+          .aoc-id-role{font-size:18px;font-weight:800;margin-top:8px}.aoc-id-meta{display:grid;gap:8px;margin-top:18px}.aoc-id-meta>div{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:center}.aoc-id-meta small{font-size:12px;opacity:.68}.aoc-id-meta b{font-size:16px}
+          .aoc-id-codes{display:grid;gap:14px;justify-items:center}.aoc-id-qr{background:#fff;border-radius:12px;padding:8px;width:156px;height:156px;display:grid;place-items:center;box-shadow:0 10px 24px rgba(0,0,0,.25)}.aoc-id-barcode{background:#fff;border-radius:10px;padding:8px;width:190px;box-shadow:0 10px 24px rgba(0,0,0,.22)}.aoc-id-barcode svg{width:100%;height:60px}.aoc-id-code-label{font-size:12px;letter-spacing:.12em;font-weight:800;opacity:.75;text-align:center}
+          .aoc-id-back-inner{position:absolute;inset:0;padding:34px;z-index:1;display:grid;grid-template-columns:170px 1fr 210px;gap:22px;align-items:center}
+          .aoc-id-back-brand{display:flex;flex-direction:column;align-items:flex-start;gap:10px}.aoc-id-back-brand strong{font-size:20px;letter-spacing:.1em}.aoc-id-back-brand span{font-size:12px;opacity:.72;letter-spacing:.12em}
+          .aoc-id-back-info{display:grid;gap:12px}.aoc-id-back-info h3{margin:0;font-size:23px}.aoc-id-back-info p{margin:0;line-height:1.55;font-size:14px;color:rgba(255,255,255,.82)}.aoc-id-back-rules{display:grid;gap:7px;margin-top:4px}.aoc-id-back-rules div{font-size:12px;color:rgba(255,255,255,.78)}
+          .aoc-id-back-code{display:grid;justify-items:center;gap:10px}.aoc-id-back-code .aoc-id-barcode{width:210px}.aoc-id-back-code .aoc-id-barcode svg{height:66px}.aoc-id-back-code .aoc-id-code-label{font-size:11px}
+          .aoc-id-download-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:16px}
+          @media(max-width:900px){.aoc-id-export-grid{grid-template-columns:1fr}.aoc-idcard-preview{min-width:720px}.aoc-id-export-scroll{overflow:auto;padding-bottom:8px}.aoc-id-name{font-size:36px}}
+          @media(max-width:760px){.aoc-idcard-preview{min-width:680px}.aoc-idcard-inner{grid-template-columns:108px 1fr 128px;padding:16px;gap:12px}.aoc-id-photo{width:100px;height:122px}.aoc-id-name{font-size:25px}.aoc-id-role{font-size:14px}.aoc-id-meta{margin-top:10px}.aoc-id-meta>div{grid-template-columns:74px 1fr}.aoc-id-meta small{font-size:10px}.aoc-id-meta b{font-size:12px}.aoc-id-logo{width:68px;height:68px}.aoc-id-qr{width:112px;height:112px}.aoc-id-barcode{width:126px}.aoc-id-barcode svg{height:48px}.aoc-id-back-inner{grid-template-columns:120px 1fr 145px;padding:18px;gap:12px}.aoc-id-back-brand strong{font-size:14px}.aoc-id-back-info h3{font-size:18px}.aoc-id-back-info p,.aoc-id-back-rules div{font-size:10px}.aoc-id-back-code .aoc-id-barcode{width:145px}.aoc-id-back-code .aoc-id-barcode svg{height:48px}}
         `;
         document.head.appendChild(style);
       }
 
-      function memberIdCardMarkup(card, logoUrl = "", forExport = false) {
+      function memberIdCardMarkup(card, logoUrl = "", side = "front", forExport = false) {
         const name = String(card.full_name || "Anggota");
         const code = String(card.member_code || "-");
         const photo = String(card.photo_url || "").trim();
         const qr = memberPublicUrl(code);
-        return `<div class="aoc-idcard-preview" id="aocMemberIdExportCard" style="${forExport ? "width:1200px;min-width:1200px" : ""}">
+        const logo = String(logoUrl || "").trim();
+        if (side === "back") {
+          return `<div class="aoc-idcard-preview aoc-id-back" id="aocMemberIdExportCardBack" data-idcard-side="back" style="${forExport ? "width:1200px;min-width:1200px" : ""}">
+            <div class="aoc-id-back-inner">
+              <div class="aoc-id-back-brand">
+                ${logo ? `<img class="aoc-id-logo" src="${esc(logo)}" crossorigin="anonymous" alt="Logo AbidzarOutdoorcamp">` : ""}
+                <strong>ABIDZAROUTDOORCAMP</strong><span>DATA ANGGOTA · ID CARD</span>
+              </div>
+              <div class="aoc-id-back-info">
+                <h3>Kartu Identitas Anggota</h3>
+                <p>ID ini merupakan identitas resmi anggota AbidzarOutdoorcamp. Data pada kartu dapat diverifikasi melalui QR Code yang terhubung ke halaman Member HTML.</p>
+                <div class="aoc-id-back-rules"><div>• Gunakan kartu ini untuk identifikasi anggota.</div><div>• Jika kartu hilang, segera laporkan kepada administrator.</div><div>• Status anggota mengikuti data pada sistem AOC.</div></div>
+                <div class="aoc-id-code-label">${esc(code)}</div>
+              </div>
+              <div class="aoc-id-back-code"><div class="aoc-id-barcode"><svg data-member-barcode="${esc(code)}"></svg></div><div class="aoc-id-code-label">BARCODE ID ANGGOTA</div></div>
+            </div>
+          </div>`;
+        }
+        return `<div class="aoc-idcard-preview" id="aocMemberIdExportCardFront" data-idcard-side="front" style="${forExport ? "width:1200px;min-width:1200px" : ""}">
           <div class="aoc-idcard-inner">
             <div>${photo ? `<img class="aoc-id-photo" src="${esc(photo)}" crossorigin="anonymous" alt="Foto ${esc(name)}">` : `<div class="aoc-id-photo empty">${esc(name.slice(0,1).toUpperCase())}</div>`}</div>
             <div>
-              <div class="aoc-id-title">ID CARD ANGGOTA · ABIDZAROUTDOORCAMP</div>
+              <div style="display:flex;align-items:center;gap:12px">${logo ? `<img class="aoc-id-logo small" src="${esc(logo)}" crossorigin="anonymous" alt="Logo AbidzarOutdoorcamp">` : ""}<div class="aoc-id-title">ID CARD ANGGOTA · ABIDZAROUTDOORCAMP</div></div>
               <div class="aoc-id-name">${esc(name)}</div>
               <div class="aoc-id-role">${esc(card.position || "Anggota")}${card.department ? ` · ${esc(card.department)}` : ""}</div>
               <div class="aoc-id-meta"><div><small>ID Anggota</small><b>${esc(code)}</b></div><div><small>Status</small><b>${card.status === "active" ? "AKTIF" : String(card.status || "").toUpperCase()}</b></div><div><small>Bergabung</small><b>${card.join_date ? new Date(card.join_date + "T00:00:00").toLocaleDateString("id-ID", {day:"2-digit",month:"long",year:"numeric"}) : "-"}</b></div></div>
@@ -6472,15 +6619,35 @@ document.addEventListener("DOMContentLoaded", () => {
       async function openMemberIdExport(card) {
         if (!card || !can("members.manage")) return;
         ensureMemberIdCardStyles();
+        let logoUrl = "";
+        try { logoUrl = String((await loadSiteSettings())?.site_logo_url || "").trim(); } catch (_) {}
         const modal=document.createElement("div"); modal.id="aocMemberIdExportModal"; modal.style.cssText="position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.84);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto";
-        modal.innerHTML=`<div style="width:min(1240px,100%);background:#101820;color:#fff;border-radius:22px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><div><span class="badge">ADMIN ONLY</span><h2 style="margin:7px 0 2px">ID Card · ${esc(card.full_name)}</h2><p class="muted">Foto gunung menggunakan foto Bromo asli, bukan gambar AI.</p></div><button class="btn small" id="aocMemberIdExportClose">Tutup</button></div><div style="overflow:auto;padding:16px 0"><div id="aocMemberIdExportWrap">${memberIdCardMarkup(card,"",true)}</div></div><div class="actions" style="justify-content:center"><button class="btn primary" id="aocMemberIdDownload">⬇ Download ID Card PNG · SUPER HD</button><a class="btn secondary" href="${esc(memberPublicUrl(card.member_code))}" target="_blank" rel="noopener">🌐 Buka HTML Member</a></div></div>`;
+        modal.innerHTML=`<div style="width:min(1280px,100%);background:#101820;color:#fff;border-radius:22px;padding:18px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><span class="badge">ADMIN ONLY</span><h2 style="margin:7px 0 2px">ID Card · ${esc(card.full_name)}</h2><p class="muted" style="margin:0">Design depan & belakang. Logo mengikuti logo yang digunakan pada Header Website.</p></div><button class="btn small" id="aocMemberIdExportClose" type="button">Tutup</button></div><div class="aoc-id-export-scroll" style="overflow:auto;padding:16px 0"><div class="aoc-id-export-grid"><div>${memberIdCardMarkup(card,logoUrl,"front",true)}</div><div>${memberIdCardMarkup(card,logoUrl,"back",true)}</div></div></div><div class="aoc-id-download-actions"><button class="btn primary" id="aocMemberIdDownloadFront" type="button">⬇ Download Depan · SUPER HD</button><button class="btn primary" id="aocMemberIdDownloadBack" type="button">⬇ Download Belakang · SUPER HD</button><button class="btn" id="aocMemberIdDownloadBoth" type="button">⬇ Download Depan + Belakang</button><a class="btn secondary" href="${esc(memberPublicUrl(card.member_code))}" target="_blank" rel="noopener">🌐 Buka HTML Member</a></div></div>`;
         document.body.appendChild(modal);
-        const cardEl=modal.querySelector("#aocMemberIdExportCard");
-        modal.querySelectorAll("[data-member-qr]").forEach(el=>{ if(window.QRCode) new window.QRCode(el,{text:el.dataset.memberQr,width:112,height:112,colorDark:"#0b1120",colorLight:"#fff"}); });
-        modal.querySelectorAll("[data-member-barcode]").forEach(el=>{ if(window.JsBarcode) window.JsBarcode(el,el.dataset.memberBarcode,{format:"CODE128",displayValue:true,fontSize:12,height:48,margin:0}); });
+        const frontEl=modal.querySelector("#aocMemberIdExportCardFront");
+        const backEl=modal.querySelector("#aocMemberIdExportCardBack");
+        modal.querySelectorAll("[data-member-qr]").forEach(el=>{ if(window.QRCode) new window.QRCode(el,{text:el.dataset.memberQr,width:156,height:156,colorDark:"#0b1120",colorLight:"#fff"}); });
+        modal.querySelectorAll("[data-member-barcode]").forEach(el=>{ if(window.JsBarcode) window.JsBarcode(el,el.dataset.memberBarcode,{format:"CODE128",displayValue:true,fontSize:16,height:66,margin:0}); });
         modal.querySelector("#aocMemberIdExportClose")?.addEventListener("click",()=>modal.remove());
         modal.addEventListener("click",e=>{if(e.target===modal)modal.remove()});
-        modal.querySelector("#aocMemberIdDownload")?.addEventListener("click",async e=>{const btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent="⏳ Membuat PNG SUPER HD...";try{await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const canvas=await window.html2canvas(cardEl,{scale:3,useCORS:true,allowTaint:false,backgroundColor:null,logging:false,width:1200,height:Math.round(1200/1.586)});canvas.toBlob(blob=>{if(!blob)return;const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=`ID-Card-${String(card.full_name).replace(/[^a-z0-9]+/gi,"-")}-${card.member_code}-SUPER-HD.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500)},"image/png")}catch(err){console.error(err);showAdminMessage("Gagal membuat PNG. Periksa foto member/CORS.","error")}finally{btn.disabled=false;btn.textContent=old}});
+        const downloadCard = async (target, side, btn) => {
+          if(!target) return;
+          const old=btn.textContent; btn.disabled=true; btn.textContent="⏳ Membuat PNG SUPER HD...";
+          try{
+            await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+            const rect=target.getBoundingClientRect();
+            const scale=Math.max(1,3600/Math.max(1,rect.width));
+            const canvas=await window.html2canvas(target,{scale,useCORS:true,allowTaint:false,backgroundColor:null,logging:false,width:Math.round(rect.width),height:Math.round(rect.height)});
+            await new Promise((resolve,reject)=>canvas.toBlob(blob=>{if(!blob)return reject(new Error("PNG kosong"));const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=`ID-Card-${String(card.full_name).replace(/[^a-z0-9]+/gi,"-")}-${card.member_code}-${side}-SUPER-HD.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>{URL.revokeObjectURL(u);resolve()},1200)},"image/png"));
+          }catch(err){console.error(err);showAdminMessage(`Gagal membuat PNG ${side}. Periksa foto/logo dan CORS.` ,"error")}finally{btn.disabled=false;btn.textContent=old}
+        };
+        modal.querySelector("#aocMemberIdDownloadFront")?.addEventListener("click",e=>downloadCard(frontEl,"depan",e.currentTarget));
+        modal.querySelector("#aocMemberIdDownloadBack")?.addEventListener("click",e=>downloadCard(backEl,"belakang",e.currentTarget));
+        modal.querySelector("#aocMemberIdDownloadBoth")?.addEventListener("click",async e=>{
+          const btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent="⏳ Membuat 2 PNG...";
+          try{await downloadCard(frontEl,"depan",btn);await downloadCard(backEl,"belakang",btn);}
+          finally{btn.disabled=false;btn.textContent=old}
+        });
       }
 
       async function openMemberIdScanner(){
