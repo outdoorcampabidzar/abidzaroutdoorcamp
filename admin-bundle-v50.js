@@ -1576,7 +1576,7 @@ document.addEventListener("DOMContentLoaded", () => {
               </div>
               <div class="aoc-stock-filters">
                 <div class="aoc-stock-category-wrap">
-                  <label class="sr-only" for="aocStockCategory">Kategori item</label>
+                  <label class="sr-only" for="aocStockCategory">Filter kategori item</label>
                   <select class="input aoc-stock-category-filter" id="aocStockCategory">
                     <option value="all" ${aocSelectedStockCategoryId === "all" ? "selected" : ""}>Semua Kategori</option>
                     <option value="__none__" ${aocSelectedStockCategoryId === "__none__" ? "selected" : ""}>Tanpa Kategori</option>
@@ -1584,20 +1584,25 @@ document.addEventListener("DOMContentLoaded", () => {
                   </select>
                 </div>
                 <div class="aoc-stock-search-wrap">
-                  <input class="input aoc-stock-search" id="aocStockSearch" type="search" placeholder="Cari item..." autocomplete="off">
+                  <input class="input aoc-stock-search" id="aocStockSearch" type="search" placeholder="Cari nama / kategori..." autocomplete="off">
                 </div>
+                <button class="btn tiny aoc-stock-reset" id="aocStockReset" type="button">↺ Reset</button>
               </div>
             </div>
             <div class="aoc-stock-list">
               ${products.flatMap(item => {
                 const vars = item.item_variants?.filter(v => v.is_active) || [];
                 return (vars.length ? vars.map(v => [item, v]) : [[item, null]]).map(([it, v]) => {
-                  const categoryId = it.item_categories?.id || it.category_id || "";
-                  const categoryName = it.item_categories?.name || "Tanpa Kategori";
+                  const rawCategory = Array.isArray(it.item_categories) ? it.item_categories[0] : it.item_categories;
+                  const categoryId = rawCategory?.id || it.category_id || "";
+                  const categorySlug = rawCategory?.slug || "";
+                  const categoryName = rawCategory?.name || "Tanpa Kategori";
+                  const normalizeCategory = (value) => String(value || "").trim().toLocaleLowerCase("id").replace(/\s+/g, " ");
+                  const categoryKey = [categoryId, categorySlug, normalizeCategory(categoryName)].filter(Boolean).join("|");
                   const menuImage = it.image_url || (it.item_images || []).slice().sort((a,b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))[0]?.image_url || "";
-                  const searchText = `${it.title} ${categoryName} ${v ? [v.name, v.capacity].filter(Boolean).join(" ") : "Stok utama"}`.toLowerCase();
+                  const searchText = `${it.title || ""} ${categoryName} ${categorySlug} ${v ? [v.name, v.capacity].filter(Boolean).join(" ") : "Stok utama"}`.toLowerCase();
                   return `
-                  <div class="aoc-stock-card" data-stock-card data-search="${esc(searchText)}" data-category-id="${esc(categoryId)}">
+                  <div class="aoc-stock-card" data-stock-card data-search="${esc(searchText)}" data-category-id="${esc(categoryId)}" data-category-slug="${esc(categorySlug)}" data-category-name="${esc(normalizeCategory(categoryName))}" data-category-key="${esc(categoryKey)}">
                     <div class="aoc-stock-card-main">
                       <div class="aoc-stock-thumb ${menuImage ? "" : "is-fallback"}">
                         ${menuImage ? `<img src="${esc(menuImage)}" alt="${esc(it.title)}" loading="lazy" onerror="this.closest('.aoc-stock-thumb').classList.add('is-fallback');this.remove();">` : ""}
@@ -1713,25 +1718,93 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const stockSearch = content.querySelector("#aocStockSearch");
         const stockCategory = content.querySelector("#aocStockCategory");
+        const stockReset = content.querySelector("#aocStockReset");
         const stockEmpty = content.querySelector("#aocStockEmpty");
+        const normalizeStockFilter = (value) => String(value || "").trim().toLocaleLowerCase("id").replace(/\s+/g, " ");
+        const stockCategoryAliases = (category) => {
+          if (!category) return [];
+          return [category.id, category.name, category.slug]
+            .filter(Boolean)
+            .map(normalizeStockFilter);
+        };
+        const findCategoryForSearch = (query) => {
+          const q = normalizeStockFilter(query);
+          if (!q || !Array.isArray(categories)) return null;
+          return categories.find(c => {
+            const aliases = stockCategoryAliases(c);
+            return aliases.some(a => q === a || q === normalizeStockFilter(slugify(a)) || a.includes(q));
+          }) || null;
+        };
         const filterStock = () => {
-          const q = String(stockSearch?.value || "").trim().toLowerCase();
-          const category = String(stockCategory?.value || "all");
+          const q = normalizeStockFilter(stockSearch?.value);
+          const selectedValue = String(stockCategory?.value || "all");
+          const selectedOption = stockCategory?.selectedOptions?.[0];
+          const selectedLabel = normalizeStockFilter(selectedOption?.textContent || "");
+          const selectedCategory = Array.isArray(categories)
+            ? categories.find(c => String(c?.id || "") === selectedValue)
+            : null;
+          const selectedAliases = new Set([
+            ...stockCategoryAliases(selectedCategory),
+            selectedLabel
+          ].filter(Boolean));
+
           let shown = 0;
           content.querySelectorAll("[data-stock-card]").forEach(card => {
-            const matchesSearch = !q || String(card.dataset.search || "").includes(q);
-            const cardCategory = String(card.dataset.categoryId || "");
-            const matchesCategory = category === "all" || (category === "__none__" ? !cardCategory : cardCategory === category);
+            const searchText = normalizeStockFilter(card.dataset.search);
+            const cardCategory = normalizeStockFilter(card.dataset.categoryId);
+            const cardSlug = normalizeStockFilter(card.dataset.categorySlug);
+            const cardName = normalizeStockFilter(card.dataset.categoryName);
+
+            const matchesSearch = !q
+              || searchText.includes(q)
+              || cardName.includes(q)
+              || cardSlug.includes(q);
+
+            let matchesCategory = true;
+            if (selectedValue === "__none__") {
+              matchesCategory = !cardCategory && !cardSlug && (!cardName || cardName === "tanpa kategori");
+            } else if (selectedValue !== "all") {
+              // Nama kategori yang tampil pada kartu menjadi sumber pencocokan utama.
+              // Ini menghindari bug saat ID relasi item_categories berbeda/berubah.
+              matchesCategory = selectedAliases.has(cardName)
+                || selectedAliases.has(cardSlug)
+                || selectedAliases.has(cardCategory)
+                || [...selectedAliases].some(alias => alias && (cardName.includes(alias) || alias.includes(cardName)));
+            }
+
             const ok = matchesSearch && matchesCategory;
             card.hidden = !ok;
             if (ok) shown++;
           });
-          if (stockEmpty) stockEmpty.hidden = shown !== 0;
+
+          if (stockEmpty) {
+            stockEmpty.hidden = shown !== 0;
+            stockEmpty.textContent = shown === 0
+              ? (q || selectedValue !== "all" ? "Tidak ada item yang cocok dengan kategori/pencarian." : "Belum ada item.")
+              : "";
+          }
         };
-        stockSearch?.addEventListener("input", filterStock);
+        stockSearch?.addEventListener("input", () => {
+          const q = normalizeStockFilter(stockSearch.value);
+          const autoCategory = findCategoryForSearch(q);
+          // Hanya auto-select jika input benar-benar merupakan nama/slug kategori.
+          // Jika user mengetik nama barang, dropdown tetap pada pilihan sebelumnya.
+          if (autoCategory && stockCategory) {
+            stockCategory.value = String(autoCategory.id);
+            aocSelectedStockCategoryId = String(autoCategory.id);
+          }
+          filterStock();
+        });
         stockCategory?.addEventListener("change", () => {
           aocSelectedStockCategoryId = stockCategory.value || "all";
           filterStock();
+        });
+        stockReset?.addEventListener("click", () => {
+          if (stockSearch) stockSearch.value = "";
+          if (stockCategory) stockCategory.value = "all";
+          aocSelectedStockCategoryId = "all";
+          filterStock();
+          stockSearch?.focus();
         });
         filterStock();
 
@@ -6504,20 +6577,20 @@ document.addEventListener("DOMContentLoaded", () => {
           .aoc-idcard-preview{width:100%;max-width:1400px;aspect-ratio:1.586/1;container-type:inline-size;border-radius:24px;overflow:hidden;position:relative;color:#fff;background:#17222c url('${AOC_MEMBER_MOUNTAIN_BG}') center/cover no-repeat;box-shadow:0 24px 70px rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.28)}
           .aoc-idcard-preview.aoc-id-back{background-image:linear-gradient(120deg,rgba(3,10,16,.9),rgba(3,10,16,.35)),url('${AOC_MEMBER_MOUNTAIN_BG}')}
           .aoc-idcard-preview:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,rgba(5,13,20,.91) 0%,rgba(5,13,20,.56) 48%,rgba(5,13,20,.18) 100%);pointer-events:none}
-          .aoc-idcard-inner{position:absolute;inset:0;padding:1.65cqw;display:grid;grid-template-columns:18cqw minmax(0,1fr) 19.5cqw;gap:1.5cqw;align-items:center;z-index:1}
-          .aoc-id-photo{width:100%;max-width:210px;aspect-ratio:154/190;height:auto;border-radius:16px;object-fit:cover;border:3px solid rgba(255,255,255,.85);background:rgba(255,255,255,.12);box-shadow:0 12px 28px rgba(0,0,0,.3)}
+          .aoc-idcard-inner{position:absolute;inset:0;padding:1.65cqw;display:grid;grid-template-columns:18cqw minmax(0,1fr) 24cqw;gap:1.5cqw;align-items:center;z-index:1}
+          .aoc-id-photo{width:100%;max-width:none;aspect-ratio:154/190;height:auto;border-radius:16px;object-fit:cover;border:3px solid rgba(255,255,255,.85);background:rgba(255,255,255,.12);box-shadow:0 12px 28px rgba(0,0,0,.3)}
           .aoc-id-photo.empty{display:flex;align-items:center;justify-content:center;font-size:58px;font-weight:800}
-          .aoc-id-logo{width:7.7cqw;height:7.7cqw;min-width:56px;min-height:56px;object-fit:contain;border-radius:16px;background:rgba(255,255,255,.92);padding:10px;box-shadow:0 12px 28px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.55)}
-          .aoc-id-logo.small{width:6.3cqw;height:6.3cqw;min-width:48px;min-height:48px;border-radius:14px;padding:8px}
-          .aoc-id-title{font-size:15px;letter-spacing:.18em;font-weight:800;opacity:.82}.aoc-id-name{font-size:4.8cqw;font-weight:900;line-height:1.05;margin-top:7px;text-shadow:0 4px 16px rgba(0,0,0,.25)}
-          .aoc-id-role{font-size:2.05cqw;font-weight:800;margin-top:8px}.aoc-id-meta{display:grid;gap:1.25cqw;margin-top:1.9cqw}.aoc-id-meta>div{display:grid;grid-template-columns:8.8cqw minmax(0,1fr);gap:1.15cqw;align-items:center;min-width:0}.aoc-id-meta small{font-size:1.65cqw;line-height:1.15;font-weight:700;opacity:.82;white-space:nowrap}.aoc-id-meta b{font-size:2.55cqw;line-height:1.15;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
-          .aoc-id-codes{display:grid;gap:1.2cqw;justify-items:center}.aoc-id-qr{background:#fff;border-radius:12px;padding:.6cqw;width:15cqw;height:15cqw;display:grid;place-items:center;box-shadow:0 10px 24px rgba(0,0,0,.25)}.aoc-id-barcode{background:#fff;border-radius:10px;padding:.6cqw;width:18.5cqw;box-shadow:0 10px 24px rgba(0,0,0,.22)}.aoc-id-barcode svg{width:100%;height:5.8cqw}.aoc-id-code-label{font-size:1cqw;letter-spacing:.12em;font-weight:800;opacity:.75;text-align:center}
-          .aoc-id-back-inner{position:absolute;inset:0;padding:1.8cqw;z-index:1;display:grid;grid-template-columns:20cqw minmax(0,1fr) 20cqw;gap:1.5cqw;align-items:center;overflow:hidden}.aoc-id-back-inner>*{min-width:0}.aoc-id-back-info{min-width:0;overflow:hidden}.aoc-id-back-info p,.aoc-id-back-rules div{overflow-wrap:anywhere;word-break:normal}
-          .aoc-id-back-brand{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;min-width:0;max-width:100%}.aoc-id-back-brand strong{display:block;max-width:100%;font-size:1.22cqw;line-height:1.2;letter-spacing:.045em;white-space:nowrap;overflow:hidden;text-overflow:clip;font-weight:900;text-shadow:0 2px 5px rgba(0,0,0,.55)}.aoc-id-back-brand span{display:block;max-width:100%;font-size:1cqw;line-height:1.35;opacity:.9;letter-spacing:.09em;white-space:normal;font-weight:800;text-shadow:0 1px 4px rgba(0,0,0,.5)}
-          .aoc-id-back-info{display:grid;gap:10px;min-width:0;max-width:100%}.aoc-id-back-info h3{margin:0;font-size:2.45cqw;line-height:1.15;font-weight:900;text-shadow:0 2px 6px rgba(0,0,0,.5)}.aoc-id-back-info p{margin:0;line-height:1.4;font-size:1.3cqw;font-weight:700;color:rgba(255,255,255,.94);max-width:100%;text-shadow:0 1px 4px rgba(0,0,0,.55)}.aoc-id-back-rules{display:grid;gap:7px;margin-top:4px}.aoc-id-back-rules div{font-size:1.08cqw;font-weight:700;color:rgba(255,255,255,.92);text-shadow:0 1px 4px rgba(0,0,0,.55)}
-          .aoc-id-back-code{display:grid;justify-items:center;align-content:center;gap:10px;min-width:0}.aoc-id-back-code .aoc-id-barcode{max-width:100%}.aoc-id-back-code .aoc-id-barcode{width:19cqw}.aoc-id-back-code .aoc-id-barcode svg{height:5.5cqw}.aoc-id-back-code .aoc-id-code-label{font-size:.95cqw;font-weight:900;text-shadow:0 1px 4px rgba(0,0,0,.55)}
+          .aoc-id-logo{width:8.5cqw;height:8.5cqw;min-width:56px;min-height:56px;object-fit:contain;border-radius:16px;background:rgba(255,255,255,.92);padding:10px;box-shadow:0 12px 28px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.55)}
+          .aoc-id-logo.small{width:6.8cqw;height:6.8cqw;min-width:48px;min-height:48px;border-radius:14px;padding:8px}
+          .aoc-id-title{font-size:1.45cqw;letter-spacing:.18em;font-weight:800;opacity:.82}.aoc-id-name{font-size:6.3cqw;font-weight:900;line-height:1.05;margin-top:7px;text-shadow:0 4px 16px rgba(0,0,0,.25)}
+          .aoc-id-role{font-size:2.8cqw;font-weight:900;margin-top:8px}.aoc-id-meta{display:grid;gap:1.55cqw;margin-top:2.25cqw}.aoc-id-meta>div{display:grid;grid-template-columns:9.5cqw minmax(0,1fr);gap:1.25cqw;align-items:center;min-width:0}.aoc-id-meta small{font-size:2.15cqw;line-height:1.15;font-weight:700;opacity:.82;white-space:nowrap}.aoc-id-meta b{font-size:3.45cqw;line-height:1.15;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
+          .aoc-id-codes{display:grid;gap:1.45cqw;justify-items:center;min-width:0;width:100%;overflow:hidden}.aoc-id-qr{background:#fff;border-radius:12px;padding:.6cqw;width:21cqw;height:21cqw;display:grid;place-items:center;box-shadow:0 10px 24px rgba(0,0,0,.25)}.aoc-id-barcode{box-sizing:border-box;background:#fff;border-radius:10px;padding:.45cqw;width:100%;max-width:100%;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.22)}.aoc-id-barcode svg{display:block;width:100%;max-width:100%;height:auto;min-height:5.8cqw;overflow:visible;object-fit:contain}.aoc-id-code-label{font-size:1.35cqw;letter-spacing:.12em;font-weight:800;opacity:.75;text-align:center}
+          .aoc-id-back-inner{position:absolute;inset:0;padding:2.15cqw;z-index:1;display:grid;grid-template-columns:24cqw minmax(0,1fr) 25cqw;gap:2cqw;align-items:center;overflow:hidden}.aoc-id-back-inner>*{min-width:0}.aoc-id-back-info{min-width:0;overflow:hidden}.aoc-id-back-info p,.aoc-id-back-rules div{overflow-wrap:anywhere;word-break:normal}
+          .aoc-id-back-brand{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;min-width:0;max-width:100%}.aoc-id-back-brand strong{display:block;max-width:100%;font-size:1.8cqw;line-height:1.2;letter-spacing:.045em;white-space:nowrap;overflow:hidden;text-overflow:clip;font-weight:900;text-shadow:0 2px 5px rgba(0,0,0,.55)}.aoc-id-back-brand span{display:block;max-width:100%;font-size:1.35cqw;line-height:1.35;opacity:.9;letter-spacing:.09em;white-space:normal;font-weight:800;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+          .aoc-id-back-info{display:grid;gap:10px;min-width:0;max-width:100%}.aoc-id-back-info h3{margin:0;font-size:3.6cqw;line-height:1.15;font-weight:900;text-shadow:0 2px 6px rgba(0,0,0,.5)}.aoc-id-back-info p{margin:0;line-height:1.4;font-size:1.8cqw;font-weight:800;color:rgba(255,255,255,.94);max-width:100%;text-shadow:0 1px 4px rgba(0,0,0,.55)}.aoc-id-back-rules{display:grid;gap:7px;margin-top:4px}.aoc-id-back-rules div{font-size:1.55cqw;font-weight:800;color:rgba(255,255,255,.92);text-shadow:0 1px 4px rgba(0,0,0,.55)}
+          .aoc-id-back-code{display:grid;justify-items:center;align-content:center;gap:10px;min-width:0}.aoc-id-back-code .aoc-id-barcode{box-sizing:border-box;max-width:100%;width:100%;overflow:hidden}.aoc-id-back-code .aoc-id-barcode svg{display:block;width:100%;max-width:100%;height:auto;min-height:6.2cqw;overflow:visible;object-fit:contain}.aoc-id-back-code .aoc-id-code-label{font-size:1.3cqw;font-weight:900;text-shadow:0 1px 4px rgba(0,0,0,.55)}
           .aoc-id-download-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:16px}
-          @media(max-width:900px){.aoc-id-export-scroll{overflow:visible;padding-bottom:8px}.aoc-idcard-preview{width:100%;max-width:100%}.aoc-id-export-grid{grid-template-columns:1fr}.aoc-id-name{font-size:3.35cqw}}
+          @media(max-width:900px){.aoc-id-export-scroll{overflow:visible;padding-bottom:8px}.aoc-idcard-preview{width:100%;max-width:100%}.aoc-id-export-grid{grid-template-columns:1fr}.aoc-id-name{font-size:5.5cqw}}
           @media(max-width:760px){.aoc-id-export-scroll{overflow:visible}.aoc-id-download-actions{display:grid;grid-template-columns:1fr}.aoc-id-download-actions .btn{width:100%}.aoc-idcard-preview{width:100%;max-width:100%;border-radius:16px}.aoc-id-export-grid{gap:18px}}
         `;
         document.head.appendChild(style);
@@ -6578,12 +6651,39 @@ document.addEventListener("DOMContentLoaded", () => {
         const empty = `<div class="notice">Belum ada ID Card anggota. Buat dari tombol <b>+ Buat ID Card</b>.</div>`;
         content.innerHTML = `<div class="admin-list-heading"><div><h3>🪪 Data Anggota</h3><p class="muted">ID Card ini <b>berbeda dari Membership Card</b>. Hanya administrator dengan hak Data Anggota yang dapat membuat atau mengubahnya.</p></div><div class="actions"><button class="btn primary small" id="aocNewMemberId">＋ Buat ID Card</button><button class="btn secondary small" id="aocScanMemberId">📷 Scan Anggota</button></div></div>
           <div class="field" style="margin-bottom:12px"><span>🔍 Cari nama / ID anggota</span><input class="input" id="aocMemberIdSearch" placeholder="AOC-MBR-XXXXXXXX"></div>
-          <div class="customer-admin-grid" id="aocMemberIdGrid">${rows.map(card => { const c=customerMap[String(card.user_id)]||{}; return `<details class="card customer-admin-card" data-member-row data-key="${esc((card.full_name+" "+card.member_code).toLowerCase())}"><summary><div><strong>${esc(card.full_name)}</strong><small>${esc(card.member_code)} · ${esc(card.position || "Anggota")}</small></div><div class="customer-badges"><span class="badge">${card.status === "active" ? "🟢 Aktif" : "🟠 "+esc(card.status)}</span></div></summary><div class="customer-detail"><div class="data-grid"><div class="data"><b>ID Anggota</b><br>${esc(card.member_code)}</div><div class="data"><b>Jabatan</b><br>${esc(card.position||"-")}</div><div class="data"><b>Departemen</b><br>${esc(card.department||"-")}</div><div class="data"><b>Foto</b><br>${card.photo_url ? "✓ Ada" : "— Belum ada"}</div></div><div class="actions" style="margin-top:12px"><a class="btn secondary small" href="member.html?member=${encodeURIComponent(card.member_code)}" target="_blank" rel="noopener">🌐 Buka HTML Member</a><button class="btn primary small" data-edit-member-id="${esc(card.id)}">✏️ Ubah Data</button><button class="btn small" data-export-member-id="${esc(card.id)}">⬇ PNG SUPER HD</button></div><p class="muted" style="margin-top:10px">${esc(c.email || "")}</p></div></details>`; }).join("") || empty}</div>`;
+          <div class="customer-admin-grid" id="aocMemberIdGrid">${rows.map(card => { const c=customerMap[String(card.user_id)]||{}; return `<details class="card customer-admin-card" data-member-row data-key="${esc((card.full_name+" "+card.member_code).toLowerCase())}"><summary><div><strong>${esc(card.full_name)}</strong><small>${esc(card.member_code)} · ${esc(card.position || "Anggota")}</small></div><div class="customer-badges"><span class="badge">${card.status === "active" ? "🟢 Aktif" : "🟠 "+esc(card.status)}</span></div></summary><div class="customer-detail"><div class="data-grid"><div class="data"><b>ID Anggota</b><br>${esc(card.member_code)}</div><div class="data"><b>Jabatan</b><br>${esc(card.position||"-")}</div><div class="data"><b>Departemen</b><br>${esc(card.department||"-")}</div><div class="data"><b>Foto</b><br>${card.photo_url ? "✓ Ada" : "— Belum ada"}</div></div><div class="actions" style="margin-top:12px"><a class="btn secondary small" href="member.html?member=${encodeURIComponent(card.member_code)}" target="_blank" rel="noopener">🌐 Buka HTML Member</a><button class="btn primary small" data-edit-member-id="${esc(card.id)}">✏️ Ubah Data</button><button class="btn small" data-export-member-id="${esc(card.id)}">⬇ PNG SUPER HD</button><button class="btn small" data-delete-member-id="${esc(card.id)}" type="button">🗑️ Hapus Anggota</button></div><p class="muted" style="margin-top:10px">${esc(c.email || "")}</p></div></details>`; }).join("") || empty}</div>`;
         document.getElementById("aocMemberIdSearch")?.addEventListener("input", e => { const q=String(e.target.value||"").toLowerCase().trim(); document.querySelectorAll("[data-member-row]").forEach(el => el.classList.toggle("hidden", q && !String(el.dataset.key||"").includes(q))); });
         document.getElementById("aocNewMemberId")?.addEventListener("click", () => openMemberIdEditor(null, customersLocal));
         document.getElementById("aocScanMemberId")?.addEventListener("click", openMemberIdScanner);
         document.querySelectorAll("[data-edit-member-id]").forEach(btn => btn.addEventListener("click", () => openMemberIdEditor(rows.find(x=>String(x.id)===String(btn.dataset.editMemberId)), customersLocal)));
         document.querySelectorAll("[data-export-member-id]").forEach(btn => btn.addEventListener("click", () => openMemberIdExport(rows.find(x=>String(x.id)===String(btn.dataset.exportMemberId)))));
+        document.querySelectorAll("[data-delete-member-id]").forEach(btn => btn.addEventListener("click", async () => {
+          const card = rows.find(x=>String(x.id)===String(btn.dataset.deleteMemberId));
+          if (!card) return showAdminMessage("Data anggota tidak ditemukan.", "error");
+          if (!can("members.manage")) return showAdminMessage("Akses Data Anggota hanya untuk administrator.", "error");
+          const ok = window.confirm(`Hapus ID Card anggota ${card.full_name || card.member_code}?\n\nYang dihapus adalah Data Anggota/ID Card ini, bukan akun login pelanggan.`);
+          if (!ok) return;
+          btn.disabled = true; btn.textContent = "Menghapus...";
+          try {
+            const { error } = await supabase.rpc("secure_admin_delete_member_id_card", { p_id: card.id });
+            if (error) throw new Error(error.message || "Gagal menghapus Data Anggota.");
+            // Bersihkan foto lama dari Storage bila URL-nya berasal dari bucket member-photos.
+            try {
+              const marker = "/member-photos/";
+              const url = String(card.photo_url || "");
+              const idx = url.indexOf(marker);
+              if (idx >= 0) {
+                const path = decodeURIComponent(url.slice(idx + marker.length).split(/[?#]/)[0]);
+                if (path) await supabase.storage.from("member-photos").remove([path]);
+              }
+            } catch (_) {}
+            showAdminMessage(`Data Anggota ${card.member_code || ""} berhasil dihapus.`, "success");
+            await renderMemberDataTab();
+          } catch (err) {
+            btn.disabled = false; btn.textContent = "🗑️ Hapus Anggota";
+            showAdminMessage(err?.message || "Gagal menghapus Data Anggota.", "error");
+          }
+        }));
       }
 
       async function openMemberIdEditor(card, customerList) {
@@ -6628,7 +6728,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const frontEl=modal.querySelector("#aocMemberIdExportCardFront");
         const backEl=modal.querySelector("#aocMemberIdExportCardBack");
         modal.querySelectorAll("[data-member-qr]").forEach(el=>{ if(window.QRCode) new window.QRCode(el,{text:el.dataset.memberQr,width:156,height:156,colorDark:"#0b1120",colorLight:"#fff"}); });
-        modal.querySelectorAll("[data-member-barcode]").forEach(el=>{ if(window.JsBarcode) window.JsBarcode(el,el.dataset.memberBarcode,{format:"CODE128",displayValue:true,fontSize:16,height:66,margin:0}); });
+        modal.querySelectorAll("[data-member-barcode]").forEach(el=>{ if(window.JsBarcode){ window.JsBarcode(el,el.dataset.memberBarcode,{format:"CODE128",displayValue:true,fontSize:12,width:1,height:48,margin:0,marginTop:2,marginBottom:2,textMargin:2}); el.setAttribute("preserveAspectRatio","xMidYMid meet"); el.style.width="100%"; el.style.height="auto"; el.style.maxWidth="100%"; el.style.overflow="visible"; } });
         modal.querySelector("#aocMemberIdExportClose")?.addEventListener("click",()=>modal.remove());
         modal.addEventListener("click",e=>{if(e.target===modal)modal.remove()});
         const downloadCard = async (target, side, btn) => {
