@@ -20,8 +20,7 @@
 <a class="nav-link" href="index.html">Beranda</a>
 <a class="nav-link" href="rental.html">Sewa Item</a>
 <a class="nav-link" href="sale.html">Jual Item</a>
-<a class="nav-link" href="trips.html">Open Trip</a><a class="nav-link" href="travel.html">🚐 Travel</a>
-<a class="nav-link" href="private-trip.html">🔒 Private Trip</a>
+<a class="nav-link" href="trips.html">Open Trip</a>
 <a class="nav-cart" href="cart.html">
               Keranjang
               <span class="cart-count hidden" data-cart-count="">0</span>
@@ -121,7 +120,6 @@
         pending: "Menunggu",
         confirmed: "Dikonfirmasi",
         paid: "Dibayar",
-        rented: "Disewa",
         completed: "Selesai",
         returned: "Dikembalikan",
         cancelled: "Dibatalkan",
@@ -201,8 +199,8 @@
                 ? `
               <div class="notice compact-rental-period">
                 <b>📅 Periode sewa</b>
-                <span>${order.rental_start_at ? `Mulai ${new Date(order.rental_start_at).toLocaleString("id-ID")}` : `${esc(rentalDate(order.rental_start))} — ${esc(rentalDate(order.rental_end))}`}</span>
-                <small>${Number(order.rental_days || 1)} × 28 jam${order.rental_due_at ? ` · Batas kembali ${new Date(order.rental_due_at).toLocaleString("id-ID")}` : ""}</small>
+                <span>${esc(rentalDate(order.rental_start))} — ${esc(rentalDate(order.rental_end))}</span>
+                <small>${Number(order.rental_days || 1)} hari</small>
               </div>
             `
                 : ""

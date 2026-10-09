@@ -164,6 +164,8 @@ function validateRegistration(values) {
   const address = String(values.address || "").trim();
   const password = String(values.password || "");
   const confirmation = String(values.confirm_password || "");
+  const transactionPin = String(values.transaction_pin || "").replace(/\D/g, "");
+  const confirmTransactionPin = String(values.confirm_transaction_pin || "").replace(/\D/g, "");
 
   if (fullName.length < 3) return "Nama lengkap minimal 3 karakter.";
   if (!validatePhone(phone)) return "Nomor WhatsApp tidak valid. Gunakan format 08xxxxxxxxxx.";
@@ -172,6 +174,9 @@ function validateRegistration(values) {
   if (password.length < 8) return "Password minimal 8 karakter.";
   if (passwordScore(password) < 2) return "Password terlalu lemah. Tambahkan kombinasi huruf dan angka.";
   if (password !== confirmation) return "Konfirmasi password tidak sama.";
+  if (!/^\d{6}$/.test(transactionPin)) return "PIN transaksi harus tepat 6 digit.";
+  if (transactionPin !== confirmTransactionPin) return "Konfirmasi PIN transaksi tidak sama.";
+  if (new Set(transactionPin.split("")).size === 1) return "Jangan gunakan PIN yang semua angkanya sama.";
 
   const terms = form?.elements?.terms;
   if (terms && !terms.checked) return "Setujui penggunaan data profil untuk melanjutkan.";
@@ -192,6 +197,8 @@ async function register(values) {
     address: String(values.address || "").trim(),
     postal_code: String(values.postal_code || "").trim() || null
   };
+  const transactionPin = String(values.transaction_pin || "").replace(/\D/g, "");
+
   const { data, error } = await supabase.auth.signUp({
     email: String(values.email || "").trim().toLowerCase(),
     password: String(values.password || ""),
@@ -202,7 +209,13 @@ async function register(values) {
 
   if (data.session && data.user) {
     await saveImmediateProfile(data.user.id, profile);
-    showMessage("Akun berhasil dibuat. Silakan lanjut dan buat kode keamanan Beranda & Checkout.", "success");
+    const { error: pinError } = await supabase.rpc("set_transaction_pin", { p_pin: transactionPin });
+    if (pinError) {
+      console.warn("PIN transaksi belum tersimpan:", pinError.message);
+      showMessage("Akun berhasil dibuat, tetapi PIN transaksi belum tersimpan. Login tetap dapat digunakan.", "warning");
+    } else {
+      showMessage("Akun berhasil dibuat. Silakan lanjut.", "success");
+    }
     setTimeout(() => { redirectAfterAuth(); }, 450);
     return;
   }

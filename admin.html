@@ -10,12 +10,6 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Admin Panel — AbidzarOutdoorcamp</title>
 <link href="styles.css" rel="stylesheet"/>
-
-<style id="aoc-v50-admin-business-modules">
-.admin-permission-section-title{display:flex;gap:12px;align-items:flex-start;margin:18px 0 10px}.admin-permission-section-title>div{display:flex;flex-direction:column;gap:3px}.admin-permission-section-title small{color:var(--muted,#8b949e)}
-.admin-business-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}.admin-business-module-card{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:16px;border:1px solid rgba(71,209,150,.22);border-radius:16px;background:rgba(17,24,29,.82);cursor:pointer;transition:.18s ease}.admin-business-module-card:hover{border-color:rgba(71,209,150,.5);transform:translateY(-1px)}.admin-business-module-card input{position:absolute;opacity:0;pointer-events:none}.admin-business-module-card:has(input:checked){border-color:rgba(71,209,150,.85);box-shadow:0 0 0 1px rgba(71,209,150,.18),0 8px 24px rgba(0,0,0,.16)}.admin-business-module-icon{font-size:30px}.admin-business-module-copy{display:flex;flex-direction:column;gap:4px}.admin-business-module-copy b{font-size:15px}.admin-business-module-copy small{color:var(--muted,#8b949e);line-height:1.45}.admin-business-module-check{opacity:.25;font-weight:900;font-size:20px}.admin-business-module-card:has(input:checked) .admin-business-module-check{opacity:1}.admin-support-permissions{margin-top:10px;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.02)}.admin-support-permissions summary{cursor:pointer;font-weight:700;padding:4px}.admin-support-permissions[open] summary{margin-bottom:10px}
-@media(max-width:700px){.admin-business-module-grid{grid-template-columns:1fr}.admin-business-module-card{padding:14px}}
-</style>
 </head>
 <body>
 <nav class="nav">
@@ -29,7 +23,7 @@
 <a class="nav-link" href="index.html">Beranda</a>
 <a class="nav-link" href="rental.html">Sewa Item</a>
 <a class="nav-link" href="sale.html">Jual Item</a>
-<a class="nav-link" href="trips.html">Open Trip</a><a class="nav-link" href="travel.html">🚐 Travel</a>
+<a class="nav-link" href="trips.html">Open Trip</a>
 <a class="nav-cart" href="cart.html">
               Keranjang
               <span class="cart-count hidden" data-cart-count="">0</span>
@@ -114,7 +108,7 @@
 <!-- AOC ADMIN BUILD 2026-09-26: stable boot / checkout-only admin -->
 <script>
 (function () {
-  window.__AOC_ADMIN_BUILD__ = '20260929-v43-settings-save';
+  window.__AOC_ADMIN_BUILD__ = '20260926-clean-v24-stable';
   window.__AOC_ADMIN_MODULE_LOADED__ = false;
   function escapeHtml(value) {
     return String(value || '').replace(/[&<>]/g, function (c) {
@@ -150,9 +144,6 @@
 </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer onerror="window.__AOC_ADMIN_SHOW_BOOT_ERROR__&&window.__AOC_ADMIN_SHOW_BOOT_ERROR__('Admin Panel gagal dimuat','Library Supabase gagal dimuat. Periksa koneksi internet lalu refresh.')"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function(){
   function cleanLegacyPinNotice(){var root=document.getElementById('adminRoot');if(!root)return;root.querySelectorAll('.notice,[role="alert"]').forEach(function(el){var t=String(el.textContent||'').trim().toLowerCase();if(t==='pin transaksi wajib diverifikasi untuk tindakan ini.'||t==='pin transaksi wajib diverifikasi untuk tindakan ini')el.remove();});}
@@ -160,8 +151,7 @@
   setInterval(cleanLegacyPinNotice,1500);
 })();
 </script>
-<script src="./admin-security-v50.js?build=20260930-v50-multi-admin-travel" defer></script>
-<script src="./admin-bundle-v50.js?build=20261004-v91-back-barcode-removed" defer onload="window.__AOC_ADMIN_MODULE_LOADED__=true" onerror="window.__AOC_ADMIN_SHOW_BOOT_ERROR__&&window.__AOC_ADMIN_SHOW_BOOT_ERROR__('Admin Panel gagal dimuat','File admin-bundle-v50.js tidak dapat dimuat. Pastikan file ini ikut di-upload.')"></script>
+<script src="./admin-bundle-v32.js?build=20261009-v38-variant-fix" defer onload="window.__AOC_ADMIN_MODULE_LOADED__=true" onerror="window.__AOC_ADMIN_SHOW_BOOT_ERROR__&&window.__AOC_ADMIN_SHOW_BOOT_ERROR__('Admin Panel gagal dimuat','File admin-bundle-v32.js tidak dapat dimuat. Pastikan file ini ikut di-upload.')"></script>
 
 
 <div id="aocRentalConditionModal" class="aoc-condition-modal" hidden role="dialog" aria-modal="true" aria-labelledby="aocRentalConditionTitle">
@@ -210,31 +200,5 @@
 <small>WhatsApp</small>
 </span>
 </a>
-
-<div id="aocAdminSecurityModal" class="aoc-admin-security-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aocAdminSecurityTitle">
-  <div class="aoc-admin-security-backdrop"></div>
-  <div class="aoc-admin-security-card">
-    <div class="aoc-admin-security-icon">🛡️</div>
-    <div id="aocAdminSecurityVerify">
-      <span class="aoc-admin-security-label">PROTEKSI PERUBAHAN ADMIN</span>
-      <h2 id="aocAdminSecurityTitle">Masukkan Kode Admin</h2>
-      <p>Perubahan penting membutuhkan PIN Admin milik akun yang sedang login. Setiap akun admin memiliki PIN sendiri dan PIN disimpan aman di database.</p>
-      <input id="aocAdminSecurityCode" class="input" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="••••••••" aria-label="Kode keamanan admin">
-      <button id="aocAdminSecurityVerifyBtn" class="btn primary" type="button">Verifikasi & Lanjutkan</button>
-      <button id="aocAdminSecurityCancelBtn" class="btn secondary" type="button">Batal</button>
-    </div>
-    <div id="aocAdminSecuritySetup" class="hidden">
-      <span class="aoc-admin-security-label">PENGATURAN KEAMANAN ADMIN</span>
-      <h2>PIN Admin Akun Saya</h2>
-      <p>Buat PIN 8 digit khusus akun ini. Jika mengganti PIN yang sudah ada, masukkan PIN lama terlebih dahulu.</p>
-      <input id="aocAdminSecurityCurrentCode" class="input hidden" inputmode="numeric" maxlength="8" autocomplete="current-password" placeholder="PIN Admin lama">
-      <input id="aocAdminSecurityNewCode" class="input" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="PIN Admin baru — 8 digit">
-      <input id="aocAdminSecurityConfirmCode" class="input" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="Ulangi 8 digit kode">
-      <button id="aocAdminSecuritySetupBtn" class="btn primary" type="button">Simpan PIN Admin</button>
-      <button id="aocAdminSecuritySetupCancelBtn" class="btn secondary" type="button">Batal</button>
-    </div>
-    <div id="aocAdminSecurityStatus" class="aoc-admin-security-status" role="status" aria-live="polite"></div>
-  </div>
-</div>
 </body>
 </html>
