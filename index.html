@@ -6,8 +6,8 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#050d17" name="theme-color"/>
 <title>AbidzarOutdoorcamp — Sewa Outdoor &amp; Open Trip</title>
-<meta content="Katalog sewa perlengkapan outdoor dan open trip AbidzarOutdoorcamp." name="description"/>
-<link href="styles.css" rel="stylesheet"/>
+<meta content="Katalog sewa perlengkapan outdoor, jual produk, open trip, dan travel AbidzarOutdoorcamp." name="description"/>
+<link href="styles.css?v=20261004-cs-v94" rel="stylesheet"/>
 </head>
 <body>
 <nav class="nav">
@@ -23,7 +23,8 @@
 <a class="nav-link active" href="index.html">Beranda</a>
 <a class="nav-link" href="rental.html">Sewa Item</a>
 <a class="nav-link" href="sale.html">Jual Item</a>
-<a class="nav-link" href="trips.html">Open Trip</a>
+<a class="nav-link" href="trips.html">Open Trip</a><a class="nav-link" href="travel.html">🚐 Travel</a>
+<a class="nav-link" href="private-trip.html">🔒 Private Trip</a>
 <a class="nav-link" href="gallery.html">📸 Galeri</a>
 <a class="nav-link" href="shop.html">🪙 Coin Shop</a>
 <a class="nav-cart" href="cart.html">
@@ -121,21 +122,65 @@
   </div>
 </section>
 <section class="container membership-card-section hidden" id="membershipCardSection">
-<div class="membership-card" data-membership-tier="Bronze" id="membershipCard">
-<div class="membership-card-top">
-<span class="membership-card-brand">AbidzarOutdoorcamp</span>
-<span class="membership-card-tier" id="membershipCardTier">Bronze</span>
-</div>
-<div class="membership-card-body">
-<div class="membership-card-info">
-<small>Nama Anggota</small>
-<strong id="membershipCardName">-</strong>
-<small class="membership-card-number" id="membershipCardNumber">-</small>
-</div>
-<div class="membership-card-qr" id="membershipCardQr" title="Tunjukkan QR ini ke kasir untuk verifikasi cepat"></div>
-</div>
-<div class="membership-card-hint">Tunjukkan QR di atas ke admin toko untuk verifikasi cepat saat transaksi.</div>
-</div>
+  <div class="membership-card-heading">
+    <div>
+      <span class="badge">KARTU MEMBER</span>
+      <h2>Kartu Member Saya</h2>
+      <p class="muted">Ketuk kartu atau tombol di bawah untuk melihat sisi belakang.</p>
+    </div>
+    <div class="membership-card-actions">
+      <button class="btn secondary membership-card-flip-btn" id="membershipCardFlip" type="button" aria-controls="membershipCard" aria-label="Balik kartu member">↻ Balik Kartu</button>
+    </div>
+  </div>
+  <div class="membership-card-scene" id="membershipCardScene">
+    <div class="membership-card" data-membership-tier="Bronze" id="membershipCard" tabindex="0" role="button" aria-label="Kartu member. Ketuk untuk membalik kartu." aria-pressed="false">
+      <div class="membership-card-inner">
+        <article class="membership-card-face membership-card-front">
+          <div class="membership-card-top">
+            <div class="membership-card-brand-wrap">
+              <img class="membership-card-logo hidden" id="membershipCardLogo" alt="Logo AbidzarOutdoorcamp">
+              <span class="membership-card-brand">AbidzarOutdoorcamp</span>
+            </div>
+            <span class="membership-card-tier" id="membershipCardTier">Bronze</span>
+          </div>
+          <div class="membership-card-body">
+            <div class="membership-card-info">
+              <small>Nama Anggota</small>
+              <strong id="membershipCardName">-</strong>
+              <small class="membership-card-number" id="membershipCardNumber">-</small>
+            </div>
+            <div class="membership-card-qr" id="membershipCardQr" title="Tunjukkan QR ini ke kasir untuk verifikasi cepat"></div>
+          </div>
+          <div class="membership-card-hint">Tunjukkan QR ke admin untuk verifikasi cepat.</div>
+          <span class="membership-card-side-label">DEPAN</span>
+        </article>
+
+        <article class="membership-card-face membership-card-back">
+          <div class="membership-card-back-head">
+            <span class="membership-card-back-title">KARTU ANGGOTA</span>
+            <span class="membership-card-back-brand">AOC</span>
+          </div>
+          <div class="membership-card-magnetic"></div>
+          <div class="membership-card-back-content">
+            <div>
+              <small>Nomor Member</small>
+              <strong id="membershipCardBackNumber">-</strong>
+            </div>
+            <div>
+              <small>Status</small>
+              <strong id="membershipCardBackTier">Aktif · Bronze</strong>
+            </div>
+          </div>
+          <div class="membership-card-back-note">
+            <strong>AbidzarOutdoorcamp</strong>
+            <span>Kartu ini digunakan untuk identifikasi member dan verifikasi transaksi.</span>
+            <span>Simpan kartu dengan baik. Jangan berikan data akun kepada orang lain.</span>
+          </div>
+          <span class="membership-card-side-label">BELAKANG</span>
+        </article>
+      </div>
+    </div>
+  </div>
 </section>
 <div id="homeSecurityGate" class="home-security-gate" aria-modal="true" aria-hidden="false" role="dialog" aria-labelledby="homeSecurityGateTitle">
   <div class="home-security-gate-card">
@@ -155,16 +200,14 @@
 <div>
 <div class="hero-eyebrow" id="site-hero-eyebrow">
 <span class="hero-eyebrow-dot"></span>
-          Outdoor rental &amp; open trip
+          SEWA • JUAL • OPEN TRIP • TRAVEL • PRIVATE TRIP
         </div>
 <h1>
 <span class="hero-title-accent" id="site-hero-title">Siapkan petualangan.</span>
 <span id="site-hero-subtitle">Pesan semuanya di satu tempat.</span>
 </h1>
 <p class="muted" id="site-hero-description">
-          Cari perlengkapan di katalog <b>Sewa Item</b> atau pilih perjalanan
-          di katalog <b>Open Trip</b>. Keduanya tetap dapat digabungkan dalam
-          satu keranjang dan satu checkout.
+          Jelajahi lima layanan AbidzarOutdoorcamp dalam satu tempat. Pilih perlengkapan, perjalanan, Travel, atau Private Trip sesuai kebutuhanmu. Setiap katalog tetap terpisah dan memiliki alur pemesanan masing-masing.
         </p>
 <div class="actions hero-actions">
 <a class="btn" href="rental.html">
@@ -180,8 +223,8 @@
 </div>
 <div aria-label="Keunggulan layanan" class="hero-proof">
 <div>
-<strong>2</strong>
-<span>Katalog terpisah</span>
+<strong>5</strong>
+<span>Layanan terpisah</span>
 </div>
 <div>
 <strong>1</strong>
@@ -203,12 +246,23 @@
           </p>
 <span class="category-choice-action">Buka katalog →</span>
 </a>
+<a class="card category-choice-card travel-choice" href="travel.html">
+<div class="category-choice-icon">🚐</div><div><span class="badge">Travel</span><h2>Travel</h2><p class="muted">Rute, jadwal, kendaraan, dan kursi travel.</p></div></a>
 <a class="card category-choice-card trip-choice" href="trips.html">
 <span class="category-choice-icon">🏔️</span>
 <span class="badge">Katalog Perjalanan</span>
 <h2>Open Trip</h2>
 <p class="muted">
             Pilih destinasi, tanggal keberangkatan, dan jumlah peserta.
+          </p>
+<span class="category-choice-action">Buka katalog →</span>
+</a>
+<a class="card category-choice-card private-trip-choice" href="private-trip.html">
+<span class="category-choice-icon">🔒</span>
+<span class="badge">Private Trip</span>
+<h2>Private Trip</h2>
+<p class="muted">
+            Perjalanan private dengan paket dan fasilitas yang dapat disesuaikan.
           </p>
 <span class="category-choice-action">Buka katalog →</span>
 </a>
@@ -310,12 +364,13 @@
 </div>
 </section>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="module">
     import { mountCatalog } from "./catalog.js";
     import { mountWebsiteRating } from "./website-rating.js?v=20260723-5";
-    import { mountMembershipCard } from "./app.js?v=202609210800";
-    import { mountAnnouncements } from "./announcements.js?v=20261009-v38";
-    import { mountHomeSecurityCode } from "./home-security-code.js?v=20261009-v38";
+    import { mountMembershipCard } from "./app.js?v=20261002-cs-v69";
+    import { mountAnnouncements } from "./announcements.js?v=20260928-v36";
+    import { mountHomeSecurityCode } from "./home-security-code.js?v=20260928-v36";
     mountHomeSecurityCode();
     mountCatalog({
       type: "product",

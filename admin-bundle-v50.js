@@ -751,6 +751,11 @@ document.addEventListener("DOMContentLoaded", () => {
       let administrators = [];
       let adminCandidateUsers = [];
       let currentAdminUserId = null;
+      // Permission Pinjam Antar Store diverifikasi dari Supabase berdasarkan email akun.
+      let currentAdminEmail = "";
+      let stockTransferPermissionGranted = false;
+      let stockTransferAllowedAdmins = [];
+      let stockTransferPermissionUsers = [];
       let editingItem = null;
       let editingVoucher = null;
       let editingShopReward = null;
@@ -1005,6 +1010,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         currentAdminUserId = user.id;
+        currentAdminEmail = String(user.email || "").trim().toLowerCase();
+        try {
+          const transferPermission = await withTimeout(
+            supabase.rpc("aoc_can_use_stock_transfer"),
+            2500,
+            "Pemeriksaan permission Pinjam Antar Store",
+          );
+          stockTransferPermissionGranted = transferPermission?.error ? false : transferPermission?.data === true;
+        } catch (error) {
+          stockTransferPermissionGranted = false;
+          console.warn("Permission Pinjam Antar Store gagal diverifikasi:", error);
+        }
         // Admin Panel tidak menggunakan kode keamanan 6 digit.
         // ADMIN TANPA PIN TRANSAKSI: akses admin hanya memakai session + role/permission.
         // PIN transaksi TIDAK PERNAH diminta di halaman admin; PIN hanya diverifikasi pada checkout.
@@ -1332,6 +1349,15 @@ document.addEventListener("DOMContentLoaded", () => {
             </button>
 
             <button
+              class="admin-tab ${activeTab === "stock_transfers" ? "active" : ""} ${(can("warehouse.manage") && stockTransferPermissionGranted) ? "" : "hidden"}"
+              data-admin-tab="stock_transfers"
+              type="button"
+              title="Peminjaman barang antar store"
+            >
+              🔄 Pinjam Antar Store
+            </button>
+
+            <button
               class="admin-tab ${activeTab === "trips" ? "active" : ""} ${(can("trip.manage") || can("catalog.manage")) ? "" : "hidden"}"
               data-admin-tab="trips"
               type="button"
@@ -1464,7 +1490,7 @@ document.addEventListener("DOMContentLoaded", () => {
           button.addEventListener("click", async () => {
             const requestedTab = button.dataset.adminTab;
             const requestedPermission = {
-              rental: "rental.manage", locations: "rental.manage", trips: "trip.manage", sale: "sale.manage", travel: "travel.manage",
+              rental: "rental.manage", locations: "rental.manage", stock_transfers: "warehouse.manage", trips: "trip.manage", sale: "sale.manage", travel: "travel.manage",
               rental_orders: "orders.view", orders: "orders.view", rental_returns: "warehouse.manage",
               rental_reminders: "notifications.manage", announcements: "settings.manage", finance: "finance.manage",
               vouchers: "vouchers.manage", shop: "coinshop.manage", settings: "settings.manage",
@@ -1472,6 +1498,10 @@ document.addEventListener("DOMContentLoaded", () => {
               reviews: "reviews.manage", notifications: "notifications.manage", administrators: "admin.manage",
               activity_logs: "audit.view", gallery: "gallery.download"
             }[requestedTab];
+            if (requestedTab === "stock_transfers" && !stockTransferPermissionGranted) {
+              showAdminMessage("Email akun ini belum diberi permission Pinjam Antar Store.", "error");
+              return;
+            }
             if (requestedPermission && !can(requestedPermission)) return;
 
             // Manajemen Administrator adalah tindakan sensitif: kode admin wajib
@@ -1497,6 +1527,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
       async function renderLocationsTab() {
         const content = document.getElementById("adminContent");
+        const normalizeStoreWhatsapp = (value) => {
+          let d = String(value || "").replace(/\D/g, "");
+          if (d.startsWith("0")) d = "62" + d.slice(1);
+          else if (d.startsWith("8")) d = "62" + d;
+          return d;
+        };
+        const getStoreWhatsapp = (locationId) => {
+          const map = siteSettings?.store_whatsapp_numbers && typeof siteSettings.store_whatsapp_numbers === "object"
+            ? siteSettings.store_whatsapp_numbers : {};
+          return normalizeStoreWhatsapp(map[String(locationId)] || "");
+        };
+        const saveStoreWhatsapp = async (locationId, phone) => {
+          const fresh = await loadSiteSettings(true);
+          const map = fresh?.store_whatsapp_numbers && typeof fresh.store_whatsapp_numbers === "object"
+            ? { ...fresh.store_whatsapp_numbers } : {};
+          const clean = normalizeStoreWhatsapp(phone);
+          if (clean) map[String(locationId)] = clean; else delete map[String(locationId)];
+          const next = { ...fresh, store_whatsapp_numbers: map };
+          const result = await supabase.rpc("secure_admin_save_site_settings", { p_settings: next });
+          if (result.error) throw result.error;
+          siteSettings = { ...DEFAULT_SITE_SETTINGS, ...(result.data || next) };
+          cachedSiteSettings = siteSettings;
+          return clean;
+        };
         content.innerHTML = '<div class="notice">Memuat lokasi dan stok...</div>';
 
         const [{ data: locations, error: le }, { data: rows, error: se }] = await Promise.all([
@@ -1546,7 +1600,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="aoc-store-bar">
                 <div>
                   <strong>${esc(selectedLocation.name)}</strong>
-                  <small>${esc(selectedLocation.code)}${selectedLocation.is_active === false ? " · Nonaktif" : " · Aktif"}</small>
+                  <small>${esc(selectedLocation.code)}${selectedLocation.is_active === false ? " · Nonaktif" : " · Aktif"}${getStoreWhatsapp(selectedLocation.id) ? " · 💬 WhatsApp tersedia" : " · ⚠️ WhatsApp belum diatur"}</small>
                 </div>
                 <div class="aoc-store-actions">
                   <button class="btn tiny" type="button" data-rename-location="${esc(selectedLocation.id)}">Rename</button>
@@ -1559,6 +1613,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <label class="field"><span>Nama Toko</span><input class="input" id="aocLocationName" placeholder="Contoh: Toko 3" maxlength="80"></label>
                 <label class="field"><span>Kode</span><input class="input" id="aocLocationCode" placeholder="TOKO3" maxlength="30" autocapitalize="characters"></label>
                 <label class="field aoc-location-admin-address"><span>Alamat (opsional)</span><input class="input" id="aocLocationAddress" placeholder="Alamat toko" maxlength="200"></label>
+                <label class="field"><span>WhatsApp Store (opsional)</span><input class="input" id="aocLocationWhatsapp" placeholder="62812xxxxxxxx" inputmode="tel" maxlength="20"><small class="muted">Nomor ini dipakai untuk komunikasi antar store.</small></label>
               </div>
               <div class="aoc-location-admin-actions">
                 <button class="btn" type="button" id="aocCancelLocationBtn">Batal</button>
@@ -1636,6 +1691,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const nameInput = content.querySelector("#aocLocationName");
         const codeInput = content.querySelector("#aocLocationCode");
         const addressInput = content.querySelector("#aocLocationAddress");
+        const whatsappInput = content.querySelector("#aocLocationWhatsapp");
         addBtn?.addEventListener("click", () => {
           if (!form) return;
           form.hidden = !form.hidden;
@@ -1646,6 +1702,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (nameInput) nameInput.value = "";
           if (codeInput) { codeInput.value = ""; delete codeInput.dataset.manual; }
           if (addressInput) addressInput.value = "";
+          if (whatsappInput) whatsappInput.value = "";
         });
         nameInput?.addEventListener("input", () => {
           if (!codeInput?.dataset.manual) {
@@ -1663,6 +1720,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const name = String(nameInput?.value || "").trim();
           const code = String(codeInput?.value || "").trim().toUpperCase();
           const address = String(addressInput?.value || "").trim() || null;
+          const whatsapp = normalizeStoreWhatsapp(whatsappInput?.value || "");
           if (!name || !code) { showAdminMessage("Nama toko dan kode wajib diisi.", "error"); return; }
           btn.disabled = true;
           try {
@@ -1673,7 +1731,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const ins = await supabase.from("aoc_locations").insert({ code, name, address, is_active: true, sort_order: nextSort }).select("id").single();
             if (ins.error) throw ins.error;
             aocSelectedLocationId = ins.data.id;
-            showAdminMessage(`${name} berhasil ditambahkan.`, "success");
+            if (whatsapp) await saveStoreWhatsapp(ins.data.id, whatsapp);
+            showAdminMessage(`${name} berhasil ditambahkan${whatsapp ? " dan WhatsApp store disimpan" : ""}.`, "success");
             await renderLocationsTab();
           } catch (e) {
             showAdminMessage(e.message || "Gagal menambahkan toko.", "error");
@@ -1689,13 +1748,17 @@ document.addEventListener("DOMContentLoaded", () => {
           if (name === null) return;
           const cleanName = name.trim();
           if (!cleanName) { showAdminMessage("Nama toko tidak boleh kosong.", "error"); return; }
-          const address = await aocPrompt("Alamat toko (opsional):", String(loc.address || ""), {title:"Alamat toko", icon:"📍", confirmText:"Simpan"});
+          const address = await aocPrompt("Alamat toko (opsional):", String(loc.address || ""), {title:"Alamat toko", icon:"📍", confirmText:"Lanjut"});
           if (address === null) return;
+          const currentWa = getStoreWhatsapp(id);
+          const whatsapp = await aocPrompt("Nomor WhatsApp store (format 62812...):", currentWa, {title:"WhatsApp Store", icon:"💬", confirmText:"Simpan"});
+          if (whatsapp === null) return;
           btn.disabled = true;
           try {
-            const r = await supabase.from("aoc_locations").update({ name: cleanName, address: address.trim() || null }).eq("id", id);
+            const r = await supabase.from("aoc_locations").update({ name: cleanName, address: String(address).trim() || null }).eq("id", id);
             if (r.error) throw r.error;
-            showAdminMessage(`${cleanName} berhasil diperbarui.`, "success");
+            await saveStoreWhatsapp(id, whatsapp);
+            showAdminMessage(`${cleanName} berhasil diperbarui beserta kontak WhatsApp.`, "success");
             await renderLocationsTab();
           } catch (e) { showAdminMessage(e.message || "Gagal mengubah toko.", "error"); }
           finally { btn.disabled = false; }
@@ -1890,6 +1953,257 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
+      let aocTransferItemRows = 1;
+
+      async function renderStockTransfersTab() {
+        const content = document.getElementById("adminContent");
+        if (!stockTransferPermissionGranted) {
+          if (content) content.innerHTML = `<div class="notice error"><b>Akses ditolak.</b><br>Email <b>${esc(currentAdminEmail || "akun ini")}</b> belum diberi permission untuk Pinjam Antar Store.</div>`;
+          return;
+        }
+        if (!content) return;
+        content.innerHTML = '<div class="notice">Memuat peminjaman antar store...</div>';
+        const { data, error } = await supabase.rpc("secure_admin_list_stock_transfers");
+        if (error) {
+          content.innerHTML = `<div class="notice error">${esc(error.message || "Gagal memuat peminjaman.")}</div>`;
+          return;
+        }
+        const transfers = Array.isArray(data) ? data : [];
+        const locations = (await supabase.from("aoc_locations").select("id,code,name,is_active").eq("is_active", true).order("sort_order")).data || [];
+        const products = rentalItems();
+        await loadSiteSettings();
+        const storeWhatsappMap = siteSettings?.store_whatsapp_numbers && typeof siteSettings.store_whatsapp_numbers === "object"
+          ? siteSettings.store_whatsapp_numbers : {};
+        const normalizeStoreWhatsapp = (value) => {
+          let d = String(value || "").replace(/\D/g, "");
+          if (d.startsWith("0")) d = "62" + d.slice(1);
+          else if (d.startsWith("8")) d = "62" + d;
+          return d;
+        };
+        const storeWhatsapp = (locationId) => normalizeStoreWhatsapp(storeWhatsappMap[String(locationId)] || "");
+        const transferWhatsappMessage = (t, targetStoreName) => {
+          const itemLines = Array.isArray(t?.items) && t.items.length
+            ? t.items.map(i => `• ${String(i.item_title || "Item")}${i.variant_name ? ` — ${String(i.variant_name)}${i.capacity ? ` (${String(i.capacity)})` : ""}` : ""} — ${Number(i.quantity || 0)} unit`).join("\n")
+            : "• Barang belum tercatat";
+          return `Halo Store ${targetStoreName || ""} 👋\n\nTerkait peminjaman ${t?.request_no || "-"} di AbidzarOutdoorcamp, saya ingin berkoordinasi mengenai barang yang dipinjam.\n\n📦 Detail barang:\n${itemLines}\n\nMohon koordinasinya terkait peminjaman barang tersebut.\nTerima kasih 🙏`;
+        };
+        const waLink = (locationId, message) => {
+          const phone = storeWhatsapp(locationId);
+          return phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : "";
+        };
+        const statusMap = {
+          pending: ["Menunggu Persetujuan", "pending", "Pengajuan sudah dibuat dan menunggu persetujuan Store Pemberi."],
+          in_transit: ["Sedang Dipinjam", "active", "Barang sudah disetujui dan stok sudah berpindah ke Store Pemohon/Penerima."],
+          return_requested: ["Pengembalian Diajukan", "warning", "Store Penerima sudah mengajukan pengembalian dan menunggu pemeriksaan."],
+          completed: ["Selesai", "done", "Barang sudah dikembalikan dan stok sudah kembali ke Store Pemberi."],
+          rejected: ["Ditolak", "danger", "Pengajuan ditolak sehingga stok tidak berpindah."],
+          cancelled: ["Dibatalkan", "danger", "Pengajuan dibatalkan dan tidak ada perpindahan stok."]
+        };
+        const fmtDate = (v) => v ? new Date(v).toLocaleString("id-ID", {dateStyle:"medium", timeStyle:"short"}) : "-";
+        const itemLabel = (i) => `${i.item_title || "Item"}${i.variant_name ? ` · ${i.variant_name}${i.capacity ? ` (${i.capacity})` : ""}` : ""}`;
+        const productImage = (it) => String(it?.image_url || it?.image || '').trim();
+        const rowHtml = (idx=0) => `
+          <div class="aoc-transfer-row" data-transfer-row>
+            <div class="aoc-transfer-field aoc-transfer-item-field">
+              <label>Barang yang Dipinjam</label>
+              <div class="aoc-transfer-picker" data-item-picker>
+                <input class="input aoc-transfer-item-search" data-transfer-item-search type="search" autocomplete="off" placeholder="🔎 Cari barang, misalnya Matras...">
+                <input type="hidden" class="aoc-transfer-item" data-transfer-item value="">
+                <button type="button" class="aoc-transfer-selected" data-transfer-selected aria-expanded="false">
+                  <span class="aoc-transfer-selected-icon">📦</span>
+                  <span class="aoc-transfer-selected-text"><b>Pilih barang</b><small>Ketik nama barang untuk mencari</small></span>
+                  <span class="aoc-transfer-chevron">⌄</span>
+                </button>
+                <div class="aoc-transfer-picker-menu" data-transfer-picker-menu hidden></div>
+              </div>
+            </div>
+            <div class="aoc-transfer-field aoc-transfer-variant-field">
+              <label>Varian</label>
+              <select class="input aoc-transfer-variant" data-transfer-variant disabled><option value="">Stok utama</option></select>
+            </div>
+            <div class="aoc-transfer-field aoc-transfer-qty-field">
+              <label>Jumlah</label>
+              <div class="aoc-transfer-qty-wrap"><button type="button" data-qty-minus>−</button><input class="input aoc-transfer-qty" data-transfer-qty type="number" min="1" step="1" value="1"><button type="button" data-qty-plus>+</button></div>
+            </div>
+            <button class="btn tiny aoc-transfer-remove" type="button" data-transfer-remove title="Hapus barang">✕</button>
+          </div>`;
+
+        const transferStyles = `
+<style>
+.aoc-transfer-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+.aoc-transfer-hero h3{margin:0}.aoc-transfer-hero p{margin:5px 0 0;opacity:.7}
+.aoc-transfer-flow{display:grid;grid-template-columns:1fr 60px 1fr;gap:12px;align-items:center;margin:14px 0}
+.aoc-transfer-store{padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.03)}
+.aoc-transfer-store small{display:block;margin:4px 0 9px;font-size:11px;line-height:1.35;opacity:.65}.aoc-transfer-explain{padding:11px 13px;border:1px solid rgba(66,211,146,.2);border-radius:12px;background:rgba(66,211,146,.06);font-size:12px;line-height:1.5}.aoc-transfer-arrow{text-align:center;font-size:25px;opacity:.9}.aoc-transfer-arrow span{display:block;font-size:18px}.aoc-transfer-arrow b{display:block;font-size:28px}
+.aoc-transfer-row{display:grid;grid-template-columns:minmax(180px,1.5fr) minmax(150px,1fr) 100px 40px;gap:10px;align-items:end;padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:14px;margin-top:10px;background:rgba(255,255,255,.02)}
+.aoc-transfer-field label{display:block;font-size:12px;font-weight:800;margin-bottom:5px;opacity:.72}.aoc-transfer-remove{height:40px}
+.aoc-transfer-add{margin-top:10px}.aoc-transfer-list{display:grid;gap:12px}.aoc-transfer-card{border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:15px;background:rgba(255,255,255,.025)}
+.aoc-transfer-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.aoc-transfer-meta{font-size:12px;opacity:.7;margin-top:4px}.aoc-transfer-items{display:grid;gap:5px;margin-top:12px}.aoc-transfer-item-line{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.035)}
+.aoc-transfer-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.aoc-transfer-status{display:inline-flex;padding:7px 11px;border-radius:999px;font-size:12px;font-weight:900;background:rgba(255,255,255,.08)}
+.aoc-transfer-current-status{display:grid;grid-template-columns:auto auto;gap:5px 9px;align-items:center;margin-top:12px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+.aoc-transfer-current-status span{font-size:10px;font-weight:900;letter-spacing:.08em;opacity:.55}.aoc-transfer-current-status strong{justify-self:start}.aoc-transfer-current-status small{grid-column:1/-1;opacity:.65;line-height:1.45;font-size:11px}
+.aoc-transfer-status.pending{background:rgba(255,255,255,.12);color:#e7edf3}.aoc-transfer-status.active{background:rgba(66,211,146,.16);color:#6ff0b0}.aoc-transfer-status.done{background:rgba(66,211,146,.18);color:#75efad}.aoc-transfer-status.warning{background:rgba(255,191,71,.16);color:#ffd37a}.aoc-transfer-status.danger{background:rgba(255,90,90,.15);color:#ff9b9b}
+.aoc-transfer-picker{position:relative}.aoc-transfer-item-search{width:100%;margin-bottom:7px}.aoc-transfer-selected{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.035);color:inherit;cursor:pointer}.aoc-transfer-selected:hover{border-color:rgba(66,211,146,.45);background:rgba(66,211,146,.06)}.aoc-transfer-selected-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:rgba(66,211,146,.10);font-size:18px;flex:0 0 34px}.aoc-transfer-selected-text{min-width:0;display:grid;gap:2px}.aoc-transfer-selected-text b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aoc-transfer-selected-text small{font-size:10px;opacity:.58}.aoc-transfer-chevron{margin-left:auto;font-size:18px;opacity:.55}.aoc-transfer-picker-menu{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);max-height:260px;overflow:auto;padding:7px;border:1px solid rgba(255,255,255,.12);border-radius:13px;background:#11171d;box-shadow:0 16px 35px rgba(0,0,0,.35)}.aoc-transfer-picker-menu[hidden]{display:none}.aoc-transfer-picker-option{width:100%;display:flex;align-items:center;gap:10px;border:0;border-radius:10px;background:transparent;color:inherit;padding:9px;text-align:left;cursor:pointer}.aoc-transfer-picker-option:hover{background:rgba(66,211,146,.10)}.aoc-transfer-picker-option img,.aoc-transfer-picker-option .fallback{width:34px;height:34px;object-fit:cover;border-radius:9px;flex:0 0 34px;background:rgba(255,255,255,.06);display:grid;place-items:center}.aoc-transfer-picker-option span{min-width:0;display:grid}.aoc-transfer-picker-option strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aoc-transfer-picker-option small{font-size:10px;opacity:.55}.aoc-transfer-qty-wrap{display:grid;grid-template-columns:34px 1fr 34px;gap:5px;align-items:center}.aoc-transfer-qty-wrap button{height:40px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.04);color:inherit;font-weight:900;font-size:17px;cursor:pointer}.aoc-transfer-qty-wrap button:hover{background:rgba(66,211,146,.10);border-color:rgba(66,211,146,.35)}.aoc-transfer-variant{min-height:40px}.aoc-transfer-wa{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:12px;padding:11px 12px;border:1px solid rgba(66,211,146,.16);border-radius:13px;background:rgba(66,211,146,.045)}.aoc-transfer-wa>div:first-child{display:grid;gap:3px}.aoc-transfer-wa>div:first-child span{font-size:10px;font-weight:900;letter-spacing:.08em}.aoc-transfer-wa>div:first-child small{font-size:11px;opacity:.62}.aoc-transfer-wa-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.aoc-transfer-wa-btn{white-space:nowrap}.aoc-transfer-wa-missing{font-size:10px;opacity:.5;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.04)}
+@media(max-width:700px){.aoc-transfer-flow{grid-template-columns:1fr}.aoc-transfer-arrow{transform:rotate(90deg)}.aoc-transfer-row{grid-template-columns:1fr 1fr}.aoc-transfer-item-field{grid-column:1/-1}.aoc-transfer-remove{width:100%}.aoc-transfer-card-head{display:block}.aoc-transfer-actions .btn{flex:1 1 100%}.aoc-transfer-wa{display:block}.aoc-transfer-wa-actions{justify-content:stretch;margin-top:8px}.aoc-transfer-wa-actions .btn{flex:1 1 100%}}
+</style>`;
+
+        const canRequestStockTransfer = ["super_admin","superadmin"].includes(String(currentStaffRole || "").toLowerCase()) && stockTransferPermissionGranted;
+        const transferRequestForm = canRequestStockTransfer ? `
+          <section class="card">
+            <div class="aoc-transfer-hero">
+              <div><h3>🔄 Peminjaman Antar Store</h3><p>Store Pemohon mengajukan barang kepada Store Pemberi. Stok baru berpindah setelah pengajuan disetujui.</p></div>
+            </div>
+            <div class="aoc-transfer-flow">
+              <label class="aoc-transfer-store aoc-transfer-receiver"><span class="field"><span>📥 Store Pemohon / Penerima</span><small>Store yang membutuhkan dan menerima barang pinjaman.</small><select class="input" id="aocTransferTo"><option value="">Pilih store pemohon...</option>${locations.map(l=>`<option value="${esc(l.id)}">${esc(l.name)} · ${esc(l.code)}</option>`).join("")}</select></span></label>
+              <div class="aoc-transfer-arrow" aria-label="Barang bergerak dari pemberi ke penerima"><span>📦</span><b>←</b></div>
+              <label class="aoc-transfer-store aoc-transfer-provider"><span class="field"><span>📤 Store Pemberi Barang</span><small>Store yang stoknya berkurang setelah disetujui.</small><select class="input" id="aocTransferFrom"><option value="">Pilih store pemberi...</option>${locations.map(l=>`<option value="${esc(l.id)}">${esc(l.name)} · ${esc(l.code)}</option>`).join("")}</select></span></label>
+            </div>
+            <div class="aoc-transfer-explain">💡 <strong>Contoh:</strong> Jika <b>Sawojajar</b> membutuhkan 2 Matras dari <b>Ketawanggede</b>, pilih <b>Sawojajar</b> sebagai Pemohon/Penerima dan <b>Ketawanggede</b> sebagai Pemberi Barang.</div>
+            <div id="aocTransferItems">${rowHtml(0)}</div>
+            <button class="btn tiny aoc-transfer-add" id="aocTransferAddItem" type="button">＋ Tambah Barang</button>
+            <label class="field" style="display:block;margin-top:12px"><span>Catatan (opsional)</span><textarea class="input" id="aocTransferNotes" rows="3" placeholder="Contoh: kebutuhan operasional Store 2"></textarea></label>
+            <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn primary" id="aocTransferSubmit" type="button">📤 Ajukan Peminjaman</button></div>
+          </section>` : `
+          <section class="card">
+            <div class="aoc-transfer-hero"><div><h3>🔒 Pengajuan Peminjaman</h3><p>Hanya akun <b>SUPERADMIN</b> yang dapat membuat pengajuan peminjaman barang antar store.</p></div></div>
+            <div class="notice">Akun ini masih dapat melihat riwayat peminjaman dan menjalankan aksi sesuai hak aksesnya, tetapi <b>tidak dapat membuat pengajuan baru</b>.</div>
+          </section>`;
+
+        const transferHistoryHtml = `
+          <section class="card" style="margin-top:14px">
+            <div class="aoc-transfer-hero"><div><h3>Riwayat Peminjaman</h3><p>${transfers.length} pengajuan tercatat.</p></div></div>
+            <div class="aoc-transfer-list">
+              ${transfers.map(t=>{
+                const st=statusMap[t.status] || [t.status,"pending"];
+                return `<article class="aoc-transfer-card">
+                  <div class="aoc-transfer-card-head"><div><strong>${esc(t.request_no)}</strong><div class="aoc-transfer-meta" style="font-weight:800;opacity:.95;margin-top:7px">📥 ${esc(t.to_location_name || "-")} <span style="opacity:.6">menerima</span> ← 📤 ${esc(t.from_location_name || "-")}</div><div class="aoc-transfer-meta">Pemohon / Penerima: <strong>${esc(t.to_location_name || "-")}</strong></div><div class="aoc-transfer-meta">Pemberi Barang: <strong>${esc(t.from_location_name || "-")}</strong></div><div class="aoc-transfer-meta">Diajukan oleh: ${esc(t.requested_by_name || "-")} · ${fmtDate(t.requested_at)}</div></div></div><div class="aoc-transfer-current-status"><span>STATUS</span><strong class="aoc-transfer-status ${st[1]}">${esc(st[0])}</strong><small>${esc(st[2] || "")}</small></div>
+                  <div class="aoc-transfer-items">${(t.items||[]).map(i=>`<div class="aoc-transfer-item-line"><span>${esc(itemLabel(i))}</span><strong>${Number(i.quantity||0)} unit</strong></div>`).join("")}</div>
+                  <div class="aoc-transfer-wa">
+                    <div><span>💬 KOMUNIKASI STORE</span><small>Hubungi langsung pihak yang terlibat dalam peminjaman ini.</small></div>
+                    <div class="aoc-transfer-wa-actions">
+                      ${waLink(t.to_location_id, transferWhatsappMessage(t, t.to_location_name)) ? `<a class="btn tiny aoc-transfer-wa-btn" target="_blank" rel="noopener noreferrer" href="${esc(waLink(t.to_location_id, transferWhatsappMessage(t, t.to_location_name)))}">💬 WA ${esc(t.to_location_name || "Penerima")}</a>` : `<span class="aoc-transfer-wa-missing">WA ${esc(t.to_location_name || "Penerima")} belum diatur</span>`}
+                      ${waLink(t.from_location_id, transferWhatsappMessage(t, t.from_location_name)) ? `<a class="btn tiny aoc-transfer-wa-btn" target="_blank" rel="noopener noreferrer" href="${esc(waLink(t.from_location_id, transferWhatsappMessage(t, t.from_location_name)))}">💬 WA ${esc(t.from_location_name || "Pemberi")}</a>` : `<span class="aoc-transfer-wa-missing">WA ${esc(t.from_location_name || "Pemberi")} belum diatur</span>`}
+                    </div>
+                  </div>
+                  ${t.notes ? `<div class="aoc-transfer-meta" style="margin-top:9px">📝 ${esc(t.notes)}</div>` : ""}
+                  ${t.rejection_reason ? `<div class="aoc-transfer-meta" style="margin-top:9px">Alasan ditolak: ${esc(t.rejection_reason)}</div>` : ""}
+                  <div class="aoc-transfer-actions">
+                    ${t.status==='pending' ? `<button class="btn primary tiny" data-transfer-approve="${esc(t.id)}">✅ Setujui & Pindahkan Stok</button><button class="btn tiny" data-transfer-reject="${esc(t.id)}">❌ Tolak</button>` : ""}
+                    ${t.status==='in_transit' ? `<button class="btn tiny" data-transfer-return-request="${esc(t.id)}">📦 Ajukan Pengembalian</button>` : ""}
+                    ${t.status==='return_requested' ? `<button class="btn primary tiny" data-transfer-return-complete="${esc(t.id)}">↩️ Terima Pengembalian & Kembalikan Stok</button>` : ""}
+                  </div>
+                </article>`;
+              }).join("") || `<div class="notice">Belum ada pengajuan peminjaman.</div>`}
+            </div>
+          </section>`;
+
+        content.innerHTML = `${transferStyles}${transferRequestForm}${transferHistoryHtml}`;
+        const itemsWrap = content.querySelector("#aocTransferItems");
+        const renderPickerOptions = (row, query='') => {
+          const menu=row?.querySelector('[data-transfer-picker-menu]');
+          if(!menu) return;
+          const q=String(query||'').trim().toLowerCase();
+          const selectedId=String(row.querySelector('[data-transfer-item]')?.value||'');
+          const found=products.filter(it=>!q || String(it.title||'').toLowerCase().includes(q)).slice(0,40);
+          menu.innerHTML=found.length ? found.map(it=>{
+            const img=productImage(it);
+            const variants=Array.isArray(it.item_variants)?it.item_variants.filter(v=>v&&v.is_active!==false).length:0;
+            return `<button type="button" class="aoc-transfer-picker-option" data-pick-item="${esc(it.id)}">${img?`<img src="${esc(img)}" alt="">`:`<span class="fallback">📦</span>`}<span><strong>${esc(it.title||'Item')}</strong><small>${variants?`${variants} varian`:'Stok utama'}</small></span>${String(it.id)===selectedId?'<b style="margin-left:auto">✓</b>':''}</button>`;
+          }).join('') : '<div style="padding:14px;text-align:center;opacity:.6;font-size:12px">Barang tidak ditemukan.</div>';
+        };
+        const closePickers = (except=null) => content.querySelectorAll('[data-transfer-picker-menu]').forEach(m=>{if(m!==except)m.hidden=true;});
+        const setPicker = (row, itemId) => {
+          const hidden=row.querySelector('[data-transfer-item]'); const input=row.querySelector('[data-transfer-item-search]'); const selected=row.querySelector('[data-transfer-selected]');
+          const item=products.find(x=>String(x.id)===String(itemId)); if(!hidden||!input||!selected) return;
+          hidden.value=item?item.id:''; input.value='';
+          const icon=selected.querySelector('.aoc-transfer-selected-icon'); const textEl=selected.querySelector('.aoc-transfer-selected-text');
+          if(item){icon.textContent='📦'; textEl.innerHTML=`<b>${esc(item.title||'Item')}</b><small>Barang dipilih · klik untuk mengganti</small>`;}
+          else {icon.textContent='📦'; textEl.innerHTML='<b>Pilih barang</b><small>Ketik nama barang untuk mencari</small>';}
+          const menu=row.querySelector('[data-transfer-picker-menu]'); if(menu) menu.hidden=true;
+          updateVariant(row);
+        };
+        const bindPicker = (row) => {
+          const input=row.querySelector('[data-transfer-item-search]'); const selected=row.querySelector('[data-transfer-selected]'); const menu=row.querySelector('[data-transfer-picker-menu]');
+          if(!input||!selected||!menu) return;
+          renderPickerOptions(row);
+          input.addEventListener('focus',()=>{closePickers(menu); menu.hidden=false; renderPickerOptions(row,input.value);});
+          input.addEventListener('input',()=>{closePickers(menu); menu.hidden=false; renderPickerOptions(row,input.value);});
+          selected.addEventListener('click',()=>{closePickers(menu); menu.hidden=!menu.hidden; renderPickerOptions(row,input.value); if(!menu.hidden) input.focus();});
+          menu.addEventListener('click',e=>{const b=e.target.closest('[data-pick-item]');if(!b)return;setPicker(row,b.dataset.pickItem);});
+          row.querySelector('[data-qty-minus]')?.addEventListener('click',()=>{const q=row.querySelector('[data-transfer-qty]');q.value=Math.max(1,(Number(q.value)||1)-1);});
+          row.querySelector('[data-qty-plus]')?.addEventListener('click',()=>{const q=row.querySelector('[data-transfer-qty]');q.value=(Math.max(1,Number(q.value)||1)+1);});
+        };
+        const updateVariant = (row) => {
+          if (!row) return;
+          const itemEl = row.querySelector("[data-transfer-item]");
+          const select = row.querySelector("[data-transfer-variant]");
+          if (!itemEl || !select) return;
+          const itemId = itemEl.value;
+          const item = products.find(x=>String(x.id)===String(itemId));
+          const vars = Array.isArray(item?.item_variants) ? item.item_variants.filter(v=>v && v.is_active !== false) : [];
+          select.innerHTML = `<option value="">Stok utama</option>` + vars.map(v=>`<option value="${esc(v.id)}">${esc(v.name || "Varian")}${v.capacity ? ` · ${esc(v.capacity)}` : ""}</option>`).join("");
+          select.disabled = vars.length === 0;
+        };
+        itemsWrap.querySelectorAll("[data-transfer-row]").forEach(row=>{bindPicker(row);updateVariant(row);});
+        content.querySelector("#aocTransferAddItem")?.addEventListener("click",()=>{
+          itemsWrap.insertAdjacentHTML("beforeend", rowHtml(++aocTransferItemRows));
+          const row=itemsWrap.lastElementChild;
+          if (!row) return;
+          bindPicker(row);
+          row.querySelector("[data-transfer-remove]")?.addEventListener("click",()=>row.remove());
+          updateVariant(row);
+        });
+        itemsWrap.querySelector("[data-transfer-remove]")?.addEventListener("click",()=>itemsWrap.querySelector("[data-transfer-row]")?.remove());
+
+        if (!canRequestStockTransfer) return;
+        content.querySelector("#aocTransferSubmit")?.addEventListener("click", async (ev)=>{
+          if (!(await requireAdminChangeCode())) return;
+          const from=content.querySelector("#aocTransferFrom")?.value;
+          const to=content.querySelector("#aocTransferTo")?.value;
+          if(!from||!to||from===to){showAdminMessage("Store Pemohon/Penerima dan Store Pemberi Barang harus berbeda.","error");return;}
+          const payload=[];
+          for(const row of itemsWrap.querySelectorAll("[data-transfer-row]")){
+            const itemId=row.querySelector("[data-transfer-item]")?.value;
+            const variantId=row.querySelector("[data-transfer-variant]")?.value || null;
+            const qty=Math.floor(Number(row.querySelector("[data-transfer-qty]")?.value||0));
+            if(!itemId) continue;
+            if(qty<1){showAdminMessage("Jumlah barang harus minimal 1.","error");return;}
+            payload.push({item_id:itemId,variant_id:variantId,quantity:qty});
+          }
+          if(!payload.length){showAdminMessage("Minimal satu barang harus dipilih.","error");return;}
+          const btn=ev.currentTarget;
+          if (!btn) return;
+          btn.disabled=true;
+          try{
+            const r=await supabase.rpc("secure_admin_create_stock_transfer",{p_from_location_id:from,p_to_location_id:to,p_items:payload,p_notes:String(content.querySelector("#aocTransferNotes")?.value||"").trim()||null});
+            if(r.error) throw r.error;
+            showAdminMessage("Pengajuan berhasil dibuat. Barang akan berpindah dari Store Pemberi ke Store Penerima setelah disetujui.","success");
+            await renderStockTransfersTab();
+          }catch(e){showAdminMessage(e.message||"Gagal membuat pengajuan.","error");}
+          finally{btn.disabled=false;}
+        });
+
+        const action = async (id, rpc, params, confirmText) => {
+          if(confirmText && !(await aocConfirm(confirmText,{title:"Konfirmasi",icon:"🔄",confirmText:"Lanjut"}))) return;
+          if (!(await requireAdminChangeCode())) return;
+          const r=await supabase.rpc(rpc,params||{p_request_id:id});
+          if(r.error){showAdminMessage(r.error.message||"Aksi gagal.","error");return;}
+          showAdminMessage("Perubahan berhasil. Stok store telah disinkronkan.","success");
+          await renderStockTransfersTab();
+        };
+        content.querySelectorAll("[data-transfer-approve]").forEach(b=>b.addEventListener("click",()=>action(b.dataset.transferApprove,"secure_admin_approve_stock_transfer",{p_request_id:b.dataset.transferApprove},"Setujui: pindahkan stok dari Store Pemberi ke Store Penerima sekarang?")));
+        content.querySelectorAll("[data-transfer-reject]").forEach(b=>b.addEventListener("click",async()=>{
+          if(!(await requireAdminChangeCode()))return;
+          const reason=await aocPrompt("Alasan penolakan (opsional):","",{title:"Tolak Peminjaman",icon:"❌",confirmText:"Tolak"});
+          if(reason===null)return;
+          const r=await supabase.rpc("secure_admin_reject_stock_transfer",{p_request_id:b.dataset.transferReject,p_reason:reason});
+          if(r.error)return showAdminMessage(r.error.message||"Gagal menolak.","error");
+          showAdminMessage("Pengajuan ditolak.","success");await renderStockTransfersTab();
+        }));
+        content.querySelectorAll("[data-transfer-return-request]").forEach(b=>b.addEventListener("click",()=>action(b.dataset.transferReturnRequest,"secure_admin_request_stock_transfer_return",{p_request_id:b.dataset.transferReturnRequest},"Ajukan pengembalian barang dari Store Penerima ke Store Pemberi?")));
+        content.querySelectorAll("[data-transfer-return-complete]").forEach(b=>b.addEventListener("click",()=>action(b.dataset.transferReturnComplete,"secure_admin_complete_stock_transfer_return",{p_request_id:b.dataset.transferReturnComplete},"Konfirmasi barang kembali dan kembalikan stok ke Store Pemberi?")));
+      }
+
       async function renderActiveTab() {
         const tab = activeTab;
         const requestId = ++renderRequestId;
@@ -1903,6 +2217,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (requestId !== renderRequestId || tab !== activeTab) return;
 
           if (tab === "locations") await renderLocationsTab();
+          else if (tab === "stock_transfers") await renderStockTransfersTab();
           else if (tab === "rental") renderRentalTab();
           else if (tab === "rental_orders") renderRentalOrdersTab();
           else if (tab === "rental_returns") renderRentalReturnsTab();
@@ -7012,6 +7327,100 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
+      async function loadStockTransferPermissionData() {
+        try {
+          const [{ data: allowed, error: allowedError }, { data: users, error: usersError }] = await Promise.all([
+            supabase.rpc("secure_list_stock_transfer_permissions"),
+            supabase.rpc("secure_list_stock_transfer_permission_users"),
+          ]);
+          if (allowedError) throw allowedError;
+          if (usersError) throw usersError;
+          stockTransferAllowedAdmins = Array.isArray(allowed) ? allowed : [];
+          stockTransferPermissionUsers = Array.isArray(users) ? users : [];
+          // Jika RPC daftar akun belum tersedia/masih kosong, gunakan daftar Administrator
+          // yang sudah dimuat dari secure_list_staff_users sebagai fallback agar dropdown tidak kosong.
+          if (!stockTransferPermissionUsers.length && Array.isArray(administrators) && administrators.length) {
+            stockTransferPermissionUsers = administrators.map(entry => ({
+              user_id: entry.user_id,
+              email: entry.email,
+              full_name: entry.full_name,
+              role: entry.role
+            })).filter(entry => String(entry.email || '').trim());
+          }
+        } catch (error) {
+          console.warn("Permission Pinjam Antar Store belum tersedia:", error);
+          stockTransferAllowedAdmins = [];
+          stockTransferPermissionUsers = (Array.isArray(administrators) ? administrators : []).map(entry => ({
+            user_id: entry.user_id, email: entry.email, full_name: entry.full_name, role: entry.role
+          })).filter(entry => String(entry.email || '').trim());
+        }
+      }
+
+      function renderStockTransferPermissionManager() {
+        const canManage = String(currentStaffRole || "").toLowerCase() === "super_admin" || String(currentStaffRole || "").toLowerCase() === "superadmin" || currentPermissions.has("*");
+        if (!canManage) return `<section class="card"><div class="notice">🔒 Pengaturan permission Pinjam Antar Store hanya dapat dikelola oleh <b>SUPERADMIN</b>.</div></section>`;
+        const allowedEmails = new Set(stockTransferAllowedAdmins.map(x => String(x.email || "").toLowerCase()));
+        const options = stockTransferPermissionUsers.map(u => {
+          const email = String(u.email || "").trim().toLowerCase();
+          const name = String(u.full_name || "").trim();
+          const role = String(u.role || "user").toLowerCase();
+          const roleLabel = (role === "super_admin" || role === "superadmin") ? "SUPERADMIN" : role.replaceAll("_", " ");
+          const disabled = allowedEmails.has(email) ? "disabled" : "";
+          return `<option value="${esc(email)}" ${disabled}>${esc(name ? `${name} — ${email}` : email)} · ${esc(roleLabel)}${disabled ? " · SUDAH AKTIF" : ""}</option>`;
+        }).join("");
+        return `<section class="card" id="stockTransferPermissionManager" style="margin-top:16px">
+          <div class="admin-editor-heading">
+            <div><span class="badge">Permission Pinjam Antar Store</span><h3>🔄 Atur Admin yang Boleh Meminjam</h3><p class="muted">Pilih akun yang boleh membuka fitur Pinjam Antar Store. Akun yang mengajukan tetap harus memiliki role <b>SUPERADMIN</b>.</p></div>
+          </div>
+          <div class="notice">Tidak perlu mengedit SQL. Tambah, nonaktifkan, atau aktifkan email langsung dari sini.</div>
+          <div class="form" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:12px">
+            <label class="field"><span>Pilih akun terdaftar</span><select id="stockTransferPermissionUser" class="input"><option value="">Pilih akun...</option>${options}</select></label>
+            <button id="stockTransferPermissionAdd" class="btn primary" type="button">+ Beri Akses</button>
+          </div>
+          <div style="margin-top:16px"><strong>Daftar yang diberi akses</strong><div id="stockTransferPermissionList" style="margin-top:10px">${stockTransferAllowedAdmins.map(renderStockTransferPermissionRow).join("") || '<div class="notice">Belum ada email yang diberi akses.</div>'}</div></div>
+        </section>`;
+      }
+
+      function renderStockTransferPermissionRow(row) {
+        const active = row.is_active !== false;
+        const email = String(row.email || "");
+        const user = stockTransferPermissionUsers.find(x => String(x.email || "").toLowerCase() === email.toLowerCase()) || {};
+        const label = String(user.full_name || email.split("@")[0] || email);
+        return `<article class="card" style="display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px;margin-bottom:8px"><div><strong>${esc(label)}</strong><div class="muted">${esc(email)}</div><small class="${active ? "admin-active" : "admin-inactive"}">${active ? "● AKTIF" : "● NONAKTIF"}</small></div><div class="actions"><button class="btn secondary small" type="button" data-stock-transfer-toggle="${esc(email)}" data-active="${active ? "false" : "true"}">${active ? "Nonaktifkan" : "Aktifkan"}</button><button class="btn danger small" type="button" data-stock-transfer-remove="${esc(email)}">Hapus</button></div></article>`;
+      }
+
+      function bindStockTransferPermissionManager() {
+        document.getElementById("stockTransferPermissionAdd")?.addEventListener("click", async () => {
+          const email = String(document.getElementById("stockTransferPermissionUser")?.value || "").trim().toLowerCase();
+          if (!email) return showAdminMessage("Pilih akun terlebih dahulu.", "error");
+          if (!(await requireAdminChangeCode())) return;
+          const { error } = await supabase.rpc("secure_set_stock_transfer_permission", { p_email: email, p_is_active: true });
+          if (error) return showAdminMessage(error.message || "Gagal memberi permission.", "error");
+          await loadStockTransferPermissionData();
+          renderAdministratorContent();
+          showAdminMessage(`${email} sekarang boleh menggunakan Pinjam Antar Store.`, "success");
+        });
+        document.querySelectorAll("[data-stock-transfer-toggle]").forEach(btn => btn.addEventListener("click", async () => {
+          if (!(await requireAdminChangeCode())) return;
+          const email = btn.dataset.stockTransferToggle;
+          const active = btn.dataset.active === "true";
+          const { error } = await supabase.rpc("secure_set_stock_transfer_permission", { p_email: email, p_is_active: active });
+          if (error) return showAdminMessage(error.message || "Gagal mengubah permission.", "error");
+          await loadStockTransferPermissionData();
+          renderAdministratorContent();
+          showAdminMessage(`${email}: permission ${active ? "diaktifkan" : "dinonaktifkan"}.`, "success");
+        }));
+        document.querySelectorAll("[data-stock-transfer-remove]").forEach(btn => btn.addEventListener("click", async () => {
+          if (!(await aocConfirm(`Hapus permission Pinjam Antar Store dari ${btn.dataset.stockTransferRemove}?`, {title:"Hapus permission", icon:"🗑️", confirmText:"Hapus", danger:true}))) return;
+          if (!(await requireAdminChangeCode())) return;
+          const { error } = await supabase.rpc("secure_remove_stock_transfer_permission", { p_email: btn.dataset.stockTransferRemove });
+          if (error) return showAdminMessage(error.message || "Gagal menghapus permission.", "error");
+          await loadStockTransferPermissionData();
+          renderAdministratorContent();
+          showAdminMessage("Permission berhasil dihapus.", "success");
+        }));
+      }
+
       async function renderAdministratorsTab() {
         const content = document.getElementById("adminContent");
 
@@ -7034,6 +7443,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         administrators = data || [];
+        await loadStockTransferPermissionData();
         renderAdministratorContent();
       }
 
@@ -7202,6 +7612,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </form>
       </section>
+      ${renderStockTransferPermissionManager()}
 
       <section>
         <div class="admin-list-heading">
@@ -7213,6 +7624,7 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>`;
 
         document.getElementById("addAdministratorForm").addEventListener("submit", addAdministrator);
+        bindStockTransferPermissionManager();
         document.getElementById("refreshAdministrators").addEventListener("click", async () => { await reloadAdministrators(); showAdminMessage("Daftar administrator dimuat ulang.", "success"); });
         document.getElementById("cancelAdministratorEdit")?.addEventListener("click", resetAdministratorForm);
         document.getElementById("adminPermissionSelectAll")?.addEventListener("change", (event) => {
@@ -7326,6 +7738,7 @@ document.addEventListener("DOMContentLoaded", () => {
             user_id: entry.user_id, email: entry.email, full_name: entry.full_name, role: entry.role,
           }));
         }
+        await loadStockTransferPermissionData();
         renderAdministratorContent();
       }
 

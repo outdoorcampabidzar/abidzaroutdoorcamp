@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PIN Keamanan Beranda — AbidzarOutdoorcamp</title>
-<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./styles.css?v=20261004-cs-v94">
 <style>
 .pin-page{min-height:100vh;display:grid;place-items:center;padding:24px;background:#070b0f}.pin-card{width:min(460px,100%);padding:28px;border:1px solid rgba(255,255,255,.1);border-radius:22px;background:#0d1318;box-shadow:0 20px 60px rgba(0,0,0,.35)}.pin-title{margin:.5rem 0}.pin-input{font-size:28px;letter-spacing:.42em;text-align:center}.pin-note{line-height:1.55}.pin-error{color:#ff8c9c}.pin-success{color:#62e5a2}.pin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.pin-status{min-height:24px;margin-top:12px}.pin-strength{font-size:13px;opacity:.75;margin-top:8px}.hidden{display:none!important}
 </style>
@@ -13,11 +13,11 @@
 <main class="pin-page">
 <section class="pin-card">
 <span class="badge">🔐 Keamanan Akun</span>
-<h1 class="pin-title">Buat PIN Keamanan Beranda</h1>
-<p class="muted pin-note">PIN ini <strong>berbeda</strong> dari PIN transaksi. PIN ini dipakai untuk membuka Beranda dan disimpan sebagai hash di server.</p>
+<h1 class="pin-title">Buat Kode Keamanan Beranda & Checkout</h1>
+<p class="muted pin-note">Kode ini digunakan bersama untuk membuka Beranda dan mengonfirmasi Checkout. Kode disimpan sebagai hash di server.</p>
 <form id="homePinForm" autocomplete="off" novalidate>
-<label class="field"><span>PIN keamanan beranda</span><input id="homePin" class="input pin-input" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" placeholder="••••••" required></label>
-<label class="field"><span>Konfirmasi PIN</span><input id="homePinConfirm" class="input pin-input" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" placeholder="••••••" required></label>
+<label class="field"><span>Kode keamanan Beranda & Checkout</span><input id="homePin" class="input pin-input" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" placeholder="••••••" required></label>
+<label class="field"><span>Konfirmasi Kode</span><input id="homePinConfirm" class="input pin-input" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" placeholder="••••••" required></label>
 <div class="pin-strength">Hindari 000000, 123456, angka berulang, atau pola mudah ditebak.</div>
 <div id="pinStatus" class="pin-status" role="status" aria-live="polite"></div>
 <div class="pin-actions"><button id="saveHomePin" class="btn primary" type="submit">Simpan PIN</button><a id="cancelPin" class="btn secondary" href="login.html">Kembali</a></div>
